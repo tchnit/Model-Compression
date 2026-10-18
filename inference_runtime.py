@@ -8,8 +8,8 @@ def cpu_device(path):
     return "intel:cpu" if path.is_dir() or path.suffix == ".xml" else "cpu"
 
 
-def configure_cpu_backend(model, path, threads, precision="FP16"):
-    """Configure a YOLO predictor or validation AutoBackend before measurement."""
+def configure_cpu_backend(model, path, threads, precision="FP16", *, strict_threads=True):
+    """Configure CPU inference; benchmarks require exact threads, live demos may accept fewer."""
     if precision not in {"FP16", "FP32"}:
         raise ValueError("Precision PyTorch phải là FP16 hoặc FP32")
     import torch
@@ -44,10 +44,20 @@ def configure_cpu_backend(model, path, threads, precision="FP16"):
             })
             backend.ov_compiled_model = backend.compile_model(graph)
         compiled = backend.ov_compiled_model
-        runtime.update(ov_threads=compiled.get_property("INFERENCE_NUM_THREADS"),
+        runtime.update(requested_threads=threads,
+                       ov_threads=int(compiled.get_property("INFERENCE_NUM_THREADS")),
                        execution_devices=compiled.get_property("EXECUTION_DEVICES"),
                        ov_streams=int(compiled.get_property("NUM_STREAMS")))
-        if (runtime["ov_threads"] != threads or runtime["execution_devices"] != ["CPU"]
-                or runtime["ov_streams"] != 1):
-            raise RuntimeError("OpenVINO không áp dụng đúng CPU/thread protocol")
+        runtime['thread_protocol_matches'] = runtime['ov_threads'] == threads
+        if (runtime["execution_devices"] != ["CPU"] or runtime["ov_streams"] != 1
+                or not 1 <= runtime["ov_threads"] <= threads):
+            raise RuntimeError(f"Cấu hình OpenVINO không hợp lệ: {runtime}")
+        if not runtime['thread_protocol_matches']:
+            message = (f"Yêu cầu {threads} luồng; OpenVINO thực tế {runtime['ov_threads']} luồng, "
+                       f"{runtime['ov_streams']} stream, thiết bị {runtime['execution_devices']}. "
+                       'CPU khả dụng hoặc chính sách lập lịch có thể giới hạn số luồng. '
+                       'Kết quả này không cùng điều kiện với benchmark yêu cầu đủ số luồng.')
+            if strict_threads:
+                raise RuntimeError(message)
+            runtime['thread_warning'] = message
     return runtime

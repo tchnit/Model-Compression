@@ -1759,7 +1759,7 @@ function updateInferenceStatus() {
   const pending = [...new Set([currentModelA, currentModelB])].filter(key =>
     key && liveSceneRequests.has(`${currentSceneId}:${key}`));
   $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
-  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} trên CPU (4 luồng)...`;
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} trên CPU (yêu cầu tối đa 4 luồng)...`;
 }
 
 function inferScene(scene, modelKeys) {

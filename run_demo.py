@@ -243,7 +243,8 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                         if m_key not in WARMED_MODELS:
                             model(np.zeros((imgsz, imgsz, 3), dtype=np.uint8), imgsz=imgsz, conf=0.10,
                                   verbose=False, rect=False, device=cpu_device(MODEL_CONFIGS[m_key]['path']))
-                            MODEL_RUNTIMES[m_key] = configure_cpu_backend(model, MODEL_CONFIGS[m_key]['path'], CPU_THREADS)
+                            MODEL_RUNTIMES[m_key] = configure_cpu_backend(model, MODEL_CONFIGS[m_key]['path'], CPU_THREADS,
+                                                                        strict_threads=False)
                             model(np.zeros((imgsz, imgsz, 3), dtype=np.uint8), imgsz=imgsz, conf=0.10,
                                   verbose=False, rect=False, device=cpu_device(MODEL_CONFIGS[m_key]['path']))
                             WARMED_MODELS.add(m_key)
@@ -282,7 +283,7 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
 
                         detections_res[m_key] = {
                             'inference_time_ms': round(infer_time, 1),
-                            'runtime': f"CPU ×{CPU_THREADS} · {imgsz}×{imgsz}",
+                            'runtime': f"CPU ×{MODEL_RUNTIMES[m_key].get('ov_threads', MODEL_RUNTIMES[m_key]['torch_threads'])} · {imgsz}×{imgsz}",
                             'runtime_settings': MODEL_RUNTIMES[m_key],
                             'detections_count': len(boxes_list),
                             'boxes': boxes_list
@@ -378,7 +379,7 @@ def run():
                   file=sys.stderr)
 
     print("[*] Đang khởi động AI Model Compression Studio...")
-    print(f"[*] Các mô hình sẽ warm-up khi được chọn trên CPU ({CPU_THREADS} threads).")
+    print(f"[*] Các mô hình sẽ warm-up khi được chọn trên CPU (yêu cầu tối đa {CPU_THREADS} luồng; báo số thực tế khi chạy).")
 
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer((HOST, PORT), StudioRequestHandler) as httpd:

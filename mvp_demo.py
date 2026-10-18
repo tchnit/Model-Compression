@@ -230,7 +230,7 @@ class MVPService:
             if self.runtime is None:
                 model(np.zeros((640, 640, 3), np.uint8), imgsz=640, conf=.25, rect=False,
                       verbose=False, device=cpu_device(self.model_path))
-                runtime = configure_cpu_backend(model, self.model_path, self.threads)
+                runtime = configure_cpu_backend(model, self.model_path, self.threads, strict_threads=False)
                 if runtime.get('execution_devices') != ['CPU']:
                     raise RuntimeError('Chưa xác minh được thiết bị thực thi OpenVINO CPU.')
                 model(np.zeros((640, 640, 3), np.uint8), imgsz=640, conf=.25, rect=False,

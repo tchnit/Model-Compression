@@ -5,9 +5,16 @@ Cập nhật ngày 18/10/2026 sau rà soát mã nguồn, runtime và bằng ch�
 
 ## MVP – Demo & Đánh giá (18/10/2026)
 
+Bổ sung sửa tương thích VPS: đã tái hiện lỗi OpenVINO thread protocol với
+CPU affinity giới hạn còn 2 CPU. Demo/MVP yêu cầu tối đa 4 luồng, chấp nhận
+OpenVINO sử dụng ít hơn khi lập lịch giới hạn, vẫn yêu cầu CPU và 1 stream.
+Giao diện/báo cáo ghi đúng `ov_threads`, `requested_threads`, cảnh báo khi khác
+cấu hình yêu cầu. Benchmark tái lập giữ kiểm tra đúng số luồng mặc định;
+không dùng các lượt demo giới hạn CPU như benchmark cùng điều kiện.
+
 Tab đầu tiên và màn hình mặc định là `demo.html#mvp`. Model chính thức dùng
 `models/int8_yolo26s_640_openvino_model/` (tên thư mục thực, không có `s` cuối).
-Backend dùng lại `get_model()` cache và cấu hình OpenVINO CPU 4 luồng, 1 stream,
+Backend dùng lại `get_model()` cache và cấu hình OpenVINO CPU tối đa 4 luồng, 1 stream,
 640×640. Không sử dụng prediction lưu sẵn cho ảnh mẫu hoặc upload.
 
 Hỗ trợ nhiều ảnh, MP4/WebM, webcam ghi tối đa 10 giây khi có secure context/quyền.

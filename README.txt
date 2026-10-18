@@ -384,7 +384,10 @@ Trang mặc định: http://<IP-server>:8765/demo.html#mvp
 Khởi chạy: kích hoạt venv rồi python run_demo.py (0.0.0.0:8765).
 Không cần cài thêm dependency ngoài requirements.txt hiện có.
 Model chính thức: models/int8_yolo26s_640_openvino_model/ (tên thật là _model, không phải _models).
-MVP dùng get_model() cache chung, OpenVINO CPU 4 luồng, 1 stream, 640×640; không dùng kết quả mẫu lưu sẵn.
+MVP dùng get_model() cache chung, OpenVINO CPU yêu cầu tối đa 4 luồng, 1 stream, 640×640; không dùng kết quả mẫu lưu sẵn.
+Trên VPS/container, OpenVINO có thể giới hạn số luồng thấp hơn theo CPU khả dụng/chính sách lập lịch.
+Demo dùng số luồng thực và hiển thị cảnh báo; báo cáo ghi requested_threads, ov_threads, thread_protocol_matches.
+Benchmark/evaluate/refresh_demo_data vẫn yêu cầu đúng số luồng protocol; sai cấu hình sẽ dừng kèm số thực tế.
 Tên 10 lớp lấy từ metadata.yaml/model.names; cấu hình end-to-end không dùng IoU/NMS.
 
 Luồng: chọn/kéo thả nhiều ảnh hoặc video → Chạy nhận diện → chọn từng kết quả → tải.
