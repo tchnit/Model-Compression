@@ -13,8 +13,9 @@ for (const side of ['A', 'B']) {
 }
 assert.doesNotMatch(html, /applyPreset\('qat'\)/);
 assert.doesNotMatch(html, /Tỷ Lệ Nén Trọng Số|Tăng Tốc Suy Luận \(CPU\)|Bảo Toàn mAP50–95|Precision Trên Tập Validation/);
-assert.match(html, /telemetry-label">Chỉ số mô hình A<\/span>/);
-assert.match(html, /telemetry-label">Chỉ số mô hình B<\/span>/);
+assert.match(html, /telemetry-label">Tốc độ của mô hình A<\/span>/);
+assert.match(html, /telemetry-label">Tốc độ của mô hình B<\/span>/);
+assert.match(html, /telemetry-label">mAP@50 · Mô hình B − Mô hình A<\/span>/);
 
 async function studio() {
   const elements = new Map();
@@ -45,7 +46,8 @@ async function studio() {
       width: 100, height: 80, data_uri: `data:image/png;base64,${id}`
     })),
     models: Object.fromEntries(modelKeys.map(key => [key, {
-      name: key, badge: key, path: key, size_mb: 10, map50: 55.25,
+      name: key, badge: key, path: key, size_mb: 10,
+      map50: key === 'yolo26s_fp32' ? 51.76 : key === 'yolo26s_ptq_int8' ? 51.44 : 55.25,
       avg_latency_ms: key === 'yolo26s_fp32' ? 40 : 20, fps: 50
     }])),
     benchmarks: JSON.parse(fs.readFileSync(`${__dirname}/demo_data/detections.json`)).benchmarks || [],
@@ -241,8 +243,11 @@ async function studio() {
     assert.equal(s.read('currentModelB'), 'yolo26s_ptq_int8');
     assert.equal(s.element('speedupSourceLabel').textContent, 'yolo26s_ptq_int8 tăng tốc so với yolo26s_fp32');
     assert.equal(s.element('speedupDisplay').textContent, '2.00x');
-    assert.match(s.element('telemetryMetricsA').textContent, /mAP@50: 55\.25% · FPS: 50\.0/);
-    assert.match(s.element('telemetryMetricsB').textContent, /mAP@50: 55\.25% · FPS: 50\.0/);
+    assert.match(s.element('telemetryMetricsA').textContent, /40\.0 ms · 25\.0 FPS/);
+    assert.match(s.element('telemetryMetricsB').textContent, /20\.0 ms · 50\.0 FPS/);
+    assert.equal(s.element('telemetryMap50A').textContent, '51.76%');
+    assert.equal(s.element('telemetryMap50B').textContent, '51.44%');
+    assert.equal(s.element('map50Delta').textContent, '-0.32 pp');
   }
 
   console.log('Model selection: lazy start, upload, serialization, cache, stale work, retry and presets passed.');

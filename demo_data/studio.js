@@ -305,14 +305,20 @@ function updateSceneView() {
     : 'Mô hình B tăng tốc so với mô hình A';
   const latA = infoA.avg_latency_ms;
   const latB = infoB.avg_latency_ms;
+  const fpsA = Number.isFinite(latA) && latA > 0 ? 1000 / latA : null;
+  const fpsB = Number.isFinite(latB) && latB > 0 ? 1000 / latB : null;
   $('speedupDisplay').textContent = Number.isFinite(latA) && Number.isFinite(latB) && latA > 0 && latB > 0 ? `${(latA / latB).toFixed(2)}x` : 'Chưa đo';
-  $('telemetryTimeA').textContent = Number.isFinite(latA) ? `${latA.toFixed(1)} ms` : 'Chưa đo benchmark';
-  $('telemetryTimeB').textContent = Number.isFinite(latB) ? `${latB.toFixed(1)} ms (${Number(infoB.fps).toFixed(1)} FPS)` : 'Chưa đo benchmark';
-  const formatMetrics = (side, info, selected) => selected
-    ? `Mô hình ${side} · ${info.name} · mAP@50: ${Number.isFinite(info.map50) ? `${info.map50.toFixed(2)}%` : 'Chưa đo'} · FPS: ${Number.isFinite(info.fps) ? info.fps.toFixed(1) : 'Chưa đo'}`
-    : `Mô hình ${side} · mAP@50: Chưa chọn · FPS: Chưa chọn`;
-  $('telemetryMetricsA').textContent = formatMetrics('A', infoA, currentModelA);
-  $('telemetryMetricsB').textContent = formatMetrics('B', infoB, currentModelB);
+  $('telemetryTimeA').textContent = fpsA != null ? `${latA.toFixed(1)} ms` : 'Chưa đo benchmark';
+  $('telemetryTimeB').textContent = fpsB != null ? `${latB.toFixed(1)} ms (${fpsB.toFixed(1)} FPS)` : 'Chưa đo benchmark';
+  $('telemetryMetricsA').textContent = currentModelA && fpsA != null ? `Mô hình A · ${infoA.name} · ${latA.toFixed(1)} ms · ${fpsA.toFixed(1)} FPS` : 'Mô hình A · Chưa đo';
+  $('telemetryMetricsB').textContent = currentModelB && fpsB != null ? `Mô hình B · ${infoB.name} · ${latB.toFixed(1)} ms · ${fpsB.toFixed(1)} FPS` : 'Mô hình B · Chưa đo';
+  const mapA = infoA.map50;
+  const mapB = infoB.map50;
+  const hasMapPair = currentModelA && currentModelB && Number.isFinite(mapA) && Number.isFinite(mapB);
+  const mapDelta = hasMapPair ? mapB - mapA : null;
+  $('map50Delta').textContent = mapDelta == null ? '—' : `${mapDelta > 0 ? '+' : ''}${mapDelta.toFixed(2)} pp`;
+  $('telemetryMap50A').textContent = currentModelA && Number.isFinite(mapA) ? `${mapA.toFixed(2)}%` : 'Chưa đo A';
+  $('telemetryMap50B').textContent = currentModelB && Number.isFinite(mapB) ? `${mapB.toFixed(2)}%` : 'Chưa đo B';
 
   const sizeA = infoA.size_mb;
   const sizeB = infoB.size_mb;
