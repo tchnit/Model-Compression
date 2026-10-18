@@ -2,9 +2,27 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 import compare_ptq_vs_qat as compare
 
 class PTQComparisonTests(unittest.TestCase):
+    def test_self_test_preserves_existing_files_and_cleans_up(self):
+        with TemporaryDirectory() as directory:
+            protected = Path(directory) / 'test_report.json'
+            protected.write_text('existing report')
+            def safe_path(value):
+                return protected if str(value) == '/tmp/test_report.json' else Path(value)
+            with patch.object(compare, 'Path', side_effect=safe_path), \
+                    patch.object(compare, 'parse_report_and_compare', wraps=compare.parse_report_and_compare) as parser:
+                compare.self_test()
+            self.assertTrue(protected.exists(), 'Self-test deleted an existing report')
+            self.assertEqual(protected.read_text(), 'existing report')
+            self.assertFalse(parser.call_args.args[0].exists())
+            with patch.object(compare, 'parse_report_and_compare', side_effect=ValueError('parser failed')) as parser:
+                with self.assertRaisesRegex(ValueError, 'parser failed'):
+                    compare.self_test()
+            self.assertFalse(parser.call_args.args[0].exists())
+
     def report(self, models):
         with TemporaryDirectory() as directory:
             path = Path(directory) / 'report.json'

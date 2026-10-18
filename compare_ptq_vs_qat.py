@@ -12,6 +12,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from tempfile import TemporaryDirectory
 from typing import Any, Dict, List, Optional
 
 
@@ -332,11 +333,11 @@ def self_test():
             }
         ]
     }
-    p = Path("/tmp/test_report.json")
-    p.write_text(json.dumps(dummy_report), encoding="utf-8")
-    res = parse_report_and_compare(p)
-    assert len(res["rows"]) >= 6, "Thiếu dữ liệu so sánh trong self-test"
-    p.unlink()
+    with TemporaryDirectory() as directory:
+        p = Path(directory) / "report.json"
+        p.write_text(json.dumps(dummy_report), encoding="utf-8")
+        res = parse_report_and_compare(p)
+        assert len(res["rows"]) >= 6, "Thiếu dữ liệu so sánh trong self-test"
     print("Self-test thành công!")
 
 
