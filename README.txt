@@ -36,6 +36,15 @@ python -m pip check
 python run_demo.py
 Server kiểm tra Python và thư viện runtime trước khi mở cổng; chưa tải model ở bước này.
 
+Nếu API báo model_artifact_missing hoặc "Model không sẵn sàng", thiếu artifact trên máy đích.
+models/ bị loại khỏi Git: git clone/pull chỉ lấy code, không lấy trọng số.
+Sao chép models/ từ máy gốc vào thư mục dự án trên VPS, giữ nguyên tên và cấu trúc:
+- models/yolo26m-bdd100k.pt
+- models/int8_yolo26m_640_openvino_model/ (đầy đủ model.xml, model.bin, metadata.yaml)
+- Các model khác muốn sử dụng: sao chép checkpoint hoặc toàn bộ thư mục OpenVINO tương ứng.
+Không thay yolo26m-bdd100k.pt bằng yolo26m.pt (model COCO khác bộ lớp).
+GET /api/status trả models_available và models_missing để kiểm tra file đã có.
+
 Máy NVIDIA/CUDA 13 (profile riêng, tạo môi trường mới, thay cho profile CPU):
 python3.12 -m venv .venv-gpu
 source .venv-gpu/bin/activate

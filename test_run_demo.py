@@ -160,6 +160,36 @@ class DemoServerTests(unittest.TestCase):
                                          {'Content-Type': 'application/json'})
                 self.assertEqual(status, 400)
 
+    def test_missing_model_artifacts_are_reported_without_loading_models(self):
+        image = BytesIO()
+        Image.new('RGB', (1, 1)).save(image, 'JPEG')
+        encoded = base64.b64encode(image.getvalue()).decode()
+        with tempfile.TemporaryDirectory() as folder:
+            configs = {
+                key: {**run_demo.MODEL_CONFIGS[key], 'path': str(Path(folder) / 'models' / artifact)}
+                for key, artifact in [('yolo26m_fp32', 'yolo26m-bdd100k.pt'),
+                                      ('yolo26m_ptq_int8', 'int8_yolo26m_640_openvino_model')]
+            }
+            with patch.object(run_demo, 'MODEL_CONFIGS', configs), \
+                    patch.object(run_demo, 'LOADED_MODELS', {}), patch.object(run_demo, 'DIRECTORY', folder):
+                _, body = self.request('GET', '/api/status')
+                inventory = json.loads(body)
+                self.assertEqual(inventory['models_available'], [])
+                self.assertEqual(set(inventory['models_missing']), set(configs))
+                for key, cfg in configs.items():
+                    with self.subTest(model=key):
+                        status, body = self.request('POST', '/api/predict',
+                                                   json.dumps({'image': encoded, 'models': [key]}),
+                                                   {'Content-Type': 'application/json'})
+                        error = json.loads(body)
+                        self.assertEqual(status, 503)
+                        self.assertEqual(error['code'], 'model_artifact_missing')
+                        self.assertIn('models/' + Path(cfg['path']).name, error['message'])
+                        self.assertIn('máy gốc', error['message'])
+                        self.assertEqual(run_demo.LOADED_MODELS, {})
+                self.assertTrue(run_demo.INFERENCE_SLOT.acquire(blocking=False))
+                run_demo.INFERENCE_SLOT.release()
+
     def test_missing_dependencies_return_json_instead_of_dropping_connection(self):
         original_import = builtins.__import__
         for missing in ['numpy', 'PIL']:

@@ -113,8 +113,15 @@ def get_model(model_key):
     global LOADED_MODELS
     if model_key not in LOADED_MODELS:
         cfg = MODEL_CONFIGS.get(model_key)
-        if not cfg or not os.path.exists(cfg['path']):
-            return None
+        if not cfg:
+            raise ValueError(f'Model không hợp lệ: {model_key}')
+        if not os.path.exists(cfg['path']):
+            artifact = os.path.relpath(cfg['path'], DIRECTORY)
+            raise FileNotFoundError(
+                f'Thiếu model {model_key}: {artifact}. '
+                'Thư mục models/ không được lưu trên Git; hãy sao chép model từ máy gốc '
+                '(OpenVINO cần cả thư mục chứa XML, BIN và metadata.yaml).'
+            )
         from ultralytics import YOLO
         print(f"[*] Nạp mô hình {model_key} từ {cfg['path']}...")
         if cfg['task']:
@@ -170,6 +177,8 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(200, {
                 'status': 'online',
                 'models_available': [key for key, cfg in MODEL_CONFIGS.items() if os.path.exists(cfg['path'])],
+                'models_missing': {key: os.path.relpath(cfg['path'], DIRECTORY)
+                                   for key, cfg in MODEL_CONFIGS.items() if not os.path.exists(cfg['path'])},
                 'models_loaded': list(LOADED_MODELS.keys())
             })
             return
@@ -220,8 +229,6 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                 try:
                     for m_key in target_models:
                         model = get_model(m_key)
-                        if not model:
-                            raise RuntimeError(f'Model không sẵn sàng: {m_key}')
 
                         configure_cpu_threads()
                         imgsz = MODEL_CONFIGS[m_key].get('imgsz', 640)
@@ -285,6 +292,9 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
             # decode_image converts Pillow decoding errors into ValueError.
             except (ValueError, base64.binascii.Error) as e:
                 self.send_json(400, {'status': 'error', 'message': str(e)})
+            except FileNotFoundError as error:
+                print(f'[!] {error}', file=sys.stderr)
+                self.send_json(503, {'status': 'error', 'code': 'model_artifact_missing', 'message': str(error)})
             except Exception:
                 import traceback
                 traceback.print_exc()
@@ -350,6 +360,10 @@ def check_runtime():
 def run():
     os.chdir(DIRECTORY)
     check_runtime()
+    for key, cfg in MODEL_CONFIGS.items():
+        if not os.path.exists(cfg['path']):
+            print(f"[!] Thiếu model {key}: {cfg['path']}. Sao chép từ máy gốc; git pull không tải models/.",
+                  file=sys.stderr)
 
     print("[*] Đang khởi động AI Model Compression Studio...")
     print(f"[*] Các mô hình sẽ warm-up khi được chọn trên CPU ({CPU_THREADS} threads).")
