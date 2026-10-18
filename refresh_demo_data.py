@@ -9,6 +9,7 @@ import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from bdd100k_eval.config import ROOT
 
 import cv2
 import numpy as np
@@ -23,7 +24,7 @@ def sync_benchmark_assets(eval_dirs=None):
     records = [r for directory in find_eval_dirs(eval_dirs) for r in parse_eval_dir(directory)
                if r["artifact_exists"] and r["imgsz"] == 640]
     records = apply_reference_speedup(deduplicate_records(records))
-    data_path = Path(__file__).resolve().parent / "demo_data/detections.json"
+    data_path = ROOT / "demo_data/detections.json"
     data = json.loads(data_path.read_text())
     by_name = {r['model_name']: r for r in records}
     for model_key, model in data["models"].items():
@@ -67,7 +68,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--eval-dirs', nargs='+', help='Chỉ lấy accuracy từ các lượt đánh giá này')
     args = parser.parse_args()
-    root = Path(__file__).resolve().parent
+    root = ROOT
     os.chdir(root)
     data_path = root / "demo_data/detections.json"
     data = json.loads(data_path.read_text())

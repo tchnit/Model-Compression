@@ -3,11 +3,12 @@
 import json
 import time
 from pathlib import Path
+from bdd100k_eval.config import ROOT
 import hardware_benchmark as bench
 
 
 def main():
-    root = Path(__file__).resolve().parent
+    root = ROOT
     data = json.loads((root / 'demo_data/detections.json').read_text())
     scene = data['scenes'][0]
     image, digest = bench.decode_image(scene['data_uri'])

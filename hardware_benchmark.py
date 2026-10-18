@@ -11,7 +11,7 @@ from functools import lru_cache
 from importlib import metadata
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+from bdd100k_eval.config import ROOT
 EXPORTS = ROOT / 'runtime_exports'
 THREADS = 4
 NAMES = ['person', 'rider', 'car', 'truck', 'bus', 'train', 'motor', 'bike', 'traffic light', 'traffic sign']

@@ -11,6 +11,7 @@ import glob
 import json
 import os
 from pathlib import Path
+from bdd100k_eval.config import ROOT
 import time
 from typing import Any, Dict, List, Optional
 
@@ -71,7 +72,7 @@ def parse_eval_dir(eval_dir: str) -> List[Dict[str, Any]]:
     accuracy_protocol["precision"] = args.get("precision", "FP32")
     accuracy_protocol.update(manifest=protocol.get("manifest_sha256"),
                              ultralytics=protocol.get("versions", {}).get("ultralytics"))
-    latency_file = Path(__file__).resolve().parent / "demo_data/latency_benchmark.json"
+    latency_file = ROOT / "demo_data/latency_benchmark.json"
     refreshed = json.loads(latency_file.read_text()) if latency_file.exists() else {}
 
     # Baseline đầu tiên làm mốc so sánh

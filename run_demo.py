@@ -25,19 +25,9 @@ from urllib.parse import unquote, urlsplit
 from inference_runtime import cpu_device, configure_cpu_backend
 import hardware_benchmark as hardware_bench
 from mvp_demo import MVPService, MODEL_KEY as MVP_MODEL_KEY
+from bdd100k_eval.config import (HOST, PORT, DIRECTORY, CPU_THREADS, MAX_REQUEST_BYTES,
+                                  MAX_IMAGE_PIXELS, PUBLIC_FILES, MODEL_CONFIGS)
 
-HOST = "0.0.0.0"
-PORT = 8765
-DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-CPU_THREADS = 4
-MAX_REQUEST_BYTES = 12 * 1024 * 1024
-MAX_IMAGE_PIXELS = 20_000_000
-PUBLIC_FILES = {
-    "/demo.html",
-    "/model-compression-yolo26-dashboard.html",
-    "/benchmark_comparison.md",
-    "/benchmark_comparison.csv",
-}
 INFERENCE_SLOT = threading.BoundedSemaphore(1)
 
 # The OpenVINO exports run on CPU.  Pin the PyTorch reference to the same
@@ -47,58 +37,6 @@ os.environ.setdefault("OMP_NUM_THREADS", str(CPU_THREADS))
 os.environ.setdefault("MKL_NUM_THREADS", str(CPU_THREADS))
 
 # Model definitions
-MODEL_CONFIGS = {
-    'yolo26m_fp32': {
-        'path': os.path.join(DIRECTORY, 'models', 'yolo26m-bdd100k.pt'),
-        'task': None,
-        'device': 'cpu',
-    },
-    'yolo26m_ptq_int8': {
-        'path': os.path.join(DIRECTORY, 'models', 'int8_yolo26m_640_openvino_model'),
-        'task': 'detect',
-        'device': 'cpu',
-    },
-    'yolo26m_qat_int8': {
-        'path': os.path.join(DIRECTORY, 'models', 'int8_yolo26m_qat_640_openvino_model'),
-        'task': 'detect',
-        'device': 'cpu',
-    },
-    'yolo26s_int8': {
-        'path': os.path.join(DIRECTORY, 'models', 'int8_yolo26s_qat_640_openvino_model'),
-        'task': 'detect',
-        'device': 'cpu',
-    },
-    'yolo26s_fp32': {
-        'path': os.path.join(DIRECTORY, 'models', 'yolo26s-bdd100k.pt'),
-        'task': None,
-        'device': 'cpu',
-    },
-    'yolo26s_ptq_int8': {
-        'path': os.path.join(DIRECTORY, 'models', 'int8_yolo26s_640_openvino_model'),
-        'task': 'detect',
-        'device': 'cpu',
-    },
-    'yolo26s_fp32_pack': {
-        'path': os.path.join(DIRECTORY, 'models', 'fp32.pt'),
-        'task': None,
-        'device': 'cpu',
-    },
-    'yolo26s_fp16_pt': {
-        'path': os.path.join(DIRECTORY, 'models', 'fp16.pt'),
-        'task': None,
-        'device': 'cpu',
-    },
-    'yolo26s_fp16_ov': {
-        'path': os.path.join(DIRECTORY, 'models', 'fp16_openvino_model'),
-        'task': 'detect',
-        'device': 'cpu',
-    },
-    'yolo26s_export_int8_640': {
-        'path': os.path.join(DIRECTORY, 'models', 'int8_yolo26s-bdd100k_640_openvino_model'),
-        'task': 'detect',
-        'device': 'cpu',
-    }
-}
 
 LOADED_MODELS = {}
 WARMED_MODELS = set()

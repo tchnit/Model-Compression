@@ -8,7 +8,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+from bdd100k_eval.config import ROOT
 OUT = ROOT / 'runtime_exports'
 
 

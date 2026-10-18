@@ -52,7 +52,7 @@ class BenchmarkAggregationTests(unittest.TestCase):
                 'latency': {'mean': 10, 'p95': 12}}}}
             path = root / 'demo_data/latency_benchmark.json'
             path.write_text(json.dumps(snapshot))
-            with patch('compare_benchmarks.__file__', str(root / 'compare_benchmarks.py')):
+            with patch('compare_benchmarks.ROOT', root):
                 self.assertFalse(parse_eval_dir(str(run))[0]['latency_verified'])
                 report['protocol']['args']['imgsz'] = 640
                 (run / 'report.json').write_text(json.dumps(report))

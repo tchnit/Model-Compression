@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import importlib.metadata
 import os
 from pathlib import Path
+from bdd100k_eval.config import ROOT
 import platform
 import subprocess
 import sys
@@ -149,7 +150,7 @@ def main():
     parser.add_argument("--output", default="verification", help="Generated evidence directory")
     parser.add_argument("--requirements", default="requirements.txt", help="CPU or NVIDIA requirements profile to verify")
     args = parser.parse_args()
-    root = Path(__file__).resolve().parent
+    root = ROOT
     os.chdir(root)
     packages = check_requirements(Path(args.requirements))
     output = Path(args.output).resolve()
