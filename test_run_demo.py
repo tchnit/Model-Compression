@@ -86,6 +86,17 @@ class DemoServerTests(unittest.TestCase):
                 self.assertEqual(self.request('HEAD','/runtime_exports/yolo26m_int8.onnx')[0],200)
         self.assertEqual(self.request('GET','/verification/browser_int8_calibration.json')[0],404)
 
+    def test_dashboard_policy_and_static_paths_allow_extracted_assets(self):
+        status, body = self.request('GET', '/model-compression-yolo26-dashboard.html')
+        self.assertEqual(status, 200)
+        policy = re.search(r'http-equiv="Content-Security-Policy" content="([^"]+)"', body.decode())[1]
+        self.assertIn("script-src 'self'", policy)
+        self.assertIn("style-src 'self' 'unsafe-inline'", policy)
+        self.assertIn("connect-src 'none'", policy)
+        for asset in ('dashboard.js', 'dashboard.css', 'studio.js', 'studio.css', 'overlays.js'):
+            with self.subTest(asset=asset):
+                self.assertEqual(self.request('GET', '/demo_data/' + asset)[0], 200)
+
     def test_wasm_shared_memory_headers(self):
         for method, path in [('GET','/demo.html'), ('HEAD','/demo_data/hardware_benchmark.js'),
                              ('HEAD','/demo_data/vendor/onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs')]:
