@@ -300,11 +300,13 @@ function updateSceneView() {
   $('sliderBadgeB').textContent = `Mô hình B: ${infoB.name}`;
 
   // Telemetry updates
-  const speedupReference = demoData.models.yolo26m_fp32;
-  const latA = speedupReference.avg_latency_ms;
+  $('speedupSourceLabel').textContent = currentModelA && currentModelB
+    ? `${infoB.name} tăng tốc so với ${infoA.name}`
+    : 'Mô hình B tăng tốc so với mô hình A';
+  const latA = infoA.avg_latency_ms;
   const latB = infoB.avg_latency_ms;
-  $('speedupDisplay').textContent = Number.isFinite(latB) && latB > 0 ? `${(latA / latB).toFixed(2)}x` : 'Chưa đo';
-  $('telemetryTimeA').textContent = `${latA.toFixed(1)} ms (YOLO26m 640)`;
+  $('speedupDisplay').textContent = Number.isFinite(latA) && Number.isFinite(latB) && latA > 0 && latB > 0 ? `${(latA / latB).toFixed(2)}x` : 'Chưa đo';
+  $('telemetryTimeA').textContent = Number.isFinite(latA) ? `${latA.toFixed(1)} ms` : 'Chưa đo benchmark';
   $('telemetryTimeB').textContent = Number.isFinite(latB) ? `${latB.toFixed(1)} ms (${Number(infoB.fps).toFixed(1)} FPS)` : 'Chưa đo benchmark';
   const formatMetrics = (side, info, selected) => selected
     ? `Mô hình ${side} · ${info.name} · mAP@50: ${Number.isFinite(info.map50) ? `${info.map50.toFixed(2)}%` : 'Chưa đo'} · FPS: ${Number.isFinite(info.fps) ? info.fps.toFixed(1) : 'Chưa đo'}`
@@ -574,7 +576,6 @@ function updateBenchmarkSummary() {
   if (!base || !ptq || !qat) return;
   const temporary = BENCHMARK_DATA.some(d => d.benchmark_temporary);
   const referenceLabel = 'FP16';
-  if ($('speedupSourceLabel')) $('speedupSourceLabel').textContent = `Tăng tốc so với YOLO26m ${referenceLabel} · 640×640`;
   if ($('benchmarkAccuracyNote')) $('benchmarkAccuracyNote').textContent = temporary
     ? 'TẠM: dùng snapshot benchmark lịch sử cho cả 6 model; baseline hiển thị là FP16.'
     : BENCHMARK_DATA.some(d => d.accuracy_pending)

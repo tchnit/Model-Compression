@@ -42,7 +42,8 @@ async function studio() {
       width: 100, height: 80, data_uri: `data:image/png;base64,${id}`
     })),
     models: Object.fromEntries(modelKeys.map(key => [key, {
-      name: key, badge: key, path: key, size_mb: 10, map50: 55.25, avg_latency_ms: 20, fps: 50
+      name: key, badge: key, path: key, size_mb: 10, map50: 55.25,
+      avg_latency_ms: key === 'yolo26s_fp32' ? 40 : 20, fps: 50
     }])),
     benchmarks: JSON.parse(fs.readFileSync(`${__dirname}/demo_data/detections.json`)).benchmarks || [],
     detections: {}
@@ -235,6 +236,8 @@ async function studio() {
     await preset;
     assert.equal(s.read('currentModelA'), 'yolo26s_fp32');
     assert.equal(s.read('currentModelB'), 'yolo26s_ptq_int8');
+    assert.equal(s.element('speedupSourceLabel').textContent, 'yolo26s_ptq_int8 tăng tốc so với yolo26s_fp32');
+    assert.equal(s.element('speedupDisplay').textContent, '2.00x');
     assert.match(s.element('telemetryMetricsA').textContent, /mAP@50: 55\.25% · FPS: 50\.0/);
     assert.match(s.element('telemetryMetricsB').textContent, /mAP@50: 55\.25% · FPS: 50\.0/);
   }

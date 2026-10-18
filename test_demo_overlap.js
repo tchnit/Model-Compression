@@ -96,7 +96,6 @@ vm.runInContext('for (const row of BENCHMARK_DATA) row.benchmark_temporary = tru
 assert.match(elements.get('benchmarkAccuracyNote').textContent, /TẠM.*baseline hiển thị là FP16/);
 assert.match(elements.get('benchmarkTableBody').innerHTML, /PyTorch FP16/);
 assert.match(elements.get('retentionKpiDetail').textContent, /\(FP16\)/);
-assert.match(elements.get('speedupSourceLabel').textContent, /FP16/);
 assert.doesNotMatch(elements.get('benchmarkTableBody').innerHTML, /FP32/);
 vm.runInContext('for (const row of BENCHMARK_DATA) { row.benchmark_temporary = false; if (row.role === "baseline") { row.accuracy_pending = true; row.map95 = null; } } filterTable("all"); updateBenchmarkSummary();', context);
 assert.match(elements.get('benchmarkAccuracyNote').textContent, /đang chờ/);
