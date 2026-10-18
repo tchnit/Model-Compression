@@ -24,7 +24,7 @@ from urllib.parse import unquote, urlsplit
 from inference_runtime import cpu_device, configure_cpu_backend
 import hardware_benchmark as hardware_bench
 
-HOST = "127.0.0.1"
+HOST = "0.0.0.0"
 PORT = 8765
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 CPU_THREADS = 4
@@ -339,6 +339,7 @@ def run():
         print(f"  🚀 MVP Demo Studio (Trực quan & Upload):  {url_demo}")
         print(f"  📊 Bảng Quản Trị & Nghiệm Thu 14 Ngày:    {url_dash}")
         print(f"  ⚡ Live Prediction API Endpoint:           http://localhost:{PORT}/api/predict")
+        print(f"  🌐 Lắng nghe: {HOST}:{PORT} · Máy khác dùng http://<IP-server>:{PORT}/demo.html")
         print("=" * 72)
         print("  Nhấn Ctrl+C để dừng server.")
         print()

@@ -315,3 +315,7 @@ Theo yêu cầu người dùng, bảng/demo/KPI và CSV/Markdown tạm dùng tr�
 ## Cổng demo tránh dịch vụ đang chạy
 
 Đổi cổng mặc định 8000 → 8765, ngoài danh sách cổng người dùng yêu cầu tránh. URL khởi động, README và lệnh mở demo/dashboard đã cập nhật. API và asset dùng URL cùng origin. Đã chạy 7 kiểm thử server và kiểm tra HTTP 200 thực cho demo/dashboard/api/status trên 8765; không chạy lại suy luận hoặc benchmark.
+
+## Truy cập demo từ máy khác
+
+Server lắng nghe 0.0.0.0:8765 theo yêu cầu người dùng; log khởi động và README hướng dẫn dùng IP máy chạy server. Đã khởi động lại, 7 test server PASS và kiểm tra HTTP 200 demo/dashboard/API qua loopback và IP LAN 192.168.2.190. Chưa kiểm tra kết nối từ một máy khác thực tế.
