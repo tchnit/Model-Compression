@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
+const scripts = ['overlays.js', 'studio.js'].map(name => fs.readFileSync(`${__dirname}/demo_data/${name}`, 'utf8'));
 const elements = new Map();
 const context = vm.createContext({
   window: { DEMO_DATA: JSON.parse(fs.readFileSync(`${__dirname}/demo_data/detections.json`)), addEventListener() {} },
@@ -14,8 +14,8 @@ const context = vm.createContext({
     }
   }
 });
-for (const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) {
-  vm.runInContext(script[1], context);
+for (const script of scripts) {
+  vm.runInContext(script, context);
 }
 const agreement = context.calculateDetectionAgreement;
 const box = (name, coords = [0, 0, 10, 10]) => ({ class_name: name, conf: 0.9, box_px: coords });

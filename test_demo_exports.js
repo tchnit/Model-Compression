@@ -11,8 +11,7 @@ const context = vm.createContext({
   document: {addEventListener(){},getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},
     createElement(tag){const el=element();el.tag=tag;el.click=()=>{downloaded=el.download};return el}}
 });
-const html=fs.readFileSync(`${__dirname}/demo.html`,'utf8');
-for(const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g))vm.runInContext(script[1],context);
+for(const name of ['overlays.js','studio.js'])vm.runInContext(fs.readFileSync(`${__dirname}/demo_data/${name}`,'utf8'),context);
 vm.runInContext(`demoData={scenes:[{id:'upload',file:'example.PNG',title:'" onload=alert(1) ',tag:'Upload',data_uri:'data:image/png;base64,AA'}],detections:{b:{upload:{boxes:[{class_id:2,class_name:'car',conf:.9,box_norm:[.1,.2,.3,.6]}]}}}};currentSceneId='upload';currentModelB='b';renderSceneList();downloadYoloTxt();`,context);
 const card=elements.get('sceneListContainer').children[0];
 assert.equal(card.children[0].alt,'" onload=alert(1) ');

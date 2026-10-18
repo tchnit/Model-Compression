@@ -19,9 +19,7 @@ assert.equal(mvpFrameAtTime(variable, .3, 10), variable[1], 'Use source timestam
 assert.equal(mvpFrameAtTime(variable, .36, 10), variable[2]);
 
 // Exercise the renderer shared by Studio, Hardware and MVP without a browser dependency.
-const html = fs.readFileSync('demo.html', 'utf8');
-const source = html.slice(html.indexOf('function generateSvgElements('), html.indexOf('function buildBDD100KJson('));
-const render = vm.runInNewContext(`const CLASS_COLORS = {car:'#06b6d4'}; ${source}; generateSvgElements;`);
+const {generateSvgElements: render} = require('./demo_data/overlays.js');
 const boxes = [{class_name: 'car', conf: .85, box_px: [10, 20, 110, 90]}];
 const defaults = render(boxes, 640, 360);
 assert.match(defaults, /class="bbox-rect"/);

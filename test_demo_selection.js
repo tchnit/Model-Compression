@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
+const scripts = ['overlays.js', 'studio.js'].map(name => fs.readFileSync(`${__dirname}/demo_data/${name}`, 'utf8'));
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 async function studio() {
@@ -60,8 +60,8 @@ async function studio() {
       });
     }
   });
-  for (const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) {
-    vm.runInContext(script[1], context);
+  for (const script of scripts) {
+    vm.runInContext(script, context);
   }
   await context.initApp();
   return {

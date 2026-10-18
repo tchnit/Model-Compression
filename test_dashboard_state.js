@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync(`${__dirname}/model-compression-yolo26-dashboard.html`,'utf8');
-const script=html.slice(html.indexOf("'use strict';"),html.indexOf('\nfunction statusBadge'));
+const dashboardScript=fs.readFileSync(`${__dirname}/demo_data/dashboard.js`,'utf8');
+const script=dashboardScript.slice(dashboardScript.indexOf("'use strict';"),dashboardScript.indexOf('\nfunction statusBadge'));
 const key='compression-lab-yolo26-bdd100k-v1';
 function load(saved){
  const storage=new Map(saved?[[key,JSON.stringify(saved)]]:[]),elements=new Map();
@@ -45,7 +46,7 @@ const summary=JSON.parse(html.match(/<script id="benchmarkSummaryData" type="app
 const qat=summary.find(row=>row.model==='int8_yolo26s_qat_640_openvino_model');
 qat.lat=123.4;qat.speedup=null;
 s.read(`document.getElementById('benchmarkSummaryData').textContent=${JSON.stringify(JSON.stringify(summary))}`);
-vm.runInContext(html.slice(html.indexOf('function renderBenchmarkEvidence'),html.indexOf('\nfunction renderAll')),s.context);
+vm.runInContext(dashboardScript.slice(dashboardScript.indexOf('function renderBenchmarkEvidence'),dashboardScript.indexOf('\nfunction renderAll')),s.context);
 s.read('renderBenchmarkEvidence()');
 assert.ok(s.read("document.getElementById('qatBenchmarkSummary').textContent").includes('123,4 ms'));
 assert.ok(s.read("document.getElementById('qatBenchmarkSummary').textContent").includes('Chưa có speedup cùng protocol.'));

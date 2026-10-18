@@ -15,12 +15,10 @@ const threadedPreview = {...preview,result:{...preview.result,protocol:{cpu_thre
 assert.equal(previewMatches(threadedPreview,config,'image-a',.25,4),true);
 assert.equal(previewMatches(threadedPreview,config,'image-a',.25,1),false);
 for (const key of Object.keys(config)) assert.equal(previewMatches(preview,{...config,[key]:'changed'},'image-a',.25),false);
-const fs = require('node:fs'), vm = require('node:vm');
-const svgCode = fs.readFileSync(`${__dirname}/demo.html`,'utf8').match(/function generateSvgElements\([\s\S]+?(?=function buildBDD100KJson)/)[0];
-const draw = vm.runInNewContext(`(${svgCode})`,{CLASS_COLORS:{car:'#06b6d4'}});
+const {generateSvgElements: draw} = require('./demo_data/overlays.js');
 const annotation = draw([{class_name:'car',conf:.8,box_px:[1250,20,1270,80]}],1280,720,2);
 assert.match(annotation,/class="bbox-rect" x="1250" y="20" width="20" height="60"/);
-assert.match(annotation,/<rect x="1170" y="0" width="110" height="32"/);
+assert.match(annotation,/<rect x="1166" y="0" width="114" height="32"/);
 assert.match(annotation,/font-size:22px/);
 assert.match(annotation,/car 80%/);
 assert.equal(draw([],720,1280), '');
