@@ -14,6 +14,7 @@ let enabledClasses = new Set(Object.keys(CLASS_COLORS));
 let sliderPercent = 50;
 let isDraggingSlider = false;
 let isServerOnline = false;
+let serverCpuThreads = null;
 const liveSceneRequests = new Map();
 let inferenceQueue = Promise.resolve();
 
@@ -35,8 +36,9 @@ async function checkServerStatus() {
       const data = await res.json();
       if (data.status === 'online') {
         isServerOnline = true;
+        serverCpuThreads = Number.isInteger(data.cpu_threads) && data.cpu_threads > 0 ? data.cpu_threads : null;
         $('serverStatusDot').classList.add('online');
-        $('serverStatusText').textContent = 'AI Server Online (Live)';
+        $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU ×${serverCpuThreads})` : 'AI Server Online (Live)';
         $('serverStatusChip').style.background = '#ecfdf5';
         $('serverStatusChip').style.borderColor = '#10b981';
         return;
@@ -46,6 +48,7 @@ async function checkServerStatus() {
     // server not reachable
   }
   isServerOnline = false;
+  serverCpuThreads = null;
   $('serverStatusDot').classList.remove('online');
   $('serverStatusText').textContent = 'Offline (Chạy python3 run_demo.py)';
 }
@@ -54,7 +57,7 @@ function updateInferenceStatus() {
   const pending = [...new Set([currentModelA, currentModelB])].filter(key =>
     key && liveSceneRequests.has(`${currentSceneId}:${key}`));
   $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
-  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} trên CPU (yêu cầu tối đa 4 luồng)...`;
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} tuần tự trên CPU (${serverCpuThreads ? `tối đa ${serverCpuThreads} luồng/model` : 'dùng toàn bộ CPU khả dụng'})...`;
 }
 
 function inferScene(scene, modelKeys) {
@@ -303,15 +306,6 @@ function updateSceneView() {
   $('speedupSourceLabel').textContent = currentModelA && currentModelB
     ? `${infoB.name} tăng tốc so với ${infoA.name}`
     : 'Mô hình B tăng tốc so với mô hình A';
-  const latA = infoA.avg_latency_ms;
-  const latB = infoB.avg_latency_ms;
-  const fpsA = Number.isFinite(latA) && latA > 0 ? 1000 / latA : null;
-  const fpsB = Number.isFinite(latB) && latB > 0 ? 1000 / latB : null;
-  $('speedupDisplay').textContent = Number.isFinite(latA) && Number.isFinite(latB) && latA > 0 && latB > 0 ? `${(latA / latB).toFixed(2)}x` : 'Chưa đo';
-  $('telemetryTimeA').textContent = fpsA != null ? `${latA.toFixed(1)} ms` : 'Chưa đo benchmark';
-  $('telemetryTimeB').textContent = fpsB != null ? `${latB.toFixed(1)} ms (${fpsB.toFixed(1)} FPS)` : 'Chưa đo benchmark';
-  $('telemetryMetricsA').textContent = currentModelA && fpsA != null ? `Mô hình A · ${infoA.name} · ${latA.toFixed(1)} ms · ${fpsA.toFixed(1)} FPS` : 'Mô hình A · Chưa đo';
-  $('telemetryMetricsB').textContent = currentModelB && fpsB != null ? `Mô hình B · ${infoB.name} · ${latB.toFixed(1)} ms · ${fpsB.toFixed(1)} FPS` : 'Mô hình B · Chưa đo';
   const mapA = infoA.map50;
   const mapB = infoB.map50;
   const hasMapPair = currentModelA && currentModelB && Number.isFinite(mapA) && Number.isFinite(mapB);
@@ -349,6 +343,15 @@ function renderBoundingBoxes() {
   const recordB = demoData.detections[currentModelB]?.[scene.id];
   const timeA = recordA?.inference_time_ms;
   const timeB = recordB?.inference_time_ms;
+  const liveTimeA = scene.live_models?.has(currentModelA) ? timeA : null;
+  const liveTimeB = scene.live_models?.has(currentModelB) ? timeB : null;
+  const fpsA = Number.isFinite(liveTimeA) && liveTimeA > 0 ? 1000 / liveTimeA : null;
+  const fpsB = Number.isFinite(liveTimeB) && liveTimeB > 0 ? 1000 / liveTimeB : null;
+  $('speedupDisplay').textContent = fpsA != null && fpsB != null ? `${(liveTimeA / liveTimeB).toFixed(2)}x` : 'Chưa đo';
+  $('telemetryTimeA').textContent = fpsA != null ? `${liveTimeA.toFixed(1)} ms` : 'Chưa đo live';
+  $('telemetryTimeB').textContent = fpsB != null ? `${liveTimeB.toFixed(1)} ms (${fpsB.toFixed(1)} FPS)` : 'Chưa đo live';
+  $('telemetryMetricsA').textContent = fpsA != null ? `Mô hình A · ${demoData.models[currentModelA].name} · ${liveTimeA.toFixed(1)} ms · ${fpsA.toFixed(1)} FPS` : 'Mô hình A · Chưa đo live';
+  $('telemetryMetricsB').textContent = fpsB != null ? `Mô hình B · ${demoData.models[currentModelB].name} · ${liveTimeB.toFixed(1)} ms · ${fpsB.toFixed(1)} FPS` : 'Mô hình B · Chưa đo live';
 
   const filteredA = detA.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));
   const filteredB = detB.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));

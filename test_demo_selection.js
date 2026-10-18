@@ -67,7 +67,7 @@ async function studio() {
       set src(value) { queueMicrotask(() => this.onload()); }
     },
     fetch(url, options) {
-      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online' }) });
+      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_threads: 8 }) });
       assert.equal(url, '/api/predict');
       return new Promise((resolve, reject) => {
         requests.push({ payload: JSON.parse(options.body), resolve, reject });
@@ -89,7 +89,8 @@ async function studio() {
         json: async () => error ? { status: 'error', message: error } : {
           status: 'success', width: 100, height: 80,
           detections: Object.fromEntries(request.payload.models.map(key => [key, {
-            inference_time_ms: 1, runtime: 'CPU ×4', detections_count: 0, boxes: []
+            inference_time_ms: key === 'yolo26s_fp32' ? 40 : 20,
+            runtime: 'CPU ×8', detections_count: 0, boxes: []
           }]))
         }
       });
@@ -101,6 +102,8 @@ async function studio() {
   // Opening the page and uploading an image do not start an unselected model.
   {
     const s = await studio();
+    assert.equal(s.read('serverCpuThreads'), 8);
+    assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU ×8)');
     assert.equal(s.read('currentModelA'), '');
     assert.equal(s.read('currentModelB'), '');
     assert.equal(s.requests.length, 0);
@@ -239,6 +242,7 @@ async function studio() {
     assert.deepEqual(s.requests[1].payload.models, ['yolo26s_ptq_int8']);
     s.finish(1);
     await preset;
+    await tick();
     assert.equal(s.read('currentModelA'), 'yolo26s_fp32');
     assert.equal(s.read('currentModelB'), 'yolo26s_ptq_int8');
     assert.equal(s.element('speedupSourceLabel').textContent, 'yolo26s_ptq_int8 tăng tốc so với yolo26s_fp32');

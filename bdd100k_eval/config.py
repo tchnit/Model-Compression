@@ -10,7 +10,16 @@ PORT = 8765
 
 DIRECTORY = str(ROOT)
 
-CPU_THREADS = 4
+
+def available_cpu_threads():
+    """Return the CPUs this process can actually schedule on."""
+    try:
+        return max(1, len(os.sched_getaffinity(0)))
+    except (AttributeError, OSError):
+        return max(1, os.cpu_count() or 1)
+
+
+CPU_THREADS = available_cpu_threads()
 
 MAX_REQUEST_BYTES = 12 * 1024 * 1024
 

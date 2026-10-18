@@ -370,7 +370,7 @@ lại xóa box cũ trước khi đo; nếu lỗi không để lại annotation c
 Kết quả 0 detection hiển thị 0 hộp. Vẽ preview sau phép đo, không cộng vào latency.
 
 Chuyển sang FP16 (2026-10-18)
-Baseline PyTorch demo, evaluator và latency mặc định dùng FP16 trên CPU 4 luồng.
+Demo dùng toàn bộ CPU được affinity/cgroup cho phép; evaluator và benchmark giữ số luồng theo protocol.
 AutoBackend bỏ FP16 CPU mặc định: helper cấu hình dtype sau khởi tạo, trước warmup/đo;
 validator cũng dùng input float16. Kiểm tra dtype thực trong runtime report.
 FP16 CPU có thể chậm hơn FP32 trên máy không có tăng tốc FP16 native.
@@ -396,7 +396,7 @@ Trang mặc định: http://<IP-server>:8765/demo.html#mvp
 Khởi chạy: kích hoạt venv rồi python run_demo.py (0.0.0.0:8765).
 Không cần cài thêm dependency ngoài requirements.txt hiện có.
 Model chính thức: models/int8_yolo26s_640_openvino_model/ (tên thật là _model, không phải _models).
-MVP dùng get_model() cache chung, OpenVINO CPU yêu cầu tối đa 4 luồng, 1 stream, 640×640; không dùng kết quả mẫu lưu sẵn.
+MVP dùng get_model() cache chung, mỗi model dùng tối đa toàn bộ CPU khả dụng, 1 stream, 640×640; A chạy xong mới đến B và không dùng kết quả mẫu lưu sẵn.
 Trên VPS/container, OpenVINO có thể giới hạn số luồng thấp hơn theo CPU khả dụng/chính sách lập lịch.
 Demo dùng số luồng thực và hiển thị cảnh báo; báo cáo ghi requested_threads, ov_threads, thread_protocol_matches.
 Benchmark/evaluate/refresh_demo_data vẫn yêu cầu đúng số luồng protocol; sai cấu hình sẽ dừng kèm số thực tế.

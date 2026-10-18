@@ -67,8 +67,8 @@ for iteration in range(2):
     report = json.loads((job['folder'] / 'report.json').read_text())
     runtime = report['runtime']
     assert runtime['execution_devices'] == ['CPU'], runtime
-    assert runtime['requested_threads'] == 4 and 1 <= runtime['ov_threads'] <= 2, runtime
-    assert runtime['thread_protocol_matches'] is False and runtime['thread_warning'], runtime
+    assert runtime['requested_threads'] == 2 and runtime['ov_threads'] == 2, runtime
+    assert runtime['thread_protocol_matches'] is True and 'thread_warning' not in runtime, runtime
     assert report['processed'] == 1 and report['inference_mean_ms'] > 0, report
     if iteration:
         assert report['timings']['initialization_ms'] == 0, report

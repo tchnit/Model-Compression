@@ -2,6 +2,7 @@ import base64
 import builtins
 import http.client
 import json
+import os
 import re
 from io import BytesIO
 from pathlib import Path
@@ -111,7 +112,8 @@ class DemoServerTests(unittest.TestCase):
                 conn.close()
 
     def test_live_comparison_pins_every_model_to_the_same_cpu_runtime(self):
-        self.assertEqual(run_demo.CPU_THREADS, 4)
+        available = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
+        self.assertEqual(run_demo.CPU_THREADS, available)
         self.assertTrue(run_demo.MODEL_CONFIGS)
         self.assertEqual(len(run_demo.MODEL_CONFIGS), 10)
         self.assertEqual({cfg["device"] for cfg in run_demo.MODEL_CONFIGS.values()}, {"cpu"})
@@ -169,7 +171,7 @@ class DemoServerTests(unittest.TestCase):
                 return [Result()]
 
         config = {'path': 'models/yolo26m-bdd100k.pt', 'task': None, 'device': 'cpu', 'precision': 'FP32'}
-        runtime = {'device': 'CPU', 'torch_threads': 4, 'precision': 'FP32',
+        runtime = {'device': 'CPU', 'torch_threads': run_demo.CPU_THREADS, 'precision': 'FP32',
                    'parameter_dtype': 'torch.float32', 'input_dtype': 'torch.float32'}
         with patch.dict(run_demo.MODEL_CONFIGS, {'yolo26m_fp32': config}, clear=True), \
                 patch.dict(run_demo.LOADED_MODELS, {}, clear=True), \
@@ -182,7 +184,7 @@ class DemoServerTests(unittest.TestCase):
                                         json.dumps({'image': encoded, 'models': ['yolo26m_fp32']}),
                                         {'Content-Type': 'application/json'})
         self.assertEqual(status, 200)
-        configure.assert_called_once_with(ANY, config['path'], 4, 'FP32', strict_threads=False)
+        configure.assert_called_once_with(ANY, config['path'], run_demo.CPU_THREADS, 'FP32', strict_threads=False)
         result = json.loads(body)['detections']['yolo26m_fp32']
         self.assertEqual(result['runtime_settings']['precision'], 'FP32')
         self.assertEqual(result['runtime_settings']['parameter_dtype'], 'torch.float32')
@@ -227,6 +229,7 @@ class DemoServerTests(unittest.TestCase):
                     patch.dict(run_demo.LOADED_MODELS, {}, clear=True), patch.object(run_demo, 'DIRECTORY', folder):
                 _, body = self.request('GET', '/api/status')
                 inventory = json.loads(body)
+                self.assertEqual(inventory['cpu_threads'], run_demo.CPU_THREADS)
                 self.assertEqual(inventory['models_available'], [])
                 self.assertEqual(set(inventory['models_missing']), set(configs))
                 for key, cfg in configs.items():
