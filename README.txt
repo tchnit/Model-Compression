@@ -392,7 +392,7 @@ Tên 10 lớp lấy từ metadata.yaml/model.names; cấu hình end-to-end khôn
 
 Luồng: chọn/kéo thả nhiều ảnh hoặc video → Chạy nhận diện → chọn từng kết quả → tải.
 Có ảnh mẫu có sẵn; mỗi lần chạy ảnh mẫu vẫn suy luận thật. Tab khác tiếp tục hoạt động.
-Ảnh JPG/JPEG/PNG/WEBP: tối đa 12 MiB, 20 triệu pixel.
+Ảnh tĩnh JPG/JPEG/PNG/WEBP: tối đa 12 MiB, 20 triệu pixel. Không hỗ trợ ảnh động WebP/PNG.
 Video MP4/WebM: tối đa 64 MiB, 60 giây, 600 frame, 1920×1080; tối đa 180 giây xử lý.
 Codec cần OpenCV giải mã được; phát gốc trên trình duyệt nên ưu tiên MP4 H.264/WebM VP8.
 Video xuất WebM VP8 ở FPS metadata đầu vào, không âm thanh; video FPS biến thiên có thể khác nhịp gốc.

@@ -34,4 +34,60 @@ assert.match(scoresOnly, /data-box-index="0"/);
 const boxesOnly = render(boxes, 640, 360, 1, {labels: false, scores: false});
 assert.match(boxesOnly, /class="bbox-rect"/);
 assert.doesNotMatch(boxesOnly, /<text/);
-console.log('MVP overlay: frame boundaries, source timestamps, interactive boxes and visibility controls PASS');
+
+// Run the real event handlers with a video frame callback ahead of the playback clock.
+const mvpSource = fs.readFileSync(`${__dirname}/demo_data/mvp.js`, 'utf8');
+const mediaSource = mvpSource.slice(mvpSource.indexOf('  function media('), mvpSource.indexOf('  function preview('));
+const selectionSource = mvpSource.slice(mvpSource.indexOf('  function selectBox('), mvpSource.indexOf('  function table('));
+for (const frameCallbacks of [true, false]) {
+  let callback, tableIndex, focused = false;
+  const video = {tagName: 'VIDEO', currentTime: 0, duration: .45, paused: true, seeking: false,
+    pause() { this.paused = true; }};
+  if (frameCallbacks) video.requestVideoFrameCallback = handler => { callback = handler; return 1; };
+  const nodes = new Map();
+  const item = {video: true, source: 'fixture.webm', frames: variable, report: {source_fps: 10}, job: {status: 'cancelled'}};
+  const playback = vm.createContext({
+    player: null, videoCallback: null, currentFrame: null, tableFrame: null, selectedBox: -1, selected: 0, items: [item], mvpFrameAtTime,
+    document: {createElement: () => video},
+    $: id => {
+      if (!nodes.has(id)) nodes.set(id, {append() {}});
+      return nodes.get(id);
+    },
+    clearPlayer() { playback.player = playback.currentFrame = null; playback.selectedBox = -1; },
+    renderOverlay() { focused = false; },
+    table(boxes, index) { focused = false; tableIndex = index; playback.tableFrame = playback.currentFrame; },
+    highlightSelection() {}
+  });
+  vm.runInContext(mediaSource + selectionSource, playback);
+  playback.media(item);
+  video.onloadedmetadata();
+  video.paused = false; video.currentTime = .3;
+  if (frameCallbacks) callback(0, {mediaTime: .35}); else video.ontimeupdate();
+  video.ontimeupdate();
+  const selectedFrame = playback.currentFrame;
+  assert.equal(selectedFrame, variable[frameCallbacks ? 2 : 1], 'Playback clock events do not replace the displayed frame');
+  assert.equal(tableIndex, selectedFrame.index, 'The table follows the displayed overlay frame');
+  focused = true;
+  playback.selectBox(0);
+  assert.equal(video.currentTime, selectedFrame.source_time_seconds, 'Selection seeks to the source timestamp');
+  video.onpause(); video.ontimeupdate(); video.onseeked();
+  if (frameCallbacks) callback(0, {mediaTime: 0});
+  assert.equal(playback.currentFrame, selectedFrame, 'A late callback must not replace the selected frame');
+  assert.equal(playback.selectedBox, 0, 'Pause and seek events keep the selected box');
+  assert.equal(focused, true, 'Unchanged frames keep the focused SVG or table row');
+  playback.selectBox(0);
+  assert.equal(playback.selectedBox, -1, 'Selecting the same box again deselects it');
+  playback.selectBox(0, 0);
+  video.onseeked();
+  assert.equal(playback.currentFrame, variable[0]);
+  assert.equal(tableIndex, 0, 'Selecting another frame updates the table');
+  assert.equal(playback.selectedBox, 0);
+  video.seeking = true; video.currentTime = .5;
+  video.onpause(); video.ontimeupdate();
+  if (frameCallbacks) callback(0, {mediaTime: .35});
+  assert.equal(playback.currentFrame, variable[0], 'Pending seeks ignore old playback events');
+  video.seeking = false; video.onseeked();
+  assert.equal(playback.currentFrame, null, 'Seeking past processed frames clears the overlay');
+  assert.equal(playback.selectedBox, -1);
+}
+console.log('MVP overlay: frame timing, selection through pause/seek, focus and visibility controls PASS');

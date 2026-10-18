@@ -189,6 +189,8 @@ class MVPService:
                 with Image.open(path) as uploaded:
                     if uploaded.format not in ('JPEG', 'PNG', 'WEBP'):
                         raise ValueError('Nội dung ảnh phải là JPEG, PNG hoặc WEBP.')
+                    if getattr(uploaded, 'is_animated', False):
+                        raise ValueError('Không hỗ trợ ảnh động. Hãy dùng ảnh tĩnh JPEG, PNG, WEBP hoặc video MP4/WebM.')
                 image, _ = decode_image(base64.b64encode(path.read_bytes()).decode(), LIMITS['image_pixels'])
                 fps, total = 0, 1
             else:

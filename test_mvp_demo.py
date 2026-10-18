@@ -63,6 +63,28 @@ class MVPTests(unittest.TestCase):
         self.assertTrue(self.slot.acquire(blocking=False))
         self.slot.release()
 
+    def test_animated_images_are_rejected_before_model_loading(self):
+        from PIL import Image
+        for image_format in ('WEBP', 'PNG'):
+            with self.subTest(format=image_format):
+                data = io.BytesIO()
+                Image.new('RGB', (10, 10), 'red').save(
+                    data, format=image_format, save_all=True,
+                    append_images=[Image.new('RGB', (10, 10), 'blue')], duration=100, loop=0)
+                payload = data.getvalue()
+                with patch.object(self.service, 'get_model', side_effect=AssertionError('Unexpected model loading')) as load:
+                    task = self.service.submit(io.BytesIO(payload), len(payload),
+                                               {**self.query, 'filename': ['animated.' + image_format.lower()]})
+                    job = self.service.get(task['id'])
+                    result = self.wait(job)
+                self.assertEqual(result['status'], 'failed')
+                self.assertIn('ảnh động', result['message'])
+                self.assertEqual(result['processed'], 0)
+                self.assertEqual(result['files'], ['report.json'])
+                load.assert_not_called()
+                self.assertTrue(self.slot.acquire(blocking=False))
+                self.slot.release()
+
     def test_cancel_during_initialization_and_expiry_cleanup(self):
         import cv2
         import numpy as np

@@ -26,7 +26,7 @@ if (typeof module !== 'undefined') module.exports = {mvpFrameAtTime};
       <h2>1. Chọn dữ liệu</h2>
       <label class="mvp-drop" id="mvpDrop"><strong>Kéo thả ảnh hoặc video</strong>JPG · PNG · WEBP · MP4 · WebM
         <input id="mvpFiles" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.mp4,.webm" aria-label="Chọn ảnh hoặc video"></label>
-      <p>Ảnh ≤12 MiB, ≤20 triệu pixel. Video ≤64 MiB, ≤60 giây, ≤600 khung hình, ≤1920×1080. Tối đa 30 tệp/phiên.</p>
+      <p>Ảnh tĩnh ≤12 MiB, ≤20 triệu pixel; không hỗ trợ ảnh động. Video ≤64 MiB, ≤60 giây, ≤600 khung hình, ≤1920×1080. Tối đa 30 tệp/phiên.</p>
       <div class="mvp-row"><button id="mvpCamera" class="btn btn-outline-primary" type="button">Dùng webcam (ghi ≤10 giây)</button></div>
       <p id="mvpCameraNote">Webcam cần HTTPS hoặc localhost và quyền camera. Bản ghi sẽ được gửi đến server để nhận diện.</p>
       <div class="mvp-samples mvp-row" id="mvpSamples" aria-label="Ảnh mẫu chạy thật"></div>
@@ -65,7 +65,7 @@ if (typeof module !== 'undefined') module.exports = {mvpFrameAtTime};
   const $ = id => document.getElementById(id);
   let config, items = [], selected = -1, running = false, stopped = false, generation = 0, activeJob, upload;
   let accuracy = null, recorder = null, cameraStream = null, cameraTimer;
-  let player = null, videoCallback = null, currentFrame = null, selectedBox = -1;
+  let player = null, videoCallback = null, currentFrame = null, tableFrame = null, selectedBox = -1;
   const objectURLs = new Set();
   function status(text) { $('mvpStatus').textContent = text; }
   function route() {
@@ -153,15 +153,20 @@ if (typeof module !== 'undefined') module.exports = {mvpFrameAtTime};
         $('mvpSeek').disabled = !$('mvpSeek').max || +$('mvpSeek').max <= 0;
         update(element.currentTime); renderOverlay();
       };
-      element.ontimeupdate = () => { update(element.currentTime); table(currentFrame?.detections || [], currentFrame?.index || 0); };
-      element.onseeked = element.onpause = () => { update(element.currentTime); renderOverlay(); table(currentFrame?.detections || [], currentFrame?.index || 0); $('mvpPlay').textContent = element.paused ? 'Phát' : 'Tạm dừng'; };
+      element.ontimeupdate = element.onseeked = element.onpause = () => {
+        if (!element.seeking) {
+          if (!element.requestVideoFrameCallback || element.paused) update(element.currentTime);
+          if (currentFrame !== tableFrame) table(currentFrame?.detections || [], currentFrame?.index || 0);
+        }
+        $('mvpPlay').textContent = element.paused ? 'Phát' : 'Tạm dừng';
+      };
       element.onplay = () => { $('mvpPlay').textContent = 'Tạm dừng'; };
       element.onended = () => { $('mvpPlay').textContent = 'Phát lại'; };
       $('mvpPlay').textContent = 'Phát';
       if (element.requestVideoFrameCallback) {
         const onFrame = (_, metadata) => {
           if (player !== element) return;
-          update(metadata.mediaTime);
+          if (!element.paused && !element.seeking) update(metadata.mediaTime);
           videoCallback = element.requestVideoFrameCallback(onFrame);
         };
         videoCallback = element.requestVideoFrameCallback(onFrame);
@@ -225,15 +230,18 @@ if (typeof module !== 'undefined') module.exports = {mvpFrameAtTime};
   function selectBox(index, frameIndex = currentFrame?.index) {
     const item = items[selected];
     const frame = item?.frames?.find(value => value.index === frameIndex);
-    if (player?.tagName === 'VIDEO') player.pause();
+    if (player?.tagName === 'VIDEO') {
+      player.pause();
+      if (frame) player.currentTime = frame.source_time_seconds ?? frame.time_seconds;
+    }
     if (frame && frame !== currentFrame) {
       currentFrame = frame; selectedBox = -1;
-      if (player?.tagName === 'VIDEO') player.currentTime = frame.source_time_seconds ?? frame.time_seconds;
       renderOverlay();
     }
     selectedBox = selectedBox === index ? -1 : index; highlightSelection();
   }
   function table(boxes, index) {
+    tableFrame = currentFrame;
     const counts = {};
     for (const box of boxes) counts[box.class_name] = (counts[box.class_name] || 0) + 1;
     $('mvpCounts').replaceChildren(...Object.entries(counts).map(([name, count]) => {
