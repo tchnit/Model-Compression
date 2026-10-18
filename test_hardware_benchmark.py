@@ -125,7 +125,8 @@ class HardwareBenchmarkTests(unittest.TestCase):
                 self.assertEqual(status,422)
                 self.assertIn('GPU failed',json.loads(body)['message'])
                 self.assertEqual(runner.call_count,1)  # No retry as CPU after GPU failure.
-                self.assertTrue(run_demo.INFERENCE_SLOT.acquire(blocking=False))
+                # The HTTP response can arrive before the handler's finally block runs.
+                self.assertTrue(run_demo.INFERENCE_SLOT.acquire(timeout=1))
                 run_demo.INFERENCE_SLOT.release()
         finally:
             DemoServerTests.tearDownClass()

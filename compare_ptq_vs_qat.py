@@ -2,7 +2,7 @@
 """Script chạy lại và so sánh đối đầu PTQ INT8 vs QAT INT8 của YOLO26m trên BDD100K."""
 
 from __future__ import annotations
-from inference_runtime import cpu_device, configure_cpu_backend
+from bdd100k_eval.inference_runtime import cpu_device, configure_cpu_backend
 import argparse
 import csv
 import json

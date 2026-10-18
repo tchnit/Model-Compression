@@ -22,9 +22,10 @@ import base64
 import threading
 import time
 from urllib.parse import unquote, urlsplit
-from inference_runtime import cpu_device, configure_cpu_backend
+from bdd100k_eval.inference_runtime import cpu_device, configure_cpu_backend
 import hardware_benchmark as hardware_bench
 from mvp_demo import MVPService, MODEL_KEY as MVP_MODEL_KEY
+from bdd100k_eval.models import get_model, configure_cpu_threads, LOADED_MODELS, WARMED_MODELS, MODEL_RUNTIMES
 from bdd100k_eval.config import (HOST, PORT, DIRECTORY, CPU_THREADS, MAX_REQUEST_BYTES,
                                   MAX_IMAGE_PIXELS, PUBLIC_FILES, MODEL_CONFIGS)
 
@@ -37,38 +38,6 @@ os.environ.setdefault("OMP_NUM_THREADS", str(CPU_THREADS))
 os.environ.setdefault("MKL_NUM_THREADS", str(CPU_THREADS))
 
 # Model definitions
-
-LOADED_MODELS = {}
-WARMED_MODELS = set()
-MODEL_RUNTIMES = {}
-
-
-def configure_cpu_threads():
-    """Restore the PyTorch CPU budget after Ultralytics initializes a predictor."""
-    import torch
-    torch.set_num_threads(CPU_THREADS)
-
-def get_model(model_key):
-    global LOADED_MODELS
-    if model_key not in LOADED_MODELS:
-        cfg = MODEL_CONFIGS.get(model_key)
-        if not cfg:
-            raise ValueError(f'Model không hợp lệ: {model_key}')
-        if not os.path.exists(cfg['path']):
-            artifact = os.path.relpath(cfg['path'], DIRECTORY)
-            raise FileNotFoundError(
-                f'Thiếu model {model_key}: {artifact}. '
-                'Hãy chạy git pull để cập nhật models/ hoặc sao chép model từ máy gốc '
-                '(OpenVINO cần cả thư mục chứa XML, BIN và metadata.yaml).'
-            )
-        from ultralytics import YOLO
-        print(f"[*] Nạp mô hình {model_key} từ {cfg['path']}...")
-        if cfg['task']:
-            model = YOLO(cfg['path'], task=cfg['task'])
-        else:
-            model = YOLO(cfg['path'])
-        LOADED_MODELS[model_key] = model
-    return LOADED_MODELS[model_key]
 
 
 MVP = MVPService(get_model, INFERENCE_SLOT, MODEL_CONFIGS[MVP_MODEL_KEY]['path'], CPU_THREADS)

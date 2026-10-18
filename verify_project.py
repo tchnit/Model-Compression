@@ -157,7 +157,7 @@ def main():
     packages = check_requirements(Path(args.requirements))
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
-    from run_demo import MODEL_CONFIGS
+    from bdd100k_eval.config import MODEL_CONFIGS
 
     models = {}
     for key, config in MODEL_CONFIGS.items():

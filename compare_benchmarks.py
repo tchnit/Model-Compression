@@ -2,7 +2,7 @@
 """Script so sánh benchmark (mAP, FPS, latency, compression) và đo latency các model YOLO26 trên BDD100K."""
 
 from __future__ import annotations
-from inference_runtime import cpu_device, configure_cpu_backend
+from bdd100k_eval.inference_runtime import cpu_device, configure_cpu_backend
 import hashlib
 from bdd100k_eval.artifacts import artifact_info, get_dir_size_mib
 from bdd100k_eval.reporting import format_table, export_csv

@@ -170,8 +170,8 @@ class DemoServerTests(unittest.TestCase):
                 for key, artifact in [('yolo26m_fp32', 'yolo26m-bdd100k.pt'),
                                       ('yolo26m_ptq_int8', 'int8_yolo26m_640_openvino_model')]
             }
-            with patch.object(run_demo, 'MODEL_CONFIGS', configs), \
-                    patch.object(run_demo, 'LOADED_MODELS', {}), patch.object(run_demo, 'DIRECTORY', folder):
+            with patch.dict(run_demo.MODEL_CONFIGS, configs, clear=True), \
+                    patch.dict(run_demo.LOADED_MODELS, {}, clear=True), patch.object(run_demo, 'DIRECTORY', folder):
                 _, body = self.request('GET', '/api/status')
                 inventory = json.loads(body)
                 self.assertEqual(inventory['models_available'], [])

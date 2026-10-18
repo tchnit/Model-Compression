@@ -4,7 +4,7 @@ See README.txt. Evaluation is Ultralytics YOLO mAP, not official BDD ignore rule
 """
 from __future__ import annotations
 from datetime import date, datetime
-from inference_runtime import cpu_device, configure_cpu_backend
+from bdd100k_eval.inference_runtime import cpu_device, configure_cpu_backend
 import argparse
 import csv
 import gc

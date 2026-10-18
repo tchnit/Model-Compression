@@ -13,7 +13,7 @@ import uuid
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-from inference_runtime import configure_cpu_backend, cpu_device
+from bdd100k_eval.inference_runtime import configure_cpu_backend, cpu_device
 
 MODEL_KEY = 'yolo26s_ptq_int8'
 MODEL_NAME = 'int8_yolo26s_640_openvino_model'
