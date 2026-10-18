@@ -14,7 +14,7 @@ Sao chép source, models/, demo_data/ và runtime_exports/ nếu dùng Hardware.
 
 Máy CPU (demo, PyTorch/OpenVINO/ONNX Runtime, export ONNX và calibration ONNX):
 python3.12 -m venv .venv
-# Linux/macOS: source .venv/bin/activate
+source .venv/bin/activate
 # Windows: py -3.12 -m venv .venv rồi .venv\Scripts\activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
@@ -24,6 +24,14 @@ python run_demo.py
 
 requirements.txt ưu tiên wheel PyTorch CPU từ https://download.pytorch.org/whl/cpu.
 Máy Ubuntu/Debian thiếu libGL.so.1 hoặc libgthread: cài libgl1 và libglib2.0-0 bằng apt.
+Nếu log báo thiếu numpy/PIL hoặc Python 3.10, dừng server và tạo môi trường mới:
+python3.12 -m venv .venv312
+source .venv312/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check
+python run_demo.py
+Server kiểm tra Python và thư viện runtime trước khi mở cổng; chưa tải model ở bước này.
 
 Máy NVIDIA/CUDA 13 (profile riêng, tạo môi trường mới, thay cho profile CPU):
 python3.12 -m venv .venv-gpu

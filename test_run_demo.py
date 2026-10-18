@@ -1,4 +1,5 @@
 import base64
+import builtins
 import http.client
 import json
 import re
@@ -13,6 +14,22 @@ from unittest.mock import patch
 from PIL import Image
 
 import run_demo
+
+
+class RuntimeStartupTests(unittest.TestCase):
+    def test_unsupported_python_stops_before_binding_port(self):
+        with patch.object(run_demo.sys, 'version_info', (3, 10)), \
+                patch.object(run_demo.socketserver, 'ThreadingTCPServer') as server:
+            with self.assertRaisesRegex(SystemExit, 'Python >= 3.12'):
+                run_demo.run()
+        server.assert_not_called()
+
+    def test_missing_runtime_stops_before_binding_port(self):
+        with patch.object(run_demo.importlib, 'import_module', side_effect=ModuleNotFoundError('numpy')), \
+                patch.object(run_demo.socketserver, 'ThreadingTCPServer') as server:
+            with self.assertRaisesRegex(SystemExit, 'pip install -r requirements.txt'):
+                run_demo.run()
+        server.assert_not_called()
 
 
 class DemoServerTests(unittest.TestCase):
@@ -127,6 +144,27 @@ class DemoServerTests(unittest.TestCase):
                 status, _ = self.request('POST', '/api/predict', json.dumps({'image': image}),
                                          {'Content-Type': 'application/json'})
                 self.assertEqual(status, 400)
+
+    def test_missing_dependencies_return_json_instead_of_dropping_connection(self):
+        original_import = builtins.__import__
+        for missing in ['numpy', 'PIL']:
+            with self.subTest(missing=missing):
+                def import_without_dependency(name, *args, **kwargs):
+                    if name == missing:
+                        raise ModuleNotFoundError(f"No module named '{missing}'")
+                    return original_import(name, *args, **kwargs)
+
+                with patch('builtins.__import__', side_effect=import_without_dependency), patch('sys.stderr'):
+                    status, body = self.request('POST', '/api/predict', '{}',
+                                                {'Content-Type': 'application/json'})
+                self.assertEqual(status, 500)
+                self.assertEqual(json.loads(body)['status'], 'error')
+
+    def test_decompression_bombs_remain_client_errors(self):
+        with patch.object(Image, 'open', side_effect=Image.DecompressionBombError('too large')):
+            status, _ = self.request('POST', '/api/predict', json.dumps({'image': 'AA=='}),
+                                     {'Content-Type': 'application/json'})
+        self.assertEqual(status, 400)
 
     def test_malformed_models_and_confidence_are_client_errors(self):
         image = BytesIO()

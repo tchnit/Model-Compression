@@ -15,6 +15,7 @@ if os.path.exists(VENV_PYTHON) and sys.executable != VENV_PYTHON and 'VIRTUAL_EN
     os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
 
 import http.server
+import importlib
 import socketserver
 import json
 import base64
@@ -189,7 +190,6 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
         if urlsplit(self.path).path == '/api/predict':
             try:
                 import numpy as np
-                from PIL import Image
 
                 content_len = int(self.headers.get('Content-Length', '0'))
                 if not 0 < content_len <= MAX_REQUEST_BYTES:
@@ -282,7 +282,8 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                     'detections': detections_res
                 })
 
-            except (ValueError, json.JSONDecodeError, base64.binascii.Error, Image.DecompressionBombError) as e:
+            # decode_image converts Pillow decoding errors into ValueError.
+            except (ValueError, base64.binascii.Error) as e:
                 self.send_json(400, {'status': 'error', 'message': str(e)})
             except Exception:
                 import traceback
@@ -323,8 +324,25 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Keep terminal output clean
         sys.stderr.write(f"[{self.log_date_time_string()}] {format % args}\n")
 
+def check_runtime():
+    if sys.version_info < (3, 12):
+        raise SystemExit(
+            f'Cần Python >= 3.12 để cài requirements.txt; đang chạy {sys.version.split()[0]} '
+            f'({sys.executable}). Hãy tạo và kích hoạt venv bằng Python 3.12.'
+        )
+    for module in ('numpy', 'PIL.Image', 'cv2', 'torch', 'ultralytics', 'openvino'):
+        try:
+            importlib.import_module(module)
+        except (ImportError, OSError) as error:
+            raise SystemExit(
+                f'Không tải được {module}: {error}\nPython đang chạy: {sys.executable}\n'
+                f'Cài thư viện trong môi trường này: {sys.executable} -m pip install -r requirements.txt'
+            ) from error
+
+
 def run():
     os.chdir(DIRECTORY)
+    check_runtime()
 
     print("[*] Đang khởi động AI Model Compression Studio...")
     print(f"[*] Các mô hình sẽ warm-up khi được chọn trên CPU ({CPU_THREADS} threads).")
