@@ -1,5 +1,16 @@
-# Optional native engines. Existing CPU demo only needs requirements.txt.
--r requirements.txt
+# NVIDIA/CUDA 13 profile. Python 3.12; tested on Linux x86_64.
+# Install INSTEAD of requirements.txt, in a separate environment.
+# Shared pins match requirements.txt; never install both ONNX Runtime packages.
+ultralytics==8.4.175
+numpy==2.5.4
+opencv-python==5.0.0.93
+Pillow==12.3.0
+PyYAML==6.0.3
+psutil==7.2.2
+openvino==2026.4.1
+torch==2.14.1
+torchvision==0.29.1
 onnx==1.23.2
+packaging==26.3
 onnxruntime-gpu==1.30.0
 tensorrt-cu13==10.16.1.11

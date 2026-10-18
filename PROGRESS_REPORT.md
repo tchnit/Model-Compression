@@ -319,3 +319,23 @@ Theo yêu cầu người dùng, bảng/demo/KPI và CSV/Markdown tạm dùng tr�
 ## Truy cập demo từ máy khác
 
 Server lắng nghe 0.0.0.0:8765 theo yêu cầu người dùng; log khởi động và README hướng dẫn dùng IP máy chạy server. Đã khởi động lại, 7 test server PASS và kiểm tra HTTP 200 demo/dashboard/API qua loopback và IP LAN 192.168.2.190. Chưa kiểm tra kết nối từ một máy khác thực tế.
+
+## Cài đặt dự án trên máy khác
+
+Đã cập nhật requirements.txt cho CPU, bổ sung ONNX 1.23.2, ONNX Runtime CPU
+1.30.0 và packaging 26.3; giữ các pin Ultralytics/PyTorch/OpenVINO hiện có.
+Ưu tiên wheel PyTorch CPU từ index chính thức; Python 3.12 theo pin NumPy 2.5.4.
+requirements-hardware.txt là profile NVIDIA/CUDA 13 độc lập, cùng pin chung,
+chỉ dùng onnxruntime-gpu thay cho onnxruntime để không cài chồng namespace.
+README mô tả cài môi trường mới, thư mục cần sao chép, thư viện hệ thống OpenCV
+và profile GPU; .venv-gpu được ignore. Verifier chọn --requirements và hiểu
+version PyTorch +cpu/+cu theo PEP 440, kiểm tra dependency trước khi kiểm kê dữ liệu.
+
+Đã cài thật requirements CPU vào venv Python 3.12 mới trên cùng máy Linux x86_64:
+pip check PASS, 22 test PASS; chạy ảnh thật qua PyTorch CPU FP16, ONNX Runtime CPU
+và OpenVINO INT8 đều thành công. Wheel nhận được torch 2.14.1+cpu, torchvision
+0.29.1+cpu; ORT không có CUDA provider. Bộ GPU đã qua pip dry-run và xác minh
+13 pin trên môi trường GPU hiện có, không cài lại GPU trong venv CPU.
+Bằng chứng: verification/requirements_cpu_install.log, requirements_cpu_tests.log,
+requirements_cpu_smoke.json và các report requirements_*_resolution.json.
+Chưa thử trên một máy vật lý/HĐH khác; không chạy lại mAP hoặc benchmark chính.

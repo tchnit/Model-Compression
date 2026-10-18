@@ -126,12 +126,32 @@ print(json.dumps({'torch_imported':False, 'ov_threads':threads, 'ov_streams':str
     return result
 
 
+def check_requirements(path):
+    """Validate profile pins, including PyTorch's +cpu/+cu local versions."""
+    from packaging.requirements import Requirement
+    packages = {}
+    for line in Path(path).read_text().splitlines():
+        line = line.split('#', 1)[0].strip()
+        if not line or line.startswith('--'):
+            continue
+        requirement = Requirement(line)
+        if requirement.marker and not requirement.marker.evaluate():
+            continue
+        actual = importlib.metadata.version(requirement.name)
+        if actual not in requirement.specifier:
+            raise ValueError(f"Environment mismatch: {requirement.name}: {actual} not in {requirement.specifier}")
+        packages[requirement.name] = actual
+    return packages
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="verification", help="Generated evidence directory")
+    parser.add_argument("--requirements", default="requirements.txt", help="CPU or NVIDIA requirements profile to verify")
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
     os.chdir(root)
+    packages = check_requirements(Path(args.requirements))
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     from run_demo import MODEL_CONFIGS
@@ -183,15 +203,6 @@ def main():
         "conditions": dict(conditions), "split": "Existing validation; previously used for evaluation",
         "held_out_final_verified": False, "calibration_disjointness_verified": False})
 
-    packages = {}
-    for line in (root / "requirements.txt").read_text().splitlines():
-        if "==" not in line:
-            continue
-        name, expected = line.strip().split("==", 1)
-        actual = importlib.metadata.version(name)
-        if actual != expected:
-            raise ValueError(f"Environment mismatch: {name}: {actual} != {expected}")
-        packages[name] = actual
     pip_check = subprocess.run([sys.executable, "-m", "pip", "check"], capture_output=True, text=True, check=True)
     source_paths = sorted(root.glob("*.py")) + sorted(root.glob("test_*.js")) + [
         root / name for name in ("requirements.txt", "demo.html", "model-compression-yolo26-dashboard.html",

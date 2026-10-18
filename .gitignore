@@ -35,6 +35,7 @@ MANIFEST
 !.env.example
 .envrc
 .venv/
+.venv-gpu/
 venv/
 ENV/
 env/

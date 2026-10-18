@@ -7,17 +7,36 @@ So sánh checkpoint gốc với các model nén KHÔNG huấn luyện lại.
 Không tự tải dataset, tải weights, huấn luyện hoặc nén model.
 Chạy chỉ baseline vẫn cho accuracy/latency, nhưng không có mAP drop cho model nén.
 
-2. Cài đặt (Python 3.10+)
-python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
-# Windows: .venv\Scripts\activate
-python -m pip install -r requirements.txt
-# Nếu chạy ONNX:
-python -m pip install onnxruntime
-# Nếu chạy OpenVINO:
-python -m pip install openvino
+2. Cài đặt trên máy khác (Python 3.12)
+Các bản NumPy đang ghim yêu cầu Python >=3.12; bộ này được kiểm tra với Python 3.12 trên Linux x86_64.
+Sao chép source, models/, demo_data/ và runtime_exports/ nếu dùng Hardware.
+Đánh giá accuracy còn cần data/bdd100k/; không sao chép thư mục .venv từ máy cũ.
 
-requirements.txt ghim các dependency runtime đã dùng để tạo artifact hiện tại.
+Máy CPU (demo, PyTorch/OpenVINO/ONNX Runtime, export ONNX và calibration ONNX):
+python3.12 -m venv .venv
+# Linux/macOS: source .venv/bin/activate
+# Windows: py -3.12 -m venv .venv rồi .venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check
+python run_demo.py
+# Máy khác truy cập http://<IP-server>:8765/demo.html
+
+requirements.txt ưu tiên wheel PyTorch CPU từ https://download.pytorch.org/whl/cpu.
+Máy Ubuntu/Debian thiếu libGL.so.1 hoặc libgthread: cài libgl1 và libglib2.0-0 bằng apt.
+
+Máy NVIDIA/CUDA 13 (profile riêng, tạo môi trường mới, thay cho profile CPU):
+python3.12 -m venv .venv-gpu
+source .venv-gpu/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-hardware.txt
+python -m pip check
+python run_demo.py
+Không cài đồng thời onnxruntime và onnxruntime-gpu trong cùng môi trường.
+GPU cần driver/CUDA/cuDNN phù hợp; TensorRT engine cần build lại trên máy đích.
+Kiểm kê môi trường GPU dùng: python verify_project.py --requirements requirements-hardware.txt
+
+Hai file requirements ghim cùng phiên bản thư viện chung, chỉ khác các engine CPU/NVIDIA.
 report.json vẫn ghi phiên bản thực tế và số luồng runtime của mỗi lần chạy.
 Một số phiên bản YOLO26 dùng end2end=True/False; phiên bản mới dùng nms=False/True.
 Script phát hiện key cấu hình để chọn tương ứng và kiểm tra head runtime.
@@ -175,7 +194,9 @@ https://docs.ultralytics.com/guides/end2end-detection/
 https://docs.ultralytics.com/reference/nn/autobackend/
 
 13. Kiểm kê và xác minh lại bằng chứng
-.venv/bin/python verify_project.py
+Kích hoạt môi trường đã cài ở mục 2, rồi chạy:
+python verify_project.py
+# Profile NVIDIA: python verify_project.py --requirements requirements-hardware.txt
 Lệnh kiểm tra 10 model: tensor dtype gốc, class map, kích thước, SHA-256;
 6 IR OpenVINO được nạp trong tiến trình riêng chỉ dùng OpenVINO/NumPy,
 không import PyTorch, CPU 4 luồng và một stream. Probe zero-input kiểm tra
@@ -225,13 +246,12 @@ Chọn model, runtime, thiết bị, precision, ảnh, warmup/số lượt rồi
   phép FP16; một số lớp vẫn giữ FP32. OpenVINO FP16 storage không chứng minh
   FP16 compute; chỉ bật FP16 khi thiết bị công bố hỗ trợ và có export phù hợp.
 
-Cài engine native tùy chọn cho máy NVIDIA/CUDA 13:
-.venv/bin/python -m pip install -r requirements-hardware.txt
-.venv/bin/python prepare_runtime_models.py
+Chọn profile NVIDIA/CUDA 13 và kích hoạt .venv-gpu theo mục 2, rồi chạy:
+python prepare_runtime_models.py
 # Hoặc chỉ export ONNX/OpenVINO:
-.venv/bin/python prepare_runtime_models.py --engines onnx openvino
+python prepare_runtime_models.py --engines onnx openvino
 # Giới hạn họ model:
-.venv/bin/python prepare_runtime_models.py --models yolo26s
+python prepare_runtime_models.py --models yolo26s
 
 Export ghi riêng runtime_exports/, không sửa models/ hay số liệu accuracy cũ.
 TensorRT build tốn vài phút/model/precision, engine phụ thuộc GPU và phiên bản;
