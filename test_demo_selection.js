@@ -12,6 +12,9 @@ for (const side of ['A', 'B']) {
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
 }
 assert.doesNotMatch(html, /applyPreset\('qat'\)/);
+assert.doesNotMatch(html, /Tỷ Lệ Nén Trọng Số|Tăng Tốc Suy Luận \(CPU\)|Bảo Toàn mAP50–95|Precision Trên Tập Validation/);
+assert.match(html, /telemetry-label">Chỉ số mô hình A<\/span>/);
+assert.match(html, /telemetry-label">Chỉ số mô hình B<\/span>/);
 
 async function studio() {
   const elements = new Map();

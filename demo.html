@@ -57,57 +57,6 @@
 <main class="app-main">
   <section id="mvp" aria-label="MVP – Demo và Đánh giá"></section>
 
-  <!-- KPI Banner -->
-  <section class="kpi-banner">
-    <div class="kpi-card cyan">
-      <div class="kpi-header">
-        <span>Tỷ Lệ Nén Trọng Số</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-      </div>
-      <div class="kpi-value-row">
-        <div class="kpi-value" id="compressionKpi">—</div>
-        <span class="kpi-badge ok">Tiết kiệm lưu trữ</span>
-      </div>
-      <div class="kpi-footer" id="compressionKpiDetail">Đang tải số đo artifact</div>
-    </div>
-
-    <div class="kpi-card green">
-      <div class="kpi-header">
-        <span>Tăng Tốc Suy Luận (CPU)</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-      </div>
-      <div class="kpi-value-row">
-        <div class="kpi-value" id="latencyKpi">—</div>
-        <span class="kpi-badge ok"><span id="latencyFps">— FPS</span></span>
-      </div>
-      <div class="kpi-footer" id="latencyKpiDetail">Đang tải phép đo CPU 4 luồng</div>
-    </div>
-
-    <div class="kpi-card">
-      <div class="kpi-header">
-        <span>Bảo Toàn mAP50–95</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
-      </div>
-      <div class="kpi-value-row">
-        <div class="kpi-value" id="retentionKpi">Chưa đo</div>
-        <span class="kpi-badge" id="retentionKpiDrop">Chờ baseline FP16</span>
-      </div>
-      <div class="kpi-footer" id="retentionKpiDetail">Chờ accuracy baseline FP16 trên 10.000 ảnh</div>
-    </div>
-
-    <div class="kpi-card amber">
-      <div class="kpi-header">
-        <span>Precision Trên Tập Validation</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-      </div>
-      <div class="kpi-value-row">
-        <div class="kpi-value">73.69%</div>
-        <span class="kpi-badge accent">Tại max-F1</span>
-      </div>
-      <div class="kpi-footer">Chưa đo mức tiết kiệm thao tác gán nhãn</div>
-    </div>
-  </section>
-
   <!-- Interactive Studio Section -->
   <section class="studio-container" id="studio">
     
@@ -304,10 +253,16 @@
               <span id="telemetryTimeA">227.0 ms</span> ➔ <strong id="telemetryTimeB" style="color:var(--green-dark)">76.4 ms</strong>
             </div>
           </div>
-          <div class="telemetry-model-metrics">
-            <span id="telemetryMetricsA">Mô hình A · mAP@50: Chưa chọn · FPS: Chưa chọn</span>
-            <span id="telemetryMetricsB">Mô hình B · mAP@50: Chưa chọn · FPS: Chưa chọn</span>
-          </div>
+        </div>
+
+        <div class="telemetry-card">
+          <span class="telemetry-label">Chỉ số mô hình A</span>
+          <div class="telemetry-secondary" id="telemetryMetricsA">Mô hình A · mAP@50: Chưa chọn · FPS: Chưa chọn</div>
+        </div>
+
+        <div class="telemetry-card">
+          <span class="telemetry-label">Chỉ số mô hình B</span>
+          <div class="telemetry-secondary" id="telemetryMetricsB">Mô hình B · mAP@50: Chưa chọn · FPS: Chưa chọn</div>
         </div>
 
         <div class="telemetry-card">

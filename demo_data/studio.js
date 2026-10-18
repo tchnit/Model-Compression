@@ -581,17 +581,7 @@ function updateBenchmarkSummary() {
     : BENCHMARK_DATA.some(d => d.accuracy_pending)
     ? 'Accuracy baseline FP16 và Δ pp đang chờ đánh giá lại đủ validation.'
     : 'Accuracy baseline và Δ pp dùng kết quả đánh giá FP16 đầy đủ.';
-  if ($('retentionKpi')) {
-    $('retentionKpi').textContent = base.map95 == null ? 'Chưa đo' : base.map95 > 0 ? `${(ptq.map95 / base.map95 * 100).toFixed(1)}%` : 'N/A';
-    $('retentionKpiDrop').textContent = ptq.drop == null ? 'Chờ baseline FP16' : `Δ ${ptq.drop.toFixed(2)} pp`;
-    $('retentionKpiDetail').textContent = base.map95 == null ? 'Chờ accuracy baseline FP16 trên 10.000 ảnh' : `${base.map95.toFixed(2)}% (${referenceLabel}) → ${ptq.map95.toFixed(2)}% (INT8 PTQ)`;
-    for (const [id, row] of [['ptqAccuracySummary', ptq], ['qatAccuracySummary', qat]]) $(id).textContent = `mAP@50–95 INT8: ${row.map95.toFixed(2)}%; ` + (row.drop == null ? 'chờ accuracy baseline FP16 để tính Δ pp.' : `Δ ${row.drop.toFixed(2)} pp so với baseline ${referenceLabel}.`);
-  }
-  $('compressionKpi').textContent = `${(100 * (1 - ptq.size / base.size)).toFixed(1)}%`;
-  $('compressionKpiDetail').textContent = `${base.size.toFixed(2)} MiB → ${ptq.size.toFixed(2)} MiB`;
-  $('latencyKpi').textContent = ptq.speedup == null ? 'Chưa đo' : `${ptq.speedup.toFixed(2)}x`;
-  $('latencyKpiDetail').textContent = `${base.lat.toFixed(1)} ms → ${ptq.lat.toFixed(1)} ms · 50 ảnh × 3${temporary ? ' · snapshot tạm' : ''}`;
-  if ($('latencyFps')) $('latencyFps').textContent = `${ptq.fps.toFixed(1)} FPS`;
+  for (const [id, row] of [['ptqAccuracySummary', ptq], ['qatAccuracySummary', qat]]) $(id).textContent = `mAP@50–95 INT8: ${row.map95.toFixed(2)}%; ` + (row.drop == null ? 'chờ accuracy baseline FP16 để tính Δ pp.' : `Δ ${row.drop.toFixed(2)} pp so với baseline ${referenceLabel}.`);
   const latencyLabel = temporary ? 'Độ trễ benchmark FP16 (snapshot tạm)' : 'Độ trễ đo lại';
   $('ptqLatencySummary').textContent = `${latencyLabel}: ${ptq.lat.toFixed(1)} ms (${ptq.fps.toFixed(1)} FPS), CPU 4 luồng.`;
   $('qatLatencySummary').textContent = `${latencyLabel}: ${qat.lat.toFixed(1)} ms (${qat.fps.toFixed(1)} FPS), CPU 4 luồng. Chất lượng xem mAP ở bảng trên.`;

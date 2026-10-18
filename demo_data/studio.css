@@ -200,74 +200,6 @@ main.app-main {
   gap: 28px;
 }
 
-/* KPI Banner */
-.kpi-banner {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-.kpi-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 18px 20px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-.kpi-card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--accent);
-}
-.kpi-card.green::before { background: var(--green); }
-.kpi-card.amber::before { background: var(--amber); }
-.kpi-card.cyan::before { background: var(--cyan); }
-
-.kpi-header {
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.kpi-value-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.kpi-value {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: var(--ink);
-}
-.kpi-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.kpi-badge.ok { background: var(--green-bg); color: var(--green-dark); }
-.kpi-badge.accent { background: var(--soft); color: var(--accent); }
-.kpi-footer {
-  font-size: 12.5px;
-  color: var(--muted);
-}
-
 /* Studio Section */
 .studio-container {
   display: grid;
@@ -810,13 +742,6 @@ input[type="range"] {
   color: var(--ink-secondary);
   font-weight: 600;
 }
-.telemetry-model-metrics {
-  display: grid;
-  gap: 2px;
-  font-size: 11px;
-  color: var(--ink-secondary);
-}
-
 /* Benchmark Explorer Section */
 .section-panel {
   background: var(--surface);
@@ -1067,11 +992,9 @@ table.bench-table tr:hover {
 @media (max-width: 1024px) {
   .studio-container { grid-template-columns: 1fr; }
   .studio-sidebar { border-right: none; border-bottom: 1px solid var(--line); padding-bottom: 20px; padding-right: 0; }
-  .kpi-banner { grid-template-columns: repeat(2, 1fr); }
   .gallery-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
-  .kpi-banner { grid-template-columns: 1fr; }
   .gallery-grid { grid-template-columns: 1fr; }
   .split-view-container { grid-template-columns: 1fr; }
   .export-card { grid-template-columns: 1fr; }
