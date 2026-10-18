@@ -138,7 +138,6 @@
         
         <div class="preset-chips">
           <button class="preset-chip" onclick="applyPreset('ptq')">FP16 vs PTQ INT8</button>
-          <button class="preset-chip" onclick="applyPreset('qat')">PTQ vs QAT INT8</button>
           <button class="preset-chip" onclick="applyPreset('edge')">YOLO26m vs 26s</button>
         </div>
 
@@ -150,16 +149,10 @@
             </span>
             <select class="model-select" id="modelSelectA">
               <option value="" selected>Chọn mô hình A để chạy</option>
+              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
+              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
               <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
               <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
-              <option value="yolo26m_qat_int8">YOLO26m QAT INT8 (OpenVINO)</option>
-              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
-              <option value="yolo26s_fp32_pack">YOLO26s FP16 (từ fp32.pt)</option>
-              <option value="yolo26s_fp16_pt">YOLO26s FP16 package (.pt)</option>
-              <option value="yolo26s_fp16_ov">YOLO26s FP16 (OpenVINO)</option>
-              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
-              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
-              <option value="yolo26s_int8">YOLO26s QAT INT8 640 (10MiB)</option>
             </select>
             <small class="model-path" id="modelPathA"></small>
           </div>
@@ -171,16 +164,10 @@
             </span>
             <select class="model-select" id="modelSelectB">
               <option value="" selected>Chọn mô hình B để chạy</option>
+              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
+              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
               <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
               <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
-              <option value="yolo26m_qat_int8">YOLO26m QAT INT8 (OpenVINO)</option>
-              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
-              <option value="yolo26s_fp32_pack">YOLO26s FP16 (từ fp32.pt)</option>
-              <option value="yolo26s_fp16_pt">YOLO26s FP16 package (.pt)</option>
-              <option value="yolo26s_fp16_ov">YOLO26s FP16 (OpenVINO)</option>
-              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
-              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
-              <option value="yolo26s_int8">YOLO26s QAT INT8 640 (10MiB)</option>
             </select>
             <small class="model-path" id="modelPathB"></small>
           </div>

@@ -3,7 +3,15 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const scripts = ['overlays.js', 'studio.js'].map(name => fs.readFileSync(`${__dirname}/demo_data/${name}`, 'utf8'));
+const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
+
+const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26m_ptq_int8'];
+for (const side of ['A', 'B']) {
+  const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
+  assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
+}
+assert.doesNotMatch(html, /applyPreset\('qat'\)/);
 
 async function studio() {
   const elements = new Map();
@@ -27,7 +35,7 @@ async function studio() {
     }
     return elements.get(id);
   };
-  const modelKeys = ['a', 'b', 'c', 'yolo26m_fp32', 'yolo26m_ptq_int8', 'yolo26m_qat_int8', 'yolo26s_ptq_int8'];
+  const modelKeys = ['a', 'b', 'c', ...expectedModels];
   const data = {
     scenes: ['scene_01', 'scene_02'].map(id => ({
       id, title: id, file: `${id}.jpg`, desc: id,
