@@ -74,6 +74,7 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(self.request("HEAD", "/demo_data/detections.json")[0], 200)
         self.assertEqual(self.request("HEAD", "/benchmark_comparison.csv")[0], 200)
         self.assertEqual(self.request("GET", "/PROGRESS_REPORT.md")[0], 404)
+        self.assertEqual(self.request("GET", "/bdd100k_eval/config.py")[0], 404)
         self.assertEqual(self.request("GET", "/demo_data/../PROGRESS_REPORT.md")[0], 404)
         self.assertEqual(self.request("HEAD", "/models/yolo26m-bdd100k.pt")[0], 404)
         with tempfile.TemporaryDirectory() as folder:

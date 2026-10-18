@@ -17,7 +17,7 @@ import numpy as np
 from bdd100k_eval import models as server
 from bdd100k_eval.artifacts import artifact_info, sha256
 from bdd100k_eval.dataset import read_frames
-from evaluate import distribution
+from bdd100k_eval.evaluation import distribution
 from bdd100k_eval.inference_runtime import configure_cpu_backend, cpu_device
 
 

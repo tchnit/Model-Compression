@@ -357,5 +357,86 @@ def main():
     print(f"\nKết quả: {out / 'summary.csv'} và {out / 'report.json'}")
 
 
+def evaluate_sessions(service, payload, limits):
+    """BDD100K frame JSON; Ultralytics matching and AP on completed image sessions."""
+    import numpy as np
+    import torch
+    from types import SimpleNamespace
+    from bdd100k_eval.dataset import canonical
+    from ultralytics.engine.validator import BaseValidator
+    from ultralytics.utils.metrics import ap_per_class, box_iou
+    if not isinstance(payload, dict):
+        raise ValueError('Payload đánh giá phải là JSON object')
+    keys = payload.get('jobs')
+    if not isinstance(keys, list) or not 1 <= len(keys) <= limits['jobs'] or len(set(keys)) != len(keys):
+        raise ValueError('Danh sách phiên đánh giá không hợp lệ')
+    jobs = [service.get(key) for key in keys]
+    if any(j['kind'] != 'image' or j['status'] != 'completed' or j['settings']['conf'] != .001 for j in jobs):
+        raise ValueError('Đánh giá chỉ dùng ảnh đã hoàn tất trong chế độ có nhãn (conf=0.001).')
+    if any(j['settings']['classes'] != jobs[0]['settings']['classes'] for j in jobs):
+        raise ValueError('Các ảnh phải dùng cùng bộ lọc lớp')
+    names = {int(k): v for k, v in service.config()['names'].items()}
+    mapping = {canonical(v): k for k, v in names.items()}
+    frames = payload.get('ground_truth')
+    if isinstance(frames, dict):
+        frames = frames.get('frames')
+    if not isinstance(frames, list) or len(frames) > 10000:
+        raise ValueError('Ground truth phải là list BDD100K frame hoặc {"frames": [...]} (tối đa 10.000 ảnh).')
+    by_name = {}
+    for frame in frames:
+        if not isinstance(frame, dict) or not isinstance(frame.get('name'), str) or frame['name'] in by_name:
+            raise ValueError('Ground truth phải có tên ảnh duy nhất')
+        by_name[frame['name']] = frame
+    stats = []
+    skipped_non_detection = 0
+    if len({j['filename'] for j in jobs}) != len(jobs):
+        raise ValueError('Tên ảnh trong phiên bị trùng; không thể ghép ground truth')
+    for job in jobs:
+        frame = by_name.get(job['filename'])
+        if frame is None or not isinstance(frame.get('labels'), list):
+            raise ValueError(f"Thiếu ground truth/labels cho {job['filename']}")
+        if len(frame['labels']) > 1000:
+            raise ValueError('Mỗi ảnh tối đa 1.000 đối tượng ground truth trong phiên MVP.')
+        targets = []
+        for label in frame['labels']:
+            if not isinstance(label, dict):
+                raise ValueError('Mỗi nhãn phải là JSON object')
+            if label.get('category') in ('lane', 'drivable area') and label.get('box2d') is None:
+                skipped_non_detection += 1
+                continue
+            if canonical(label.get('category', '')) not in mapping:
+                raise ValueError('Ground truth chứa lớp không thuộc 10 lớp BDD100K')
+            attrs = label.get('attributes') or {}
+            if not isinstance(attrs, dict):
+                raise ValueError('attributes phải là JSON object')
+            if any(attrs.get(k) for k in ('ignore', 'ignored', 'crowd', 'iscrowd')) or any(label.get(k) for k in ('ignore', 'ignored', 'crowd', 'iscrowd')):
+                raise ValueError('Phiên MVP chưa hỗ trợ ignore/crowd; hãy dùng evaluator chuyên biệt.')
+            cid = mapping[canonical(label['category'])]
+            box = label.get('box2d', {})
+            if not isinstance(box, dict) or any(k not in box for k in ('x1', 'y1', 'x2', 'y2')):
+                raise ValueError('Nhãn cần box2d có x1, y1, x2, y2')
+            xyxy = [float(box[k]) for k in ('x1', 'y1', 'x2', 'y2')]
+            if not all(math.isfinite(v) for v in xyxy) or not (0 <= xyxy[0] < xyxy[2] <= job['width'] and 0 <= xyxy[1] < xyxy[3] <= job['height']):
+                raise ValueError('Tọa độ ground truth không hợp lệ hoặc nằm ngoài ảnh')
+            if cid in job['settings']['classes']:
+                targets.append([cid, *xyxy])
+        target = torch.tensor(targets, dtype=torch.float32).reshape(-1, 5)
+        predictions = job['frames'][0]['detections']
+        pred = torch.tensor([[*b['xyxy'], b['confidence'], b['class_id']] for b in predictions], dtype=torch.float32).reshape(-1, 6)
+        iou = box_iou(target[:, 1:], pred[:, :4])
+        correct = BaseValidator.match_predictions(SimpleNamespace(iouv=torch.linspace(.5, .95, 10)), pred[:, 5], target[:, 0], iou)
+        stats.append((correct.numpy(), pred[:, 4].numpy(), pred[:, 5].numpy(), target[:, 0].numpy()))
+    tp, conf, pred_cls, target_cls = [np.concatenate([s[i] for s in stats], axis=0) for i in range(4)]
+    if not len(target_cls):
+        raise ValueError('Không có đối tượng ground truth trong các lớp đã chọn; mAP không xác định.')
+    result = ap_per_class(tp, conf, pred_cls, target_cls, names=names)
+    return dict(images=len(jobs), ground_truth_objects=len(target_cls), precision=float(result[2].mean()),
+                skipped_non_detection_labels=skipped_non_detection,
+                recall=float(result[3].mean()), map50=float(result[5][:, 0].mean()), map50_95=float(result[5].mean()),
+                per_class=[dict(class_name=names[int(cid)], map50=float(result[5][i, 0]), map50_95=float(result[5][i].mean())) for i, cid in enumerate(result[6])],
+                protocol='Ultralytics AP, IoU 0.50:0.95; P/R macro tại điểm F1 tối ưu; conf=0.001, max_det=300, '
+                         'chỉ lớp có GT; không phải evaluator BDD100K chính thức.', jobs=keys)
+
+
 if __name__ == "__main__":
     main()

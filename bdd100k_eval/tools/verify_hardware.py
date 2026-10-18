@@ -4,7 +4,7 @@ import json
 import time
 from pathlib import Path
 from bdd100k_eval.config import ROOT
-import hardware_benchmark as bench
+from bdd100k_eval import hardware_benchmark as bench
 
 
 def main():
