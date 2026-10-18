@@ -147,6 +147,19 @@ def check_requirements(path):
     return packages
 
 
+def source_files(root):
+    paths = list(root.glob("*.py")) + list(root.glob("test_*.js"))
+    paths += list((root / "bdd100k_eval").rglob("*.py"))
+    paths += list((root / "demo_data").glob("*.js"))
+    paths += list((root / "demo_data").glob("*.css"))
+    paths += [root / name for name in (
+        "requirements.txt", "requirements-hardware.txt", "README.txt", "REFACTOR_REPORT.md",
+        "rebenchmark_all.sh", "demo.html", "model-compression-yolo26-dashboard.html",
+        "demo_data/detections.json", "demo_data/latency_benchmark.json", "demo_data/browser_models.json",
+        "demo_data/vendor/onnxruntime-web/vendor.json", "runtime_exports/manifest.json")]
+    return sorted(path for path in paths if path.is_file())
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="verification", help="Generated evidence directory")
@@ -207,15 +220,7 @@ def main():
         "held_out_final_verified": False, "calibration_disjointness_verified": False})
 
     pip_check = subprocess.run([sys.executable, "-m", "pip", "check"], capture_output=True, text=True, check=True)
-    source_paths = sorted(root.glob("*.py")) + sorted(root.glob("test_*.js")) + [
-        root / name for name in ("requirements.txt", "demo.html", "model-compression-yolo26-dashboard.html",
-                                "demo_data/detections.json", "demo_data/demo_bundle.js",
-                                "demo_data/latency_benchmark.json")]
-    source_paths += [root / name for name in (
-        'requirements-hardware.txt', 'demo_data/hardware_benchmark.js',
-        'demo_data/hardware_benchmark.css', 'demo_data/browser_models.json', 'demo_data/vendor/onnxruntime-web/vendor.json',
-        'runtime_exports/manifest.json') if (root / name).is_file()]
-    sources = {str(p.relative_to(root)): sha256(p) for p in source_paths}
+    sources = {str(p.relative_to(root)): sha256(p) for p in source_files(root)}
     write_json(output / "environment.lock.json", {"python": sys.version, "platform": platform.platform(),
         "logical_cpus": os.cpu_count(), "packages": packages, "pip_check": pip_check.stdout.strip(),
         "source_sha256": sources, "clean_environment_reinstall_verified": False})

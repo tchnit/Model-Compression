@@ -34,9 +34,6 @@ INFERENCE_SLOT = threading.BoundedSemaphore(1)
 os.environ.setdefault("OMP_NUM_THREADS", str(CPU_THREADS))
 os.environ.setdefault("MKL_NUM_THREADS", str(CPU_THREADS))
 
-# Model definitions
-
-
 MVP = MVPService(get_model, INFERENCE_SLOT, MODEL_CONFIGS[MVP_MODEL_KEY]['path'], CPU_THREADS)
 
 class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):

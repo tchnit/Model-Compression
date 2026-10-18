@@ -9,7 +9,7 @@ Chạy chỉ baseline vẫn cho accuracy/latency, nhưng không có mAP drop cho
 
 2. Cài đặt trên máy khác (Python 3.12)
 Các bản NumPy đang ghim yêu cầu Python >=3.12; bộ này được kiểm tra với Python 3.12 trên Linux x86_64.
-git clone/pull lấy source, models/ và demo_data/; sao chép thêm runtime_exports/ nếu dùng Hardware.
+git clone/pull lấy source (bao gồm bdd100k_eval/), models/ và toàn bộ demo_data/; sao chép thêm runtime_exports/ nếu dùng Hardware.
 Đánh giá accuracy còn cần data/bdd100k/; không sao chép thư mục .venv từ máy cũ.
 
 Máy CPU (demo, PyTorch/OpenVINO/ONNX Runtime, export ONNX và calibration ONNX):
@@ -188,6 +188,8 @@ node test_demo_overlap.js
 node test_demo_selection.js
 node test_demo_exports.js
 node test_dashboard_state.js
+node test_hardware_browser.js
+node test_mvp_overlay.js
 
 11. Tái tạo demo và benchmark latency
 .venv/bin/python refresh_demo_data.py
@@ -225,8 +227,12 @@ không bao gồm import thư viện và không bảo đảm cache ổ đĩa lạ
 Toàn bộ 10.000 ảnh được giải mã, hash và đối chiếu annotation; ảnh trùng
 nội dung được liệt kê, giữ nguyên benchmark lịch sử. Không tự chia lại
 validation đã sử dụng rồi gọi đó là final chưa từng thấy.
-Output trong verification/: model_inventory.json, image_manifest.json,
+Mặc định output trong verification/: model_inventory.json, image_manifest.json,
 data_inventory.json, environment.lock.json, protocol.yaml, reproduction.json.
+Để giữ nguyên bằng chứng cũ, truyền thư mục mới, ví dụ:
+python verify_project.py --output verification/check_20261018
+environment.lock.json hash cả implementation trong bdd100k_eval/, các entry point
+ở root, JS/CSS của demo/dashboard và manifest runtime; không hash lại vendor internals.
 Protocol này ghi cấu hình quan sát được; không thay xác nhận ngưỡng của nhóm.
 
 Chạy lại phép so sánh 50 ảnh (không dùng mAP subset làm kết quả 10.000 ảnh):
@@ -433,3 +439,38 @@ File media hỗ trợ HTTP Range để phát/tua. Không lưu upload vào Git, k
 Nhãn lane/drivable area không có box2d được bỏ qua như pipeline hiện có; báo cáo ghi số nhãn bỏ qua.
 Để hội đồng thử đánh giá nhanh: chọn ảnh mẫu, chọn Đánh giá có nhãn, tải liên kết nhãn mẫu rồi chọn file JSON đó.
 demo_data/mvp_sample_labels.json trích box2d từ nhãn BDD100K sẵn có cho 5 ảnh demo; không phải prediction.
+
+CẤU TRÚC SOURCE SAU REFACTOR (2026-10-18)
+=======================================
+Các lệnh Python ở root giữ nguyên tên, tham số và import cũ. Implementation nằm
+trong package phẳng bdd100k_eval/, không cần cài package hay đổi working directory:
+
+bdd100k_eval/
+  config.py              đường dẫn root, model registry và giới hạn hiện có
+  artifacts.py           SHA-256, kích thước và metadata artifact
+  reporting.py           JSON, CSV và bảng báo cáo dùng chung
+  dataset.py             mapping BDD100K và chuẩn bị dataset evaluation
+  image_ops.py           giải mã, letterbox và hậu xử lý benchmark Hardware
+  inference_runtime.py   cấu hình CPU/precision/head hiện có
+  models.py              lazy loading và cache model dùng chung
+  evaluation.py          evaluator, worker CLI và đánh giá phiên MVP
+  hardware_benchmark.py  backend benchmark native hiện có
+  mvp_demo.py            quản lý phiên và xử lý ảnh/video
+  api.py                 HTTP handlers, route và phản hồi API
+  server.py              kiểm tra runtime và khởi động HTTP server
+  tools/                 implementation của 7 CLI phụ trợ
+
+demo.html và model-compression-yolo26-dashboard.html vẫn là URL cũ.
+demo_data/studio.js, studio.css, dashboard.js và dashboard.css chứa source
+đã tách từ HTML. overlays.js là renderer SVG chung; tải trước studio.js,
+hardware_benchmark.js và mvp.js. Hardware worker vẫn dùng URL cũ.
+JSON benchmark nhúng trong dashboard giữ nguyên để refresh_demo_data cập nhật.
+
+Không đổi đường dẫn models/, runtime_exports/, data/, evaluation_*/, verification/
+và các symlink. Giữ các entry point root khi triển khai hoặc viết script cũ;
+code mới có thể import trực tiếp từ bdd100k_eval. Không chỉ sao chép wrapper root
+mà bỏ package hoặc JS/CSS mới. Tests hồi quy vẫn ở root.
+
+Báo cáo thay đổi, bằng chứng baseline, kiểm tra tương đương và giới hạn còn lại:
+REFACTOR_REPORT.md. Chưa tái chạy full validation 10.000 ảnh cho mỗi model trong
+đợt refactor; kết quả lịch sử không bị ghi đè hoặc đổi nhãn.

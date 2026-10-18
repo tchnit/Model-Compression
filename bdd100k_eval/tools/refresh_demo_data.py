@@ -22,7 +22,7 @@ from bdd100k_eval.inference_runtime import configure_cpu_backend, cpu_device
 
 
 def sync_benchmark_assets(eval_dirs=None):
-    from compare_benchmarks import find_eval_dirs, parse_eval_dir, deduplicate_records, apply_reference_speedup
+    from bdd100k_eval.tools.compare_benchmarks import find_eval_dirs, parse_eval_dir, deduplicate_records, apply_reference_speedup
     records = [r for directory in find_eval_dirs(eval_dirs) for r in parse_eval_dir(directory)
                if r["artifact_exists"] and r["imgsz"] == 640]
     records = apply_reference_speedup(deduplicate_records(records))
