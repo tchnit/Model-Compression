@@ -195,6 +195,9 @@ function applyPreset(preset) {
   if (preset === 'ptq') {
     currentModelA = 'yolo26m_fp32';
     currentModelB = 'yolo26m_ptq_int8';
+  } else if (preset === 'ptq-s') {
+    currentModelA = 'yolo26s_fp32';
+    currentModelB = 'yolo26s_ptq_int8';
   } else if (preset === 'edge') {
     currentModelA = 'yolo26m_ptq_int8';
     currentModelB = 'yolo26s_ptq_int8';

@@ -223,6 +223,20 @@ async function studio() {
     assert.equal(s.read('currentModelB'), 'yolo26m_ptq_int8');
   }
 
+  {
+    const s = await studio();
+    const preset = s.context.applyPreset('ptq-s');
+    await tick();
+    assert.deepEqual(s.requests[0].payload.models, ['yolo26s_fp32']);
+    s.finish(0);
+    await tick();
+    assert.deepEqual(s.requests[1].payload.models, ['yolo26s_ptq_int8']);
+    s.finish(1);
+    await preset;
+    assert.equal(s.read('currentModelA'), 'yolo26s_fp32');
+    assert.equal(s.read('currentModelB'), 'yolo26s_ptq_int8');
+  }
+
   console.log('Model selection: lazy start, upload, serialization, cache, stale work, retry and presets passed.');
 })().catch(error => {
   console.error(error);
