@@ -3,6 +3,34 @@
 Cập nhật ngày 18/10/2026 sau rà soát mã nguồn, runtime và bằng chứng.
 **Trạng thái: demo hoạt động; chưa đủ bằng chứng nghiệm thu toàn bộ dự án.**
 
+## MVP – Demo & Đánh giá (18/10/2026)
+
+Tab đầu tiên và màn hình mặc định là `demo.html#mvp`. Model chính thức dùng
+`models/int8_yolo26s_640_openvino_model/` (tên thư mục thực, không có `s` cuối).
+Backend dùng lại `get_model()` cache và cấu hình OpenVINO CPU 4 luồng, 1 stream,
+640×640. Không sử dụng prediction lưu sẵn cho ảnh mẫu hoặc upload.
+
+Hỗ trợ nhiều ảnh, MP4/WebM, webcam ghi tối đa 10 giây khi có secure context/quyền.
+Tác vụ nền có tiến trình, hủy, xóa, TTL; dữ liệu tạm ngoài source và giới hạn
+CPU/dung lượng/frame/thời lượng. Xuất ảnh JPEG, WebM VP8 không âm thanh,
+JSON/CSV phát hiện và báo cáo cấu hình/hash/thiết bị/timer thực.
+Đếm theo frame, chưa tracking; không công bố số đối tượng duy nhất.
+Khởi tạo/warm-up tách riêng, FPS xử lý không dùng FPS phát video.
+
+Đánh giá ảnh có nhãn nhận subset BDD100K JSON theo tên ảnh, dùng hàm matching/AP
+của Ultralytics, conf=0.001. Bỏ nhãn lane/drivable-area không có box2d, từ chối
+ignore/crowd và schema không hỗ trợ. P/R ở F1 tối ưu, AP chỉ trung bình lớp có GT;
+không phải evaluator BDD100K chính thức. Không có GT thì ghi rõ chưa có nhãn chuẩn.
+
+Đã chạy model thật trên ảnh mẫu và video WebM 12 frame; kiểm tra đọc lại video
+đầu ra, CPU thực và tái dùng model (lượt sau initialization_ms=0).
+Đã kiểm tra luồng metric bằng nhãn BDD100K thật cho một ảnh; đây là kiểm tra
+tích hợp, không thay cho accuracy toàn validation. Bằng chứng local:
+`verification/mvp_smoke_final.log`, `verification/mvp_smoke/` và các log test MVP.
+Test hồi quy `test_mvp_demo.py` có chạy OpenVINO thật trên ảnh/video, bao gồm
+video không có tổng frame trong metadata. Webcam vật lý và môi trường VPS đích
+chưa được kiểm thử trong phiên triển khai này.
+
 ## Chuyển baseline sang FP16 (18/10/2026)
 
 Theo yêu cầu người dùng, demo, evaluator và benchmark latency hiện yêu cầu

@@ -1081,8 +1081,9 @@ table.bench-table tr:hover {
 }
 </style>
 <link rel="stylesheet" href="demo_data/hardware_benchmark.css">
+<link rel="stylesheet" href="demo_data/mvp.css">
 </head>
-<body>
+<body class="mvp-active">
 
 <!-- Header -->
 <header class="app-header">
@@ -1101,7 +1102,8 @@ table.bench-table tr:hover {
   </div>
 
   <nav class="nav-links">
-    <a class="nav-link active" href="#studio">Phòng Thử Nghiệm</a>
+    <a class="nav-link active" href="#mvp">MVP – Demo &amp; Đánh giá</a>
+    <a class="nav-link" href="#studio">Phòng Thử Nghiệm</a>
     <a class="nav-link" href="#hardware">Benchmark Hardware</a>
     <a class="nav-link" href="#benchmarks">Bảng Đối Chứng (6 Cấu Hình)</a>
     <a class="nav-link" href="#ptq-vs-qat">PTQ vs QAT</a>
@@ -1126,6 +1128,7 @@ table.bench-table tr:hover {
 </header>
 
 <main class="app-main">
+  <section id="mvp" aria-label="MVP – Demo và Đánh giá"></section>
 
   <!-- KPI Banner -->
   <section class="kpi-banner">
@@ -1860,7 +1863,6 @@ async function initApp() {
 
   updateSceneView();
   await checkServerStatus();
-  void inferScene(demoData.scenes.find(s => s.id === currentSceneId), [currentModelA, currentModelB]);
 }
 
 function renderSceneList() {
@@ -2402,5 +2404,6 @@ window.addEventListener('resize', syncSliderWidth);
 document.addEventListener('DOMContentLoaded', initApp);
 </script>
 <script src="demo_data/hardware_benchmark.js"></script>
+<script src="demo_data/mvp.js"></script>
 </body>
 </html>

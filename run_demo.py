@@ -24,6 +24,7 @@ import time
 from urllib.parse import unquote, urlsplit
 from inference_runtime import cpu_device, configure_cpu_backend
 import hardware_benchmark as hardware_bench
+from mvp_demo import MVPService, MODEL_KEY as MVP_MODEL_KEY
 
 HOST = "0.0.0.0"
 PORT = 8765
@@ -131,6 +132,9 @@ def get_model(model_key):
         LOADED_MODELS[model_key] = model
     return LOADED_MODELS[model_key]
 
+
+MVP = MVPService(get_model, INFERENCE_SLOT, MODEL_CONFIGS[MVP_MODEL_KEY]['path'], CPU_THREADS)
+
 class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
@@ -159,6 +163,8 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
         return path in PUBLIC_FILES or path.startswith("/demo_data/") or path in onnx_files
 
     def do_GET(self):
+        if MVP.handle(self, 'GET'):
+            return
         # Redirect / to /demo.html
         if urlsplit(self.path).path in ('/', '/index.html'):
             self.path = '/demo.html'
@@ -193,6 +199,8 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_error(404, "Not found")
 
     def do_POST(self):
+        if MVP.handle(self, 'POST'):
+            return
         if urlsplit(self.path).path == '/api/benchmark/run':
             self.run_hardware_benchmark()
             return
@@ -302,6 +310,10 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         self.send_error(404, "Endpoint not found")
+
+    def do_DELETE(self):
+        if not MVP.handle(self, 'DELETE'):
+            self.send_error(404, 'Endpoint not found')
 
     def run_hardware_benchmark(self):
         try:

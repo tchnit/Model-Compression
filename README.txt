@@ -378,3 +378,50 @@ Latency cùng 50 ảnh ×3, warmup5, 640×640, conf0.001, IoU0.7, max_det300, se
 Giữ toàn bộ các cột benchmark; Δ pp theo baseline FP16 cùng họ; speedup CSV theo
 YOLO26m FP16 640, bộ lọc YOLO26s theo baseline YOLO26s FP16.
 Chưa có accuracy FP16 đủ 10.000 ảnh thì không đổi nhãn accuracy FP32 cũ thành FP16.
+
+MVP – Demo & Đánh giá (2026-10-18)
+Trang mặc định: http://<IP-server>:8765/demo.html#mvp
+Khởi chạy: kích hoạt venv rồi python run_demo.py (0.0.0.0:8765).
+Không cần cài thêm dependency ngoài requirements.txt hiện có.
+Model chính thức: models/int8_yolo26s_640_openvino_model/ (tên thật là _model, không phải _models).
+MVP dùng get_model() cache chung, OpenVINO CPU 4 luồng, 1 stream, 640×640; không dùng kết quả mẫu lưu sẵn.
+Tên 10 lớp lấy từ metadata.yaml/model.names; cấu hình end-to-end không dùng IoU/NMS.
+
+Luồng: chọn/kéo thả nhiều ảnh hoặc video → Chạy nhận diện → chọn từng kết quả → tải.
+Có ảnh mẫu có sẵn; mỗi lần chạy ảnh mẫu vẫn suy luận thật. Tab khác tiếp tục hoạt động.
+Ảnh JPG/JPEG/PNG/WEBP: tối đa 12 MiB, 20 triệu pixel.
+Video MP4/WebM: tối đa 64 MiB, 60 giây, 600 frame, 1920×1080; tối đa 180 giây xử lý.
+Codec cần OpenCV giải mã được; phát gốc trên trình duyệt nên ưu tiên MP4 H.264/WebM VP8.
+Video xuất WebM VP8 ở FPS metadata đầu vào, không âm thanh; video FPS biến thiên có thể khác nhịp gốc.
+Webcam ghi tối đa 10 giây rồi gửi server để nhận diện; cần HTTPS hoặc localhost, MediaRecorder và quyền camera.
+Webcam qua http://<IP-VPS> thường không khả dụng: tải video hoặc đặt ứng dụng sau HTTPS.
+Chế độ Trình chiếu phóng lớn hình/chỉ số, ẩn điều khiển phụ; Esc để thoát.
+Đổi confidence/lớp/hộp/nhãn cần Chạy lại để kết quả và tệp xuất nhất quán.
+
+Suy luận: timer engine từ Ultralytics/OpenVINO. Pipeline: tiền xử lý + inference + hậu xử lý/API.
+FPS xử lý: số frame / thời gian xử lý tuần tự, gồm vẽ/mã hóa/đọc frame tiếp; không phải FPS phát.
+Toàn bộ trên server: từ sau upload đến kết thúc, gồm giải mã và khởi tạo/warm-up.
+Khởi tạo/warm-up đo riêng, bằng 0 khi tái dùng runtime đã chuẩn bị; không cộng vào suy luận thường.
+Báo cáo chứa hash đầu vào/XML/BIN, cấu hình, thiết bị CPU thực, phiên bản OpenVINO và phạm vi timer.
+Số đếm video theo khung hình; counts trong báo cáo là tổng lượt phát hiện, không phải đối tượng duy nhất.
+Chưa triển khai tracking. Không có ground truth thì không công bố precision, recall hoặc mAP.
+
+Đánh giá có nhãn: chỉ ảnh, BDD100K JSON list frame hoặc {frames: [...]} ≤12 MiB; cung cấp subset theo ảnh demo.
+Mỗi frame: name khớp chính xác tên tệp, labels chứa category và box2d x1,y1,x2,y2 theo pixel ảnh gốc.
+Tối đa 1.000 GT/ảnh; phải có entry labels=[] cho ảnh không có đối tượng.
+Không nhận COCO JSON, nhãn video, ignore/crowd hay tên lớp ngoài mapping BDD100K.
+Chế độ này chạy conf=0.001, max_det=300; mAP theo Ultralytics IoU 0.50:0.95, P/R macro tại F1 tối ưu.
+Chỉ lấy trung bình trên lớp có GT trong subset/bộ lọc lớp; đây không phải đánh giá BDD100K chính thức hoặc toàn validation.
+Nhãn BDD100K gốc toàn bộ lớn hơn giới hạn upload: trích frame theo tên ảnh hoặc dùng evaluate.py cho tập đầy đủ.
+
+Tài nguyên: một tác vụ inference/benchmark server tại một thời điểm; tối đa 30 tệp, 512 MiB dữ liệu hiện có,
+video đầu ra tối đa 128 MiB. Giới hạn tính theo từng tiến trình server, chưa phải hệ thống nhiều tenant.
+Dừng yêu cầu ngừng sau bước/khung đang chạy; phần đã xử lý được đánh dấu cancelled và có thể tải.
+Xóa dữ liệu hủy việc đang chạy rồi dọn file; TTL 30 phút không truy cập, kiểm tra định kỳ mỗi phút.
+Khi đóng trang, trình duyệt yêu cầu xóa phiên; TTL xử lý trường hợp mất kết nối/đóng tab bất thường.
+API /api/mvp/config, POST /api/mvp/jobs (raw file + query cấu hình), GET/DELETE /api/mvp/jobs/<id>,
+POST /api/mvp/jobs/<id>/cancel, GET /api/mvp/jobs/<id>/files/<file>, POST /api/mvp/evaluate.
+File media hỗ trợ HTTP Range để phát/tua. Không lưu upload vào Git, không tự đổi sang model/runtime khác.
+Nhãn lane/drivable area không có box2d được bỏ qua như pipeline hiện có; báo cáo ghi số nhãn bỏ qua.
+Để hội đồng thử đánh giá nhanh: chọn ảnh mẫu, chọn Đánh giá có nhãn, tải liên kết nhãn mẫu rồi chọn file JSON đó.
+demo_data/mvp_sample_labels.json trích box2d từ nhãn BDD100K sẵn có cho 5 ảnh demo; không phải prediction.
