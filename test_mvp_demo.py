@@ -49,6 +49,15 @@ class MVPTests(unittest.TestCase):
         self.assertTrue(self.slot.acquire(blocking=False))
         self.slot.release()
 
+    def test_directory_creation_failure_releases_inference_slot(self):
+        with patch.object(Path, 'mkdir', side_effect=OSError('disk full')):
+            with self.assertRaisesRegex(OSError, 'disk full'):
+                self.service.submit(io.BytesIO(b'x'), 1, self.query)
+        self.assertEqual(self.service.jobs, {})
+        self.assertEqual(list(Path(self.service.temp.name).iterdir()), [])
+        self.assertTrue(self.slot.acquire(blocking=False))
+        self.slot.release()
+
     def test_corrupt_video_produces_downloadable_failure_report(self):
         data = b'not a video'
         task = self.service.submit(io.BytesIO(data), len(data), {**self.query, 'filename': ['broken.webm']})

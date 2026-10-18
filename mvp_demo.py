@@ -113,8 +113,8 @@ class MVPService:
             raise RuntimeError('Server đang chạy tác vụ khác; vui lòng thử lại sau.')
         key = uuid.uuid4().hex
         folder = Path(self.temp.name) / key
-        folder.mkdir()
         try:
+            folder.mkdir()
             digest = hashlib.sha256()
             with (folder / ('input' + suffix)).open('wb') as output:
                 remaining = length
