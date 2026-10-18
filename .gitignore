@@ -1,0 +1,156 @@
+# ==============================================================================
+# YOLO26 x BDD100K Model Compression & Evaluation - .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Bytecode & Python Artifacts
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ------------------------------------------------------------------------------
+# 2. Virtual Environments & Testing / Type Checkers
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+.envrc
+.venv/
+venv/
+ENV/
+env/
+*.bak/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+
+# ------------------------------------------------------------------------------
+# 3. Datasets & Large Archives (BDD100K)
+# ------------------------------------------------------------------------------
+# Raw BDD100K images, labels, annotations
+/data/
+/archive/
+/datasets/
+/bdd100k/
+
+# Ultralytics dataset cache (val.cache, etc.)
+*.cache
+
+# Compressed archives (dataset zips, weights archives)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# ------------------------------------------------------------------------------
+# 4. Model Weights & Compiled Engine Artifacts
+# ------------------------------------------------------------------------------
+# PyTorch checkpoints, TorchScript, OpenVINO IR, TensorRT engines, ONNX exports
+*.pt
+*.pth
+*.pwf
+*.onnx
+*.engine
+*.plan
+*.bin
+*.weights
+*.tflite
+*.safetensors
+*.blob
+
+# Model checkpoints directory
+/models/
+!/models/.gitkeep
+
+# Runtime exports (keep manifest metadata, ignore compiled binaries)
+/runtime_exports/*
+!/runtime_exports/manifest.json
+
+# ------------------------------------------------------------------------------
+# 5. Evaluation, Benchmark & Experiment Outputs
+# ------------------------------------------------------------------------------
+# Ultralytics training/validation runs
+/runs/
+
+# Project evaluation output directories
+/evaluation_*/
+/eval_*/
+/smoke_run*/
+/output/
+/outputs/
+/verification/
+/test_smoke_ptq_qat/
+/TESTT/
+/comparison_yolo26m_visual/
+
+# ML experiment tracking
+wandb/
+mlruns/
+lightning_logs/
+.aim/
+events.out.tfevents.*
+
+# ------------------------------------------------------------------------------
+# 6. Logs, Process IDs & Temporary Files
+# ------------------------------------------------------------------------------
+*.log
+pip-log.txt
+*.pid
+*.tmp
+*.bak
+*.backup
+*~
+*.swp
+*.swo
+
+# ------------------------------------------------------------------------------
+# 7. IDE, Editor & OS Metadata
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# VS Code / JetBrains / Editors
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+.ipynb_checkpoints/
+
+# ------------------------------------------------------------------------------
+# 8. Node & Frontend Web Dependencies
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

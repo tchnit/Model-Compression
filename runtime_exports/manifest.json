@@ -1,0 +1,198 @@
+{
+  "yolo26s_FP32_onnx": {
+    "path": "runtime_exports/yolo26s_fp32.onnx",
+    "sha256": "d9abd97a48914ad5a82cdfd0a13973773e06f1790e0f6f757a87f2bc5604a024",
+    "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP32",
+    "onnx_version": "1.23.2"
+  },
+  "yolo26s_FP32_openvino": {
+    "path": "runtime_exports/yolo26s_fp32.xml",
+    "sha256": "bb688a876f15c8b52e6ace0c694c7ab5c5b7ab6ae08d3032299a53ee2b4072cd",
+    "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP32",
+    "bin_sha256": "77235b62f14663f0dfed94a29156b74003a30e195304d22905586664714d9d73",
+    "openvino_version": "2026.4.1-22982-e213a147257-releases/2026/4"
+  },
+  "yolo26s_FP32_tensorrt": {
+    "path": "runtime_exports/yolo26s_fp32.engine",
+    "sha256": "36daaaed8d1bb56c0e3e11148a809600aedc6849a52e6ae381881371dcca010a",
+    "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP32",
+    "gpu": "NVIDIA GeForce RTX 3070 Laptop GPU",
+    "compute_capability": [
+      8,
+      6
+    ],
+    "tensorrt_version": "10.16.1.11",
+    "tf32": false,
+    "precision_policy": "FP32; TF32 disabled"
+  },
+  "yolo26s_FP16_onnx": {
+    "path": "runtime_exports/yolo26s_fp16.onnx",
+    "sha256": "5cab402aedc912659e64314cd27e6a0a15fe39fa3639b473ad4630352160a3a1",
+    "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP16",
+    "onnx_version": "1.23.2"
+  },
+  "yolo26s_FP16_tensorrt": {
+    "path": "runtime_exports/yolo26s_fp16.engine",
+    "sha256": "b786237804d21724b261b449f8ca369a2f7be3b1876321260adee05dd3f0e990",
+    "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP16",
+    "gpu": "NVIDIA GeForce RTX 3070 Laptop GPU",
+    "compute_capability": [
+      8,
+      6
+    ],
+    "tensorrt_version": "10.16.1.11",
+    "tf32": false,
+    "precision_policy": "FP16 permitted; unsupported layers FP32"
+  },
+  "yolo26m_FP32_onnx": {
+    "path": "runtime_exports/yolo26m_fp32.onnx",
+    "sha256": "cf0ddc3a2d23e9d931e2c34ad2379e335b9e3c11034019f1c60ba59cf7bab5bd",
+    "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP32",
+    "onnx_version": "1.23.2"
+  },
+  "yolo26m_FP32_openvino": {
+    "path": "runtime_exports/yolo26m_fp32.xml",
+    "sha256": "1f536864e1f74ec020409943ca0fff70c5e6bdf11f1cc6d70ef53d9b8608f684",
+    "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP32",
+    "bin_sha256": "6269c83fb5a8922ee15a0fa8d6971c52451d4e185fb52fe3681c95d90c777c7a",
+    "openvino_version": "2026.4.1-22982-e213a147257-releases/2026/4"
+  },
+  "yolo26m_FP32_tensorrt": {
+    "path": "runtime_exports/yolo26m_fp32.engine",
+    "sha256": "f97b69d2bc86ecb8d9188d416da38e440864efc325782c8db215bf53604bd453",
+    "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP32",
+    "gpu": "NVIDIA GeForce RTX 3070 Laptop GPU",
+    "compute_capability": [
+      8,
+      6
+    ],
+    "tensorrt_version": "10.16.1.11",
+    "tf32": false,
+    "precision_policy": "FP32; TF32 disabled"
+  },
+  "yolo26m_FP16_onnx": {
+    "path": "runtime_exports/yolo26m_fp16.onnx",
+    "sha256": "fdddd7e1f17a34ac718ad7b63b23c244b28306e4c6029c7ad4aff4308f24e14e",
+    "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP16",
+    "onnx_version": "1.23.2"
+  },
+  "yolo26m_FP16_tensorrt": {
+    "path": "runtime_exports/yolo26m_fp16.engine",
+    "sha256": "59e517e678a22c496eb89aca3a54509ebed856388cd52059f92eca5635c8fb37",
+    "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "FP16",
+    "gpu": "NVIDIA GeForce RTX 3070 Laptop GPU",
+    "compute_capability": [
+      8,
+      6
+    ],
+    "tensorrt_version": "10.16.1.11",
+    "tf32": false,
+    "precision_policy": "FP16 permitted; unsupported layers FP32"
+  },
+  "yolo26s_INT8_onnx": {
+    "path": "runtime_exports/yolo26s_int8.onnx",
+    "sha256": "09dd980fe35635240f2779d72f4acd3bf577fb5abc19e54041b6ecfa31f75033",
+    "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "INT8",
+    "onnx_version": "1.23.2",
+    "onnxruntime_version": "1.30.0",
+    "calibration_images": 128,
+    "calibration_sha256": "0f18ed36d36533527c23b1d94ac29f74d8bc3f8ac5567c40c0790c63ff1c1700",
+    "quantized_convs": 102,
+    "precision_policy": "PTQ QDQ: uint8 activations / int8 per-channel Conv weights; other operations floating point"
+  },
+  "yolo26m_INT8_onnx": {
+    "path": "runtime_exports/yolo26m_int8.onnx",
+    "sha256": "8643ccdd2c95759a01c9a3adfed9fba06c384369ff112340bc5cebf3406cabef",
+    "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+    "shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "precision": "INT8",
+    "onnx_version": "1.23.2",
+    "onnxruntime_version": "1.30.0",
+    "calibration_images": 128,
+    "calibration_sha256": "0f18ed36d36533527c23b1d94ac29f74d8bc3f8ac5567c40c0790c63ff1c1700",
+    "quantized_convs": 112,
+    "precision_policy": "PTQ QDQ: uint8 activations / int8 per-channel Conv weights; other operations floating point"
+  }
+}

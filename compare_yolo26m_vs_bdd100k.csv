@@ -1,0 +1,20 @@
+Category,Metric,YOLO26m_BDD100K,YOLO26m_COCO,Delta
+Architecture,Tập dữ liệu huấn luyện,BDD100K (Giao thông),MS COCO (Tổng quát),Chuyên biệt vs Phổ quát
+Architecture,Số lượng lớp phát hiện,10 lớp,80 lớp,+70 lớp
+Architecture,Dung lượng file (.pt),42.02 MB,42.21 MB,+0.19 MB (+0.5%)
+Architecture,Tổng số tham số (Params),"21,788,308 (21.79M)","21,896,248 (21.90M)","+107,940 (0.108M)"
+Architecture,Tham số Backbone + Neck,"18,974,272","18,974,272",0 (Giống nhau 100%)
+Architecture,Tham số Detection Head,"2,814,036","2,921,976","+107,940 (Do số lớp 80 vs 10)"
+Architecture,SHA-256 Checkpoint,8246690d0d92816e...,401cea9ab23ad192...,Khác nhau
+Performance,Độ trễ trung bình (CUDA),19.45 ms,20.87 ms,+1.42 ms
+Performance,Độ trễ trung vị p50 (CUDA),17.53 ms,20.56 ms,+3.03 ms
+Performance,Độ trễ p95 (CUDA),22.29 ms,22.38 ms,+0.09 ms
+Performance,Tốc độ khung hình (FPS - CUDA),51.4 FPS,47.9 FPS,1.07x
+Performance,Độ trễ trung bình (CPU),218.98 ms,302.57 ms,+83.6 ms
+Performance,Tốc độ khung hình (FPS - CPU),4.6 FPS,3.3 FPS,1.39x
+Detections,b1ca2e5d-84cf9134.jpg,28 boxes,11 boxes,+17 boxes (+155%)
+Detections,b1cd1e94-549d0bfe.jpg,14 boxes,6 boxes,+8 boxes (+133%)
+Detections,b1ceb32e-a106591d.jpg,21 boxes,16 boxes,+5 boxes (+31%)
+Detections,b1d0a191-5490450b.jpg,24 boxes,12 boxes,+12 boxes (+100%)
+Detections,b1d0a191-de8948f6.jpg,22 boxes,14 boxes,+8 boxes (+57%)
+Detections,TỔNG CỘNG TẤT CẢ SCENE,109 boxes,59 boxes,+50 boxes

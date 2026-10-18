@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compression Studio · YOLO26 × BDD100K MVP Demo</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
+<script src="demo_data/demo_bundle.js?v=cpu4-live-scenes"></script>
+<style>
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --ink: #0f172a;
+  --ink-secondary: #475569;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --accent: #4f46e5;
+  --accent-light: #6366f1;
+  --accent-dark: #3730a3;
+  --soft: #eef2ff;
+  --green: #10b981;
+  --green-bg: #ecfdf5;
+  --green-dark: #047857;
+  --amber: #f59e0b;
+  --amber-bg: #fffbeb;
+  --red: #ef4444;
+  --red-bg: #fef2f2;
+  --cyan: #06b6d4;
+  --cyan-bg: #ecfeff;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 3px rgba(15,23,42,.06);
+  --shadow-md: 0 4px 16px -2px rgba(15,23,42,.08), 0 2px 6px -1px rgba(15,23,42,.04);
+  --shadow-lg: 0 12px 32px -4px rgba(15,23,42,.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header & Nav */
+header.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #2563eb);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(79,70,229,.35);
+}
+.brand-title {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.3px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: var(--soft);
+  color: var(--accent);
+  border-radius: 6px;
+  border: 1px solid rgba(79,70,229,.2);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-link {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.nav-link:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.nav-link.active {
+  background: var(--soft);
+  color: var(--accent);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #2563eb);
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(79,70,229,.25);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--accent-dark), #1d4ed8);
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79,70,229,.35);
+}
+.btn-outline-primary {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.btn-outline-primary:hover {
+  background: var(--soft);
+}
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* Server Status Chip */
+.server-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+.status-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16,185,129,0.6);
+}
+
+/* Layout container */
+main.app-main {
+  flex: 1;
+  max-width: 1420px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* KPI Banner */
+.kpi-banner {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.cyan::before { background: var(--cyan); }
+
+.kpi-header {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+.kpi-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.kpi-badge.ok { background: var(--green-bg); color: var(--green-dark); }
+.kpi-badge.accent { background: var(--soft); color: var(--accent); }
+.kpi-footer {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Studio Section */
+.studio-container {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Sidebar Controls */
+.studio-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-right: 1px solid var(--line);
+  padding-right: 20px;
+}
+.control-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.control-title {
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Scene Selector */
+.scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scene-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.scene-item:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.scene-item.active {
+  background: var(--soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.scene-thumb {
+  width: 48px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #cbd5e1;
+}
+.scene-info {
+  flex: 1;
+  min-width: 0;
+}
+.scene-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scene-tag {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* Custom upload box */
+.upload-box {
+  border: 2px dashed #93c5fd;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  background: #eff6ff;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.upload-box:hover {
+  border-color: var(--accent);
+  background: var(--soft);
+}
+.upload-box span {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+/* Model Selectors */
+.model-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.select-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.select-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+select.model-select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+}
+select.model-select:focus {
+  border-color: var(--accent);
+}
+.model-path {
+  color: var(--muted);
+  font: 10px/1.4 monospace;
+  overflow-wrap: anywhere;
+}
+
+/* Quick Compare Presets */
+.preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.preset-chip {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.preset-chip:hover {
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Sliders & Toggles */
+.range-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.range-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Category Filters */
+.class-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.class-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+.class-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Stage Canvas Area */
+.studio-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.stage-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.view-modes {
+  display: flex;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: 8px;
+  gap: 2px;
+}
+.view-mode-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.view-mode-btn.active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Canvas Viewport */
+.canvas-viewport {
+  position: relative;
+  background: #090d16;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #1e293b;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Split View Containers */
+.split-view-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  background: #111827;
+  padding: 6px;
+}
+.canvas-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #090d16;
+  border-radius: 8px;
+}
+
+/* Pixel-perfect image frame */
+.image-stage-wrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+.image-stage-wrap img.source-image {
+  display: block;
+  max-width: 100%;
+  max-height: 500px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+}
+.image-stage-wrap svg.detection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: all;
+}
+
+.panel-model-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.panel-stat-pill {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  color: #94a3b8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.panel-stat-pill strong {
+  color: #38bdf8;
+}
+
+/* Slider View (Before/After) */
+.slider-view-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #090d16;
+  overflow: hidden;
+  padding: 6px;
+}
+.slider-stage {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  user-select: none;
+  border-radius: 8px;
+}
+.slider-stage img.source-image {
+  display: block;
+  max-width: 100%;
+  max-height: 500px;
+  width: auto;
+  height: auto;
+  user-select: none;
+}
+.slider-layer-base { position: relative; line-height: 0; }
+.slider-layer-clip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  overflow: hidden;
+  z-index: 5;
+}
+.slider-inner-fixed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  line-height: 0;
+}
+.slider-layer-base > svg.detection-overlay,
+.slider-inner-fixed > svg.detection-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.slider-inner-fixed > img.source-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+.slider-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: #38bdf8;
+  z-index: 15;
+  cursor: ew-resize;
+  transform: translateX(-50%);
+  touch-action: none;
+}
+.slider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 3px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 14px rgba(0,0,0,0.6);
+  color: #0f172a;
+}
+
+/* Interactive SVG Bounding Box Styling */
+.bbox-rect {
+  fill-opacity: 0.12;
+  stroke-width: 2.2;
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+.bbox-rect:hover {
+  fill-opacity: 0.35;
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+.bbox-label {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px;
+  font-weight: 750;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  pointer-events: none;
+}
+
+/* Live AI Scanning Indicator */
+.ai-loading-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(9, 13, 22, 0.88);
+  backdrop-filter: blur(6px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.ai-loading-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.scanner-laser {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, transparent);
+  box-shadow: 0 0 16px #38bdf8;
+  animation: scanDown 1.6s infinite ease-in-out alternate;
+}
+@keyframes scanDown {
+  0% { top: 5%; }
+  100% { top: 95%; }
+}
+.ai-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(255,255,255,0.15);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Stage Bottom Metrics Row */
+.stage-telemetry {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 12px;
+}
+.telemetry-card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.telemetry-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.telemetry-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.telemetry-primary {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.telemetry-secondary {
+  font-size: 12px;
+  color: var(--ink-secondary);
+  font-weight: 600;
+}
+
+/* Benchmark Explorer Section */
+.section-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.section-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Benchmark Table */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+table.bench-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+table.bench-table th {
+  background: var(--surface-2);
+  color: var(--ink-secondary);
+  font-weight: 700;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+table.bench-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  white-space: nowrap;
+}
+table.bench-table tr:last-child td {
+  border-bottom: none;
+}
+table.bench-table tr.highlight-row {
+  background: rgba(79, 70, 229, 0.04);
+}
+table.bench-table tr.highlight-row td:first-child {
+  border-left: 3px solid var(--accent);
+}
+table.bench-table tr:hover {
+  background: rgba(241, 245, 249, 0.7);
+}
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-pill.baseline { background: #e2e8f0; color: #334155; }
+.badge-pill.candidate { background: var(--green-bg); color: var(--green-dark); }
+.badge-pill.qat { background: var(--amber-bg); color: #b45309; }
+.badge-pill.nano { background: var(--soft); color: var(--accent); }
+
+/* Progress bar inside table cell */
+.mini-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mini-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+  max-width: 60px;
+}
+.mini-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+/* Pre-Labeling Export Drawer / Modal */
+.export-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+}
+.json-preview {
+  background: #0f172a;
+  color: #38bdf8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  padding: 14px;
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  white-space: pre;
+}
+
+/* Gallery */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.gallery-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.gallery-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent);
+}
+.gallery-img-wrap {
+  height: 200px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+.gallery-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.gallery-info {
+  padding: 12px 14px;
+}
+.gallery-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.gallery-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* Toast */
+.toast-msg {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+.toast-msg.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Modal lightbox for charts */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.modal-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+}
+.modal-body img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .studio-container { grid-template-columns: 1fr; }
+  .studio-sidebar { border-right: none; border-bottom: 1px solid var(--line); padding-bottom: 20px; padding-right: 0; }
+  .kpi-banner { grid-template-columns: repeat(2, 1fr); }
+  .gallery-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .kpi-banner { grid-template-columns: 1fr; }
+  .gallery-grid { grid-template-columns: 1fr; }
+  .split-view-container { grid-template-columns: 1fr; }
+  .export-card { grid-template-columns: 1fr; }
+  .stage-telemetry { grid-template-columns: 1fr; }
+}
+</style>
+<link rel="stylesheet" href="demo_data/hardware_benchmark.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="brand-group">
+    <div class="brand-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+      </svg>
+    </div>
+    <div class="brand-title">
+      Compression Studio
+      <span class="brand-badge">BDD100K Autonomous Driving</span>
+    </div>
+  </div>
+
+  <nav class="nav-links">
+    <a class="nav-link active" href="#studio">Phòng Thử Nghiệm</a>
+    <a class="nav-link" href="#hardware">Benchmark Hardware</a>
+    <a class="nav-link" href="#benchmarks">Bảng Đối Chứng (6 Cấu Hình)</a>
+    <a class="nav-link" href="#ptq-vs-qat">PTQ vs QAT</a>
+    <a class="nav-link" href="#evidence">Bằng Chứng Kiểm Toán</a>
+  </nav>
+
+  <div class="header-actions">
+    <div class="server-status-chip" id="serverStatusChip" title="Trạng thái máy chủ suy luận Python AI">
+      <span class="status-dot" id="serverStatusDot"></span>
+      <span id="serverStatusText">Kiểm tra server AI...</span>
+    </div>
+
+    <a class="btn btn-outline-primary" href="benchmark_comparison.md" target="_blank" title="Xem báo cáo chi tiết Markdown">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span>Báo Cáo MD</span>
+    </a>
+    <a class="btn btn-primary" href="model-compression-yolo26-dashboard.html" title="Chuyển sang Bảng Quản Trị & Nghiệm Thu">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+      <span>Bảng Quản Trị & Nghiệm Thu</span>
+    </a>
+  </div>
+</header>
+
+<main class="app-main">
+
+  <!-- KPI Banner -->
+  <section class="kpi-banner">
+    <div class="kpi-card cyan">
+      <div class="kpi-header">
+        <span>Tỷ Lệ Nén Trọng Số</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+      </div>
+      <div class="kpi-value-row">
+        <div class="kpi-value" id="compressionKpi">—</div>
+        <span class="kpi-badge ok">Tiết kiệm lưu trữ</span>
+      </div>
+      <div class="kpi-footer" id="compressionKpiDetail">Đang tải số đo artifact</div>
+    </div>
+
+    <div class="kpi-card green">
+      <div class="kpi-header">
+        <span>Tăng Tốc Suy Luận (CPU)</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+      </div>
+      <div class="kpi-value-row">
+        <div class="kpi-value" id="latencyKpi">—</div>
+        <span class="kpi-badge ok"><span id="latencyFps">— FPS</span></span>
+      </div>
+      <div class="kpi-footer" id="latencyKpiDetail">Đang tải phép đo CPU 4 luồng</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span>Bảo Toàn mAP50–95</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+      </div>
+      <div class="kpi-value-row">
+        <div class="kpi-value" id="retentionKpi">Chưa đo</div>
+        <span class="kpi-badge" id="retentionKpiDrop">Chờ baseline FP16</span>
+      </div>
+      <div class="kpi-footer" id="retentionKpiDetail">Chờ accuracy baseline FP16 trên 10.000 ảnh</div>
+    </div>
+
+    <div class="kpi-card amber">
+      <div class="kpi-header">
+        <span>Precision Trên Tập Validation</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+      </div>
+      <div class="kpi-value-row">
+        <div class="kpi-value">73.69%</div>
+        <span class="kpi-badge accent">Tại max-F1</span>
+      </div>
+      <div class="kpi-footer">Chưa đo mức tiết kiệm thao tác gán nhãn</div>
+    </div>
+  </section>
+
+  <!-- Interactive Studio Section -->
+  <section class="studio-container" id="studio">
+    
+    <!-- Controls Sidebar -->
+    <aside class="studio-sidebar">
+      
+      <!-- Scene Selection -->
+      <div class="control-block">
+        <div class="control-title">
+          <span>1. Tình Huống Giao Thông</span>
+          <span style="font-size:11px;color:var(--accent)" id="sceneBadge">5 Scenes</span>
+        </div>
+        <div class="scene-list" id="sceneListContainer">
+          <!-- Populated via JS -->
+        </div>
+
+        <label class="upload-box" id="uploadLabel">
+          <input type="file" id="imageUploader" accept="image/*" style="display:none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:4px;color:var(--accent)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <div><span>Tải lên ảnh của bạn</span></div>
+          <small style="font-size:11px;color:#1e40af;font-weight:600">🤖 Chạy trực tiếp qua YOLO26 AI Server</small>
+        </label>
+      </div>
+
+      <!-- Models to Compare -->
+      <div class="control-block">
+        <div class="control-title">2. Mô Hình Đối Chứng</div>
+        
+        <div class="preset-chips">
+          <button class="preset-chip" onclick="applyPreset('ptq')">FP16 vs PTQ INT8</button>
+          <button class="preset-chip" onclick="applyPreset('qat')">PTQ vs QAT INT8</button>
+          <button class="preset-chip" onclick="applyPreset('edge')">YOLO26m vs 26s</button>
+        </div>
+
+        <div class="model-select-group">
+          <div class="select-wrapper">
+            <span class="select-label">
+              <span>MÔ HÌNH A (TRÁI)</span>
+              <span id="labelAInfo" style="color:var(--muted)">FP16 · 42MiB</span>
+            </span>
+            <select class="model-select" id="modelSelectA">
+              <option value="" selected>Chọn mô hình A để chạy</option>
+              <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
+              <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
+              <option value="yolo26m_qat_int8">YOLO26m QAT INT8 (OpenVINO)</option>
+              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
+              <option value="yolo26s_fp32_pack">YOLO26s FP16 (từ fp32.pt)</option>
+              <option value="yolo26s_fp16_pt">YOLO26s FP16 package (.pt)</option>
+              <option value="yolo26s_fp16_ov">YOLO26s FP16 (OpenVINO)</option>
+              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
+              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
+              <option value="yolo26s_int8">YOLO26s QAT INT8 640 (10MiB)</option>
+            </select>
+            <small class="model-path" id="modelPathA"></small>
+          </div>
+
+          <div class="select-wrapper">
+            <span class="select-label">
+              <span>MÔ HÌNH B (PHẢI)</span>
+              <span id="labelBInfo" style="color:var(--green-dark)">INT8 · 20.5MiB</span>
+            </span>
+            <select class="model-select" id="modelSelectB">
+              <option value="" selected>Chọn mô hình B để chạy</option>
+              <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
+              <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
+              <option value="yolo26m_qat_int8">YOLO26m QAT INT8 (OpenVINO)</option>
+              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
+              <option value="yolo26s_fp32_pack">YOLO26s FP16 (từ fp32.pt)</option>
+              <option value="yolo26s_fp16_pt">YOLO26s FP16 package (.pt)</option>
+              <option value="yolo26s_fp16_ov">YOLO26s FP16 (OpenVINO)</option>
+              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
+              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
+              <option value="yolo26s_int8">YOLO26s QAT INT8 640 (10MiB)</option>
+            </select>
+            <small class="model-path" id="modelPathB"></small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detection Threshold Slider -->
+      <div class="control-block">
+        <div class="control-title">
+          <span>3. Ngưỡng Tự Tin (Conf)</span>
+          <span style="font-family:monospace;color:var(--accent)" id="confValueText">0.25</span>
+        </div>
+        <div class="range-container">
+          <input type="range" id="confSlider" min="0.10" max="0.80" step="0.05" value="0.25">
+          <div class="range-row">
+            <small>0.10 (Bao quát)</small>
+            <small>0.80 (Chặt chẽ)</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Class Filters -->
+      <div class="control-block">
+        <div class="control-title">
+          <span>4. Lọc Lớp Đối Tượng</span>
+          <button class="btn btn-sm" style="padding:1px 6px;font-size:10px" onclick="toggleAllClasses()">Tất cả</button>
+        </div>
+        <div class="class-filter-grid" id="classFilterContainer">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Stage View -->
+    <div class="studio-stage">
+      
+      <!-- Toolbar -->
+      <div class="stage-toolbar">
+        <div>
+          <h2 style="font-size:16px;font-weight:750" id="currentSceneTitle">Đô Thị Ban Ngày (City Daytime)</h2>
+          <span style="font-size:12px;color:var(--muted)" id="currentSceneDesc">Giao lộ mật độ cao, xe buýt, ô tô, người đi bộ và đèn giao thông.</span>
+        </div>
+
+        <div class="view-modes">
+          <button class="view-mode-btn active" id="modeBtnSplit" onclick="setViewMode('split')">Song Song (Split)</button>
+          <button class="view-mode-btn" id="modeBtnSlider" onclick="setViewMode('slider')">Kéo So Sánh (Slider)</button>
+          <button class="view-mode-btn" id="modeBtnToggle" onclick="setViewMode('toggle')">Chuyển Đổi A/B</button>
+        </div>
+      </div>
+
+      <!-- Canvas Viewport -->
+      <div class="canvas-viewport" id="canvasViewport">
+        
+        <!-- Live AI Inference Spinner Overlay -->
+        <div class="ai-loading-overlay" id="aiLoadingOverlay">
+          <div class="scanner-laser"></div>
+          <div class="ai-spinner"></div>
+          <strong style="font-size:15px;letter-spacing:0.3px">Đang chạy mô hình AI trực tiếp...</strong>
+          <small style="color:#94a3b8" id="aiLoadingSubtext">Xử lý hình ảnh qua PyTorch & OpenVINO INT8</small>
+        </div>
+
+        <!-- Mode 1: Split View (Default) -->
+        <div class="split-view-container" id="splitViewContainer">
+          
+          <!-- Panel A -->
+          <div class="canvas-panel" id="panelA">
+            <div class="panel-model-badge" id="badgeA">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#38bdf8"></span>
+              <span id="panelTitleA">YOLO26m FP16 (Baseline)</span>
+            </div>
+            <div class="image-stage-wrap" id="stageWrapA">
+              <img class="source-image" id="imgA" alt="Scene A">
+              <svg class="detection-overlay" id="overlayA"></svg>
+            </div>
+            <div class="panel-stat-pill" id="statPillA">
+              Phát hiện: <strong id="boxCountA">0</strong> hộp · <span id="timeA">0ms</span>
+            </div>
+          </div>
+
+          <!-- Panel B -->
+          <div class="canvas-panel" id="panelB">
+            <div class="panel-model-badge" id="badgeB">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399"></span>
+              <span id="panelTitleB">YOLO26m PTQ INT8 (OpenVINO)</span>
+            </div>
+            <div class="image-stage-wrap" id="stageWrapB">
+              <img class="source-image" id="imgB" alt="Scene B">
+              <svg class="detection-overlay" id="overlayB"></svg>
+            </div>
+            <div class="panel-stat-pill" id="statPillB">
+              Phát hiện: <strong id="boxCountB">0</strong> hộp · <span id="timeB">0ms</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Mode 2: Slider View (Before/After) -->
+        <div class="slider-view-wrapper" id="sliderViewWrapper" style="display:none">
+          <div class="slider-stage" id="sliderStage">
+            <!-- Base Layer (Model B) -->
+            <div class="slider-layer-base" id="sliderLayerBase">
+              <img class="source-image" id="sliderImgA" alt="Layer Base">
+              <svg class="detection-overlay" id="sliderOverlayA"></svg>
+              <div class="panel-model-badge" id="sliderBadgeB" style="top:12px;right:12px;left:auto"></div>
+            </div>
+            <!-- Clipped Top Layer (Model A) -->
+            <div class="slider-layer-clip" id="sliderClip">
+              <div class="slider-inner-fixed" id="sliderInner">
+                <img class="source-image" id="sliderImgB" alt="Layer Clipped">
+                <svg class="detection-overlay" id="sliderOverlayB"></svg>
+              <div class="panel-model-badge" id="sliderBadgeA" style="top:12px;left:12px"></div>
+              </div>
+            </div>
+            <!-- Slider Divider -->
+            <div class="slider-divider" id="sliderDivider">
+              <div class="slider-handle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Telemetry Bottom Bar -->
+      <div class="stage-telemetry">
+        <div class="telemetry-card">
+          <span class="telemetry-label" id="speedupSourceLabel">Tăng Tốc So Với YOLO26m FP16 · 640×640</span>
+          <div class="telemetry-stats">
+            <div class="telemetry-primary" id="speedupDisplay">Chưa chọn</div>
+            <div class="telemetry-secondary">
+              <span id="telemetryTimeA">227.0 ms</span> ➔ <strong id="telemetryTimeB" style="color:var(--green-dark)">76.4 ms</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="telemetry-card">
+          <span class="telemetry-label">Dung Lượng Trọng Số Lưu Trữ</span>
+          <div class="telemetry-stats">
+            <div class="telemetry-primary" id="sizeDiffDisplay">-51.2%</div>
+            <div class="telemetry-secondary">
+              <span id="telemetrySizeA">42.0 MiB</span> ➔ <strong id="telemetrySizeB" style="color:var(--accent)">20.49 MiB</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="telemetry-card">
+          <span class="telemetry-label">Độ Trùng Khớp Phát Hiện (Overlap & Retention)</span>
+          <div class="telemetry-stats">
+            <div class="telemetry-primary" id="overlapDisplay" style="color:var(--green-dark)">—</div>
+            <div class="telemetry-secondary" id="overlapDetails" title="Retention = số hộp A khớp B / số hộp A đang hiển thị. Ghép 1–1 cùng lớp, IoU ≥ 0,5, ưu tiên IoU lớn nhất. Đây là độ đồng thuận giữa hai model, không phải độ chính xác so với nhãn thật.">
+              Giữ lại hộp A trong B · cùng lớp, IoU ≥ 0,5
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pre-labeling Export Panel -->
+      <div class="export-card">
+        <div>
+          <h3 style="font-size:14px;font-weight:750;margin-bottom:6px">Tác Vụ Tiền Gán Nhãn Tự Động (Auto Pre-Labeling)</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
+            Xuất trực tiếp kết quả suy luận của mô hình nén ra định dạng nhãn chuẩn BDD100K hoặc YOLO để nạp vào CVAT, Label Studio. Cần người kiểm tra nhãn trước khi sử dụng.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline-primary" id="copyLabelsBtn" disabled onclick="copyBDD100KJson()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Sao chép JSON BDD100K</span>
+            </button>
+            <button class="btn" id="downloadJsonBtn" disabled onclick="downloadBDD100KJson()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Tải file .json</span>
+            </button>
+            <button class="btn" id="downloadYoloBtn" disabled onclick="downloadYoloTxt()">
+              <span>Tải file YOLO .txt</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:11px;font-weight:700;color:var(--muted)">XEM TRƯỚC SCHEMA BDD100K EXPORT</span>
+            <span style="font-size:11px;color:var(--accent)" id="exportBoxesCount">0 đối tượng</span>
+          </div>
+          <div class="json-preview" id="jsonPreviewBox"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- Comprehensive Benchmark Explorer Section -->
+  <section class="section-panel" id="hardware">
+    <div class="section-header"><div>
+      <h2 class="section-title">ONNX Runtime Web &amp; WebGPU</h2>
+      <p class="section-subtitle">Benchmark ngay trên máy của bạn · CPU trình duyệt hoặc GPU qua WebGPU · 640×640 · p50 / p95 / FPS.</p>
+    </div><button class="btn btn-outline-primary" id="hwRefresh" type="button">Quét lại cấu hình</button></div>
+    <p id="hwHardware" class="section-subtitle" aria-live="polite">Đang đọc phần cứng…</p>
+    <p class="section-subtitle">ONNX Runtime Web chạy model ONNX ngay trong trình duyệt: WASM dùng CPU, WebGPU dùng GPU của máy mở trang. Hai chế độ này không gửi ảnh đến API suy luận Python. Chỉ bấm Chạy benchmark mới bắt đầu đo. Các runtime backend nằm trong nhóm nâng cao.</p>
+    <div class="hw-controls">
+      <label>Model<select id="hwModel"></select></label>
+      <label>Runtime<select id="hwEngine">
+        <optgroup label="Chạy trên máy của bạn · Trình duyệt">
+          <option value="wasm">ONNX Runtime Web · CPU (WASM)</option>
+          <option value="webgpu">ONNX Runtime Web · GPU (WebGPU)</option>
+        </optgroup>
+        <optgroup label="Nâng cao · Máy chạy backend Python">
+          <option value="pytorch">PyTorch · Backend</option><option value="onnxruntime">ONNX Runtime · Backend</option>
+          <option value="tensorrt">TensorRT · Backend NVIDIA</option><option value="openvino">OpenVINO · Backend</option>
+        </optgroup>
+      </select></label>
+      <label>Thiết bị<select id="hwDevice"></select></label>
+      <label>Số luồng CPU (WASM)<select id="hwThreads" aria-describedby="hwThreadInfo"><option value="1">1 luồng</option></select></label>
+      <label>Precision<select id="hwPrecision"><option>FP32</option><option selected>FP16</option><option>INT8</option></select></label>
+      <label>Ảnh benchmark<select id="hwImage"></select></label>
+      <label>Ảnh của bạn<input id="hwUpload" type="file" accept="image/jpeg,image/png,image/webp"></label>
+      <label>Warmup (0–10)<input id="hwWarmup" type="number" min="0" max="10" value="3" step="1"></label>
+      <label>Lượt đo (1–50)<input id="hwRepeats" type="number" min="1" max="50" value="10" step="1"></label>
+      <label>Confidence<input id="hwConf" type="number" min="0" max="1" value="0.25" step="0.05"></label>
+    </div>
+    <p id="hwThreadInfo" class="section-subtitle" aria-live="polite"></p>
+    <p id="hwPrecisionInfo" class="section-subtitle" aria-live="polite">Precision: FP32 · FP16 · INT8.</p>
+    <div class="hw-actions">
+      <button id="hwRun" class="btn btn-primary" type="button" disabled>Chạy benchmark</button>
+      <button id="hwExport" class="btn btn-outline-primary" type="button" disabled>Xuất kết quả JSON</button>
+    </div>
+    <p id="hwStatus" role="status" class="section-subtitle">Chưa có kết quả.</p>
+    <figure class="hw-preview-wrap">
+      <div class="hw-preview-stage">
+        <img id="hwPreview" alt="Ảnh dùng cho benchmark" width="1280" height="720">
+        <svg id="hwPreviewBoxes" role="img" aria-label="Box phát hiện với tên lớp và confidence" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <figcaption id="hwPreviewCaption" class="section-subtitle" aria-live="polite">Bấm Chạy benchmark để xem box phát hiện.</figcaption>
+    </figure>
+    <p class="section-subtitle">Phạm vi thời gian: tiền xử lý + truyền dữ liệu + suy luận + hậu xử lý; không gồm gửi HTTP, giải mã ảnh, tải model và warmup. FPS = 1000 / thời gian trung bình. Đây là microbenchmark một ảnh, không phải mAP hay throughput theo batch. Browser dùng Canvas, backend dùng OpenCV nên có thể khác nhẹ kết quả phát hiện. INT8 dùng graph PTQ/QAT có sẵn; TensorRT FP16 cho phép một số lớp giữ FP32.</p>
+    <div class="hw-table-wrap"><table class="hw-table"><thead><tr><th>Model / ảnh</th><th>Runtime / thiết bị</th><th>Precision</th><th>Luồng CPU</th><th>p50</th><th>p95</th><th>FPS</th><th>Hộp</th><th>Lượt</th></tr></thead>
+      <tbody id="hwResults"><tr><td colspan="9">Bấm Chạy benchmark để đo cấu hình đã chọn.</td></tr></tbody></table></div>
+    <details><summary>Thông số và nguồn gốc phép đo gần nhất</summary><pre id="hwDetails" class="hw-details">Chưa đo.</pre></details>
+  </section>
+
+  <section class="section-panel" id="benchmarks">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Bảng So Sánh Benchmark Tái Lập (6 Cấu Hình)
+        </h2>
+        <div class="section-subtitle">Accuracy: 10.000 ảnh BDD100K Val. Latency: 50 ảnh × 3 lượt, CPU 4 luồng, 640×640; máy dùng chung, kết quả phụ thuộc tải tại thời điểm đo. Baseline PyTorch chạy FP16 (trọng số và input float16). <span id="benchmarkAccuracyNote">Accuracy baseline FP16 và Δ pp đang chờ đánh giá lại đủ validation.</span> Dung lượng tính theo artifact thực tế. <a href="benchmark_comparison.csv">Tải bảng CSV</a></div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="filterTable('all')">Tất cả (6)</button>
+        <button class="btn btn-sm" onclick="filterTable('YOLO26m')">YOLO26m</button>
+        <button class="btn btn-sm" onclick="filterTable('YOLO26s')">YOLO26s</button>
+        <button class="btn btn-sm" onclick="filterTable('INT8')">Chỉ INT8</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="bench-table" id="benchmarkTable">
+        <thead>
+          <tr>
+            <th>Họ & Mô hình</th>
+            <th>Loại</th>
+            <th>Độ phân giải</th>
+            <th>Dung lượng (MiB)</th>
+            <th>mAP@50–95</th>
+            <th>Suy giảm (Δ pp)</th>
+            <th>mAP@50</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>Latency (ms)</th>
+            <th>Tốc độ (FPS)</th>
+            <th>Tăng tốc<br><small id="benchmarkSpeedupReference">vs YOLO26m 640</small></th>
+          </tr>
+        </thead>
+        <tbody id="benchmarkTableBody">
+          <!-- Populated via JS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PTQ vs QAT Deep Dive Section -->
+  <section class="section-panel" id="ptq-vs-qat">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
+          Phân Tích Chuyên Sâu: PTQ vs QAT Trên YOLO26m
+        </h2>
+        <div class="section-subtitle">Đánh giá thực nghiệm giữa Lượng tử hóa sau huấn luyện (PTQ) và Lượng tử hóa có nhận thức (QAT).</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      
+      <!-- PTQ Card -->
+      <div style="background:var(--green-bg);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:16px;font-weight:800;color:var(--green-dark)">YOLO26m PTQ INT8 (Đối chứng)</h3>
+          <span class="badge-pill candidate">Ứng Viên Cần Kiểm Chứng</span>
+        </div>
+        <ul style="font-size:13px;line-height:1.7;color:#064e3b;margin-left:18px;margin-bottom:14px">
+          <li id="ptqAccuracySummary">mAP@50–95 INT8: 32.76%; chờ accuracy baseline FP16 để tính Δ pp.</li>
+          <li><strong>mAP@50: 57.13%</strong> — Kết quả INT8 trên validation.</li>
+          <li><strong>Precision tại max-F1: 73.69%</strong> — Đo trên tập validation; không phải precision tại ngưỡng confidence của demo.</li>
+          <li id="ptqLatencySummary">Đang tải latency đo lại theo cùng cấu hình CPU.</li>
+          <li><strong>Thời gian đóng gói:</strong> Nhanh chóng qua OpenVINO NNCF, không cần huấn luyện lại nặng nề.</li>
+        </ul>
+        <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid rgba(16,185,129,.2);font-size:12px">
+          <strong>Kết luận:</strong> PTQ giữ mAP tốt hơn QAT trong các log hiện có; còn cần kiểm chứng quy trình và tiêu chí nghiệm thu.
+        </div>
+      </div>
+
+      <!-- QAT Card -->
+      <div style="background:var(--amber-bg);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:16px;font-weight:800;color:#92400e">YOLO26m QAT INT8 (Đối chứng)</h3>
+          <span class="badge-pill qat">Phương Án Nghiên Cứu</span>
+        </div>
+        <ul style="font-size:13px;line-height:1.7;color:#78350f;margin-left:18px;margin-bottom:14px">
+          <li id="qatAccuracySummary">mAP@50–95 INT8: 31.45%; chờ accuracy baseline FP16 để tính Δ pp.</li>
+          <li><strong>mAP@50: 55.49%</strong> — Kết quả INT8 trên validation.</li>
+          <li><strong>Precision: 63.32%</strong> — Thấp hơn PTQ (73.69%) tại điểm max-F1; chưa có đánh giá riêng vật thể nhỏ.</li>
+          <li><strong>Recall: 51.72%</strong> — Cao hơn nhẹ (+0.73 pp), bù đắp cho việc phát hiện nhiều ứng viên box hơn.</li>
+          <li id="qatLatencySummary">Đang tải latency đo lại theo cùng cấu hình CPU.</li>
+        </ul>
+        <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid rgba(245,158,11,.2);font-size:12px">
+          <strong>Lý do suy giảm:</strong> Chưa có bằng chứng xác định nguyên nhân suy giảm. Cần log huấn luyện/calibration và phân tích lỗi theo lớp.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Empirical Evidence Gallery -->
+  <section class="section-panel" id="evidence">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          Biểu Đồ Kiểm Toán & Bằng Chứng Thực Nghiệm
+        </h2>
+        <div class="section-subtitle">Ảnh trích xuất trực tiếp từ nhật ký đánh giá 10.000 khung hình của pipeline. Bấm vào ảnh để phóng to.</div>
+      </div>
+    </div>
+
+    <div class="gallery-grid">
+      
+      <div class="gallery-card" onclick="openLightbox('demo_data/charts/baseline_BoxPR_curve.png', 'Đường Cong Precision - Recall: Baseline lịch sử')">
+        <div class="gallery-img-wrap">
+          <img src="demo_data/charts/baseline_BoxPR_curve.png" alt="Baseline PR Curve">
+        </div>
+        <div class="gallery-info">
+          <div class="gallery-title">Đường Cong PR · Baseline lịch sử</div>
+          <div class="gallery-desc">mAP@50 = 57.30%, mAP@50-95 = 33.06%</div>
+        </div>
+      </div>
+
+      <div class="gallery-card" onclick="openLightbox('demo_data/charts/int8_BoxPR_curve.png', 'Đường Cong Precision - Recall: INT8 PTQ')">
+        <div class="gallery-img-wrap">
+          <img src="demo_data/charts/int8_BoxPR_curve.png" alt="INT8 PR Curve">
+        </div>
+        <div class="gallery-info">
+          <div class="gallery-title">Đường Cong PR · INT8 PTQ</div>
+          <div class="gallery-desc">mAP@50 = 57.13%, mAP@50-95 = 32.76% (kết quả INT8)</div>
+        </div>
+      </div>
+
+      <div class="gallery-card" onclick="openLightbox('demo_data/charts/int8_confusion_matrix.png', 'Ma Trận Nhầm Lẫn Chuẩn Hóa: INT8 PTQ')">
+        <div class="gallery-img-wrap">
+          <img src="demo_data/charts/int8_confusion_matrix.png" alt="INT8 Confusion Matrix">
+        </div>
+        <div class="gallery-info">
+          <div class="gallery-title">Ma Trận Nhầm Lẫn (Normalized)</div>
+          <div class="gallery-desc">Độ chính xác từng lớp: car, bus, truck, person, bike...</div>
+        </div>
+      </div>
+
+      <div class="gallery-card" onclick="openLightbox('demo_data/charts/int8_BoxF1_curve.png', 'Đường Cong F1 - Confidence: INT8 PTQ')">
+        <div class="gallery-img-wrap">
+          <img src="demo_data/charts/int8_BoxF1_curve.png" alt="INT8 F1 Curve">
+        </div>
+        <div class="gallery-info">
+          <div class="gallery-title">Đường Cong F1 vs Confidence</div>
+          <div class="gallery-desc">F1 đạt đỉnh tại ngưỡng conf ~0.25 - 0.35</div>
+        </div>
+      </div>
+
+      <div class="gallery-card" onclick="openLightbox('demo_data/charts/baseline_confusion_matrix.png', 'Ma Trận Nhầm Lẫn: Baseline lịch sử')">
+        <div class="gallery-img-wrap">
+          <img src="demo_data/charts/baseline_confusion_matrix.png" alt="Baseline Confusion Matrix">
+        </div>
+        <div class="gallery-info">
+          <div class="gallery-title">Ma Trận Nhầm Lẫn · Baseline lịch sử</div>
+          <div class="gallery-desc">Cơ sở đối chiếu ma trận nhầm lẫn gốc</div>
+        </div>
+      </div>
+
+      <div class="gallery-card" onclick="location.href='model-compression-yolo26-dashboard.html#evaluation'">
+        <div class="gallery-img-wrap" style="background:var(--soft);color:var(--accent);display:flex;flex-direction:column;gap:8px;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <span style="font-weight:700;font-size:13px">Xem Bảng Kiểm Toán Tiêu Chí</span>
+        </div>
+        <div class="gallery-info">
+          <div class="gallery-title">Tiêu Chí Nghiệm Thu Định Lượng</div>
+          <div class="gallery-desc">Xem tiêu chí đạt/chưa đạt và các bằng chứng còn thiếu trong Dashboard</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Lightbox Modal -->
+<div class="modal-overlay" id="lightboxModal" onclick="closeLightbox()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <strong id="modalTitle" style="font-size:14px">Biểu Đồ Kiểm Toán</strong>
+      <button class="btn btn-sm" onclick="closeLightbox()">Đóng</button>
+    </div>
+    <div class="modal-body">
+      <img id="modalImg" src="" alt="Zoomed Chart">
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast-msg" id="toastBox">Đã sao chép!</div>
+
+<script>
+// Class palette
+const CLASS_COLORS = {
+  'car': '#06b6d4',          // Cyan
+  'bus': '#3b82f6',          // Blue
+  'truck': '#8b5cf6',        // Violet
+  'person': '#10b981',       // Emerald
+  'rider': '#34d399',        // Light Green
+  'bike': '#14b8a6',         // Teal
+  'motor': '#f97316',        // Orange
+  'train': '#ec4899',        // Pink
+  'traffic light': '#f59e0b', // Amber
+  'traffic sign': '#ef4444'   // Red
+};
+
+// Benchmark Data
+const BENCHMARK_DATA = window.DEMO_DATA?.benchmarks || [];
+
+// App State
+let demoData = window.DEMO_DATA || null;
+let currentSceneId = 'scene_01';
+let currentModelA = '';
+let currentModelB = '';
+let currentConf = 0.25;
+let currentViewMode = 'split'; // split, slider, toggle
+let selectedToggleModel = 'A';
+let enabledClasses = new Set(Object.keys(CLASS_COLORS));
+let sliderPercent = 50;
+let isDraggingSlider = false;
+let isServerOnline = false;
+const liveSceneRequests = new Map();
+let inferenceQueue = Promise.resolve();
+
+// DOM helper
+const $ = id => document.getElementById(id);
+
+function showToast(msg) {
+  const t = $('toastBox');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Check Backend AI Server Status
+async function checkServerStatus() {
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'online') {
+        isServerOnline = true;
+        $('serverStatusDot').classList.add('online');
+        $('serverStatusText').textContent = 'AI Server Online (Live)';
+        $('serverStatusChip').style.background = '#ecfdf5';
+        $('serverStatusChip').style.borderColor = '#10b981';
+        return;
+      }
+    }
+  } catch(e) {
+    // server not reachable
+  }
+  isServerOnline = false;
+  $('serverStatusDot').classList.remove('online');
+  $('serverStatusText').textContent = 'Offline (Chạy python3 run_demo.py)';
+}
+
+function updateInferenceStatus() {
+  const pending = [...new Set([currentModelA, currentModelB])].filter(key =>
+    key && liveSceneRequests.has(`${currentSceneId}:${key}`));
+  $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} trên CPU (4 luồng)...`;
+}
+
+function inferScene(scene, modelKeys) {
+  if (!isServerOnline) return Promise.resolve();
+  const models = [...new Set(modelKeys)].filter(key => demoData.models[key] && !scene.live_models?.has(key));
+  return Promise.all(models.map(modelKey => {
+    const requestKey = `${scene.id}:${modelKey}`;
+    if (liveSceneRequests.has(requestKey)) return liveSceneRequests.get(requestKey);
+
+    // The server accepts one inference at a time; discard obsolete queued selections.
+    const request = inferenceQueue.then(async () => {
+      try {
+        if (currentSceneId !== scene.id || ![currentModelA, currentModelB].includes(modelKey)) return;
+        const res = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey] })
+        });
+        const result = await res.json();
+        if (!res.ok || result.status !== 'success') throw new Error(result.message || `HTTP ${res.status}`);
+        const detection = result.detections[modelKey];
+        if (!detection) throw new Error('Server không trả về kết quả model đã chọn');
+        if (!demoData.detections[modelKey]) demoData.detections[modelKey] = {};
+        demoData.detections[modelKey][scene.id] = {
+          scene_id: scene.id,
+          image_file: scene.file,
+          width: result.width,
+          height: result.height,
+          ...detection
+        };
+        if (!scene.live_models) scene.live_models = new Set();
+        scene.live_models.add(modelKey);
+      } catch (err) {
+        console.warn('Live inference failed:', err);
+        if (currentSceneId === scene.id && [currentModelA, currentModelB].includes(modelKey)) {
+          showToast(`Không thể chạy ${demoData.models[modelKey].name}: ${err.message}. Chọn lại model để thử lại.`);
+        }
+      } finally {
+        liveSceneRequests.delete(requestKey);
+        if (currentSceneId === scene.id) renderBoundingBoxes();
+        updateInferenceStatus();
+      }
+    });
+    inferenceQueue = request;
+    liveSceneRequests.set(requestKey, request);
+    updateInferenceStatus();
+    return request;
+  }));
+}
+
+function selectModel(side, modelKey) {
+  if (side === 'A') currentModelA = modelKey;
+  else currentModelB = modelKey;
+  updateSceneView();
+  const scene = demoData.scenes.find(s => s.id === currentSceneId);
+  return inferScene(scene, [modelKey]);
+}
+
+// Initialize Application
+async function initApp() {
+  if (!demoData) {
+    console.warn("DEMO_DATA bundle not found");
+    return;
+  }
+
+  // Render Scene List
+  renderSceneList();
+
+  // Render Class Filters
+  const filterEl = $('classFilterContainer');
+  filterEl.innerHTML = Object.keys(CLASS_COLORS).map(cls => `
+    <label class="class-check">
+      <input type="checkbox" value="${cls}" checked onchange="toggleClass('${cls}', this.checked)">
+      <span class="class-color-dot" style="background:${CLASS_COLORS[cls]}"></span>
+      <span>${cls}</span>
+    </label>
+  `).join('');
+
+  // Setup Event Listeners
+  $('modelSelectA').addEventListener('change', e => {
+    void selectModel('A', e.target.value);
+  });
+  $('modelSelectB').addEventListener('change', e => {
+    void selectModel('B', e.target.value);
+  });
+  $('confSlider').addEventListener('input', e => {
+    currentConf = parseFloat(e.target.value);
+    $('confValueText').textContent = currentConf.toFixed(2);
+    renderBoundingBoxes();
+  });
+
+  // Setup slider dragging
+  setupSliderInteraction();
+
+  // Custom Image Upload listener
+  $('imageUploader').addEventListener('change', handleCustomImageUpload);
+
+  // Render Benchmark Table
+  renderBenchmarkTable(BENCHMARK_DATA);
+  updateBenchmarkSummary();
+
+  updateSceneView();
+  await checkServerStatus();
+  void inferScene(demoData.scenes.find(s => s.id === currentSceneId), [currentModelA, currentModelB]);
+}
+
+function renderSceneList() {
+  const listEl = $('sceneListContainer');
+  listEl.replaceChildren(...demoData.scenes.map(scene => {
+    const item = document.createElement('div');
+    item.className = `scene-item ${scene.id === currentSceneId ? 'active' : ''}`;
+    item.addEventListener('click', () => selectScene(scene.id));
+    const img = document.createElement('img');
+    img.className = 'scene-thumb';
+    img.src = scene.data_uri || scene.image_url;
+    img.alt = scene.title;
+    const info = document.createElement('div');
+    info.className = 'scene-info';
+    for (const [className, text] of [['scene-name', scene.title], ['scene-tag', scene.tag]]) {
+      const label = document.createElement('div');
+      label.className = className;
+      label.textContent = text;
+      info.append(label);
+    }
+    item.append(img, info);
+    return item;
+  }));
+  $('sceneBadge').textContent = `${demoData.scenes.length} Scenes`;
+}
+
+function selectScene(sceneId) {
+  currentSceneId = sceneId;
+  renderSceneList();
+  updateSceneView();
+  return inferScene(demoData.scenes.find(s => s.id === sceneId), [currentModelA, currentModelB]);
+}
+
+function applyPreset(preset) {
+  if (preset === 'ptq') {
+    currentModelA = 'yolo26m_fp32';
+    currentModelB = 'yolo26m_ptq_int8';
+  } else if (preset === 'qat') {
+    currentModelA = 'yolo26m_ptq_int8';
+    currentModelB = 'yolo26m_qat_int8';
+  } else if (preset === 'edge') {
+    currentModelA = 'yolo26m_ptq_int8';
+    currentModelB = 'yolo26s_ptq_int8';
+  }
+  $('modelSelectA').value = currentModelA;
+  $('modelSelectB').value = currentModelB;
+  updateSceneView();
+  void inferScene(demoData.scenes.find(s => s.id === currentSceneId), [currentModelA, currentModelB]);
+  showToast(`Đã áp dụng cấu hình so sánh: ${preset.toUpperCase()}`);
+}
+
+function toggleClass(cls, checked) {
+  if (checked) enabledClasses.add(cls);
+  else enabledClasses.delete(cls);
+  renderBoundingBoxes();
+}
+
+function toggleAllClasses() {
+  const allInputs = document.querySelectorAll('#classFilterContainer input');
+  const allChecked = enabledClasses.size === Object.keys(CLASS_COLORS).length;
+  allInputs.forEach(i => {
+    i.checked = !allChecked;
+    if (!allChecked) enabledClasses.add(i.value);
+    else enabledClasses.delete(i.value);
+  });
+  renderBoundingBoxes();
+}
+
+function setViewMode(mode) {
+  currentViewMode = mode;
+  ['Split', 'Slider', 'Toggle'].forEach(m => {
+    $(`modeBtn${m}`).classList.toggle('active', m.toLowerCase() === mode);
+  });
+
+  if (mode === 'split') {
+    $('splitViewContainer').style.display = 'grid';
+    $('sliderViewWrapper').style.display = 'none';
+    $('panelA').style.display = 'flex';
+    $('panelB').style.display = 'flex';
+  } else if (mode === 'slider') {
+    $('splitViewContainer').style.display = 'none';
+    $('sliderViewWrapper').style.display = 'flex';
+    requestAnimationFrame(syncSliderWidth);
+  } else if (mode === 'toggle') {
+    $('splitViewContainer').style.display = 'grid';
+    $('sliderViewWrapper').style.display = 'none';
+    selectedToggleModel = selectedToggleModel === 'A' ? 'B' : 'A';
+    $('panelA').style.display = selectedToggleModel === 'A' ? 'flex' : 'none';
+    $('panelB').style.display = selectedToggleModel === 'B' ? 'flex' : 'none';
+    showToast(`Đang hiển thị mô hình: ${selectedToggleModel}`);
+  }
+}
+
+function updateSceneView() {
+  const scene = demoData.scenes.find(s => s.id === currentSceneId) || demoData.scenes[0];
+  const imgSrc = scene.data_uri || scene.image_url;
+
+  // Update scene text
+  $('currentSceneTitle').textContent = scene.title;
+  $('currentSceneDesc').textContent = scene.desc;
+
+  // Set image sources and wait for load to ensure exact aspect ratio
+  const setupImg = (imgEl, callback) => {
+    imgEl.onload = () => {
+      if (callback) callback(imgEl.naturalWidth, imgEl.naturalHeight);
+    };
+    imgEl.src = imgSrc;
+    if (imgEl.complete && imgEl.naturalWidth) {
+      if (callback) callback(imgEl.naturalWidth, imgEl.naturalHeight);
+    }
+  };
+
+  setupImg($('imgA'), (w, h) => {
+    $('overlayA').setAttribute('viewBox', `0 0 ${w} ${h}`);
+    renderBoundingBoxes();
+  });
+  setupImg($('imgB'), (w, h) => {
+    $('overlayB').setAttribute('viewBox', `0 0 ${w} ${h}`);
+  });
+  setupImg($('sliderImgA'), (w, h) => {
+    $('sliderOverlayA').setAttribute('viewBox', `0 0 ${w} ${h}`);
+    syncSliderWidth();
+  });
+  setupImg($('sliderImgB'), (w, h) => {
+    $('sliderOverlayB').setAttribute('viewBox', `0 0 ${w} ${h}`);
+  });
+
+  // Update model labels
+  const infoA = demoData.models[currentModelA] || { name: 'Chọn mô hình A để chạy' };
+  const infoB = demoData.models[currentModelB] || { name: 'Chọn mô hình B để chạy' };
+
+  $('labelAInfo').textContent = currentModelA ? `${infoA.badge} · ${infoA.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
+  $('labelBInfo').textContent = currentModelB ? `${infoB.badge} · ${infoB.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
+  $('modelPathA').textContent = infoA.path || '';
+  $('modelPathB').textContent = infoB.path || '';
+
+  $('panelTitleA').textContent = infoA.name;
+  $('panelTitleB').textContent = infoB.name;
+  $('sliderBadgeA').textContent = `Mô hình A: ${infoA.name}`;
+  $('sliderBadgeB').textContent = `Mô hình B: ${infoB.name}`;
+
+  // Telemetry updates
+  const speedupReference = demoData.models.yolo26m_fp32;
+  const latA = speedupReference.avg_latency_ms;
+  const latB = infoB.avg_latency_ms;
+  $('speedupDisplay').textContent = Number.isFinite(latB) && latB > 0 ? `${(latA / latB).toFixed(2)}x` : 'Chưa đo';
+  $('telemetryTimeA').textContent = `${latA.toFixed(1)} ms (YOLO26m 640)`;
+  $('telemetryTimeB').textContent = Number.isFinite(latB) ? `${latB.toFixed(1)} ms (${Number(infoB.fps).toFixed(1)} FPS)` : 'Chưa đo benchmark';
+
+  const sizeA = infoA.size_mb;
+  const sizeB = infoB.size_mb;
+  const red = ((1 - sizeB / sizeA) * 100).toFixed(1);
+  $('sizeDiffDisplay').textContent = currentModelA && currentModelB ? `${red > 0 ? '-' : '+'}${Math.abs(red)}%` : '—';
+  $('telemetrySizeA').textContent = currentModelA ? `${sizeA.toFixed(2)} MiB` : 'Chưa chọn A';
+  $('telemetrySizeB').textContent = currentModelB ? `${sizeB.toFixed(2)} MiB` : 'Chưa chọn B';
+
+  renderBoundingBoxes();
+  updateInferenceStatus();
+}
+
+function renderBoundingBoxes() {
+  const scene = demoData.scenes.find(s => s.id === currentSceneId) || demoData.scenes[0];
+  const w = $('imgA').naturalWidth || scene.width || 1280;
+  const h = $('imgA').naturalHeight || scene.height || 720;
+
+  // Ensure SVGs have exact natural dimensions as viewBox
+  ['overlayA', 'overlayB', 'sliderOverlayA', 'sliderOverlayB'].forEach(id => {
+    const el = $(id);
+    if (el) el.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  });
+
+  const detA = demoData.detections[currentModelA]?.[scene.id]?.boxes || [];
+  const detB = demoData.detections[currentModelB]?.[scene.id]?.boxes || [];
+
+  const recordA = demoData.detections[currentModelA]?.[scene.id];
+  const recordB = demoData.detections[currentModelB]?.[scene.id];
+  const timeA = recordA?.inference_time_ms;
+  const timeB = recordB?.inference_time_ms;
+
+  const filteredA = detA.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));
+  const filteredB = detB.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));
+
+  const agreement = calculateDetectionAgreement(filteredA, filteredB, w, h);
+  $('overlapDisplay').textContent = recordA && recordB && agreement.retention !== null
+    ? `${agreement.retention.toFixed(1)}%` : '—';
+  $('overlapDetails').textContent = !recordA || !recordB
+    ? 'Chưa có dữ liệu cho cả hai model trên ảnh này'
+    : !filteredA.length ? 'Không có hộp A ở ngưỡng và lớp đang chọn'
+    : `B giữ ${agreement.matches}/${filteredA.length} hộp A · B thêm ${filteredB.length - agreement.matches} hộp chưa khớp · IoU TB: ${agreement.meanIou === null ? '—' : (agreement.meanIou * 100).toFixed(1) + '%'}`;
+
+  $('boxCountA').textContent = recordA ? filteredA.length : '—';
+  $('timeA').textContent = recordA ? `${timeA}ms${recordA.runtime ? ` · ${recordA.runtime}` : ''}` : currentModelA ? 'Chưa suy luận' : 'Chọn mô hình A';
+
+  $('boxCountB').textContent = recordB ? filteredB.length : '—';
+  $('timeB').textContent = recordB ? `${timeB}ms${recordB.runtime ? ` · ${recordB.runtime}` : ''}` : currentModelB ? 'Chưa suy luận' : 'Chọn mô hình B';
+
+  // Render SVG elements
+  $('overlayA').innerHTML = generateSvgElements(filteredA, w, h);
+  $('overlayB').innerHTML = generateSvgElements(filteredB, w, h);
+  $('sliderOverlayA').innerHTML = generateSvgElements(filteredB, w, h);
+  $('sliderOverlayB').innerHTML = generateSvgElements(filteredA, w, h);
+
+  // Update export preview
+  updateExportJson(filteredB, scene, w, h);
+}
+
+function calculateDetectionAgreement(boxesA, boxesB, w, h) {
+  const pixels = box => box.box_px || box.box_norm.map((v, i) => v * (i % 2 ? h : w));
+  const pairs = [];
+  boxesA.forEach((a, ai) => {
+    const [ax1, ay1, ax2, ay2] = pixels(a);
+    boxesB.forEach((b, bi) => {
+      if (a.class_name !== b.class_name) return;
+      const [bx1, by1, bx2, by2] = pixels(b);
+      const intersection = Math.max(0, Math.min(ax2, bx2) - Math.max(ax1, bx1))
+        * Math.max(0, Math.min(ay2, by2) - Math.max(ay1, by1));
+      const union = Math.max(0, ax2 - ax1) * Math.max(0, ay2 - ay1)
+        + Math.max(0, bx2 - bx1) * Math.max(0, by2 - by1) - intersection;
+      const iou = union > 0 ? intersection / union : 0;
+      if (iou >= 0.5) pairs.push({ ai, bi, iou });
+    });
+  });
+  pairs.sort((a, b) => b.iou - a.iou);
+  const usedA = new Set();
+  const usedB = new Set();
+  let totalIou = 0;
+  for (const pair of pairs) {
+    if (usedA.has(pair.ai) || usedB.has(pair.bi)) continue;
+    usedA.add(pair.ai);
+    usedB.add(pair.bi);
+    totalIou += pair.iou;
+  }
+  return {
+    matches: usedA.size,
+    retention: boxesA.length ? usedA.size / boxesA.length * 100 : null,
+    meanIou: usedA.size ? totalIou / usedA.size : null
+  };
+}
+
+function generateSvgElements(boxes, w, h, labelScale = 1) {
+  return boxes.map(b => {
+    let x, y, boxW, boxH;
+    if (b.box_px && b.box_px.length === 4) {
+      x = b.box_px[0];
+      y = b.box_px[1];
+      boxW = b.box_px[2] - b.box_px[0];
+      boxH = b.box_px[3] - b.box_px[1];
+    } else {
+      const [nx1, ny1, nx2, ny2] = b.box_norm;
+      x = nx1 * w;
+      y = ny1 * h;
+      boxW = (nx2 - nx1) * w;
+      boxH = (ny2 - ny1) * h;
+    }
+
+    const color = CLASS_COLORS[b.class_name] || '#38bdf8';
+    const confPct = Math.round(b.conf * 100);
+    const labelWidth = Math.min(w, (b.class_name.length * 7 + 34) * labelScale);
+    const labelX = Math.max(0, Math.min(x, w - labelWidth));
+
+    return `
+      <g class="bbox-group">
+        <rect class="bbox-rect" x="${x}" y="${y}" width="${boxW}" height="${boxH}" stroke="${color}" fill="${color}" stroke-opacity="0.9">
+          <title>${b.class_name} (${confPct}%) [x:${Math.round(x)}, y:${Math.round(y)}, w:${Math.round(boxW)}, h:${Math.round(boxH)}]</title>
+        </rect>
+        <rect x="${labelX}" y="${Math.max(0, y - 16 * labelScale)}" width="${labelWidth}" height="${16 * labelScale}" fill="${color}" fill-opacity="0.9" rx="3"></rect>
+        <text class="bbox-label" style="font-size:${11 * labelScale}px" x="${labelX + 4 * labelScale}" y="${Math.max(12 * labelScale, y - 4 * labelScale)}" fill="#ffffff">${b.class_name} ${confPct}%</text>
+      </g>
+    `;
+  }).join('');
+}
+
+function buildBDD100KJson(boxes, scene, w, h) {
+  return {
+    name: scene.file,
+    attributes: scene.attributes || {},
+    labels: boxes.map((b, idx) => ({
+      id: idx,
+      category: ({person:'pedestrian',motor:'motorcycle',bike:'bicycle'})[b.class_name] || b.class_name,
+      manualShape: false,
+      manualAttributes: false,
+      box2d: {
+        x1: b.box_px ? Math.round(b.box_px[0]) : Math.round(b.box_norm[0] * w),
+        y1: b.box_px ? Math.round(b.box_px[1]) : Math.round(b.box_norm[1] * h),
+        x2: b.box_px ? Math.round(b.box_px[2]) : Math.round(b.box_norm[2] * w),
+        y2: b.box_px ? Math.round(b.box_px[3]) : Math.round(b.box_norm[3] * h)
+      },
+      confidence: b.conf
+    }))
+  };
+}
+
+function updateExportJson(boxes, scene, w, h) {
+  const hasResult = !!demoData.detections[currentModelB]?.[scene.id];
+  ['copyLabelsBtn', 'downloadJsonBtn', 'downloadYoloBtn'].forEach(id => { $(id).disabled = !hasResult; });
+  if (!hasResult) {
+    $('exportBoxesCount').textContent = 'Chưa có kết quả Model B';
+    $('jsonPreviewBox').textContent = 'Chọn mô hình B và chờ kết quả để xuất nhãn.';
+    return;
+  }
+  $('exportBoxesCount').textContent = `${boxes.length} đối tượng (Model B)`;
+  
+  const bddFormat = buildBDD100KJson(boxes, scene, w, h);
+
+  const jsonStr = JSON.stringify(bddFormat, null, 2);
+  $('jsonPreviewBox').textContent = jsonStr.slice(0, 1500) + (jsonStr.length > 1500 ? '\n... [Đã rút gọn]' : '');
+}
+
+function copyBDD100KJson() {
+  const scene = demoData.scenes.find(s => s.id === currentSceneId) || demoData.scenes[0];
+  const w = $('imgA').naturalWidth || scene.width || 1280;
+  const h = $('imgA').naturalHeight || scene.height || 720;
+  const detB = demoData.detections[currentModelB]?.[scene.id]?.boxes || [];
+  const filteredB = detB.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));
+
+  const bddFormat = buildBDD100KJson(filteredB, scene, w, h);
+
+  navigator.clipboard.writeText(JSON.stringify(bddFormat, null, 2)).then(() => {
+    showToast("Đã sao chép nhãn BDD100K JSON vào Clipboard!");
+  });
+}
+
+function downloadBDD100KJson() {
+  const scene = demoData.scenes.find(s => s.id === currentSceneId) || demoData.scenes[0];
+  const w = $('imgA').naturalWidth || scene.width || 1280;
+  const h = $('imgA').naturalHeight || scene.height || 720;
+  const detB = demoData.detections[currentModelB]?.[scene.id]?.boxes || [];
+  const filteredB = detB.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));
+
+  const bddFormat = buildBDD100KJson(filteredB, scene, w, h);
+
+  const blob = new Blob([JSON.stringify(bddFormat, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `prelabel_${scene.file.replace(/\.[^.]+$/, '')}_${currentModelB}.json`;
+  a.click();
+  showToast("Đã tải xuống file BDD100K JSON!");
+}
+
+function downloadYoloTxt() {
+  const scene = demoData.scenes.find(s => s.id === currentSceneId) || demoData.scenes[0];
+  const detB = demoData.detections[currentModelB]?.[scene.id]?.boxes || [];
+  const filteredB = detB.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));
+
+  const lines = filteredB.map(b => {
+    const [x1, y1, x2, y2] = b.box_norm;
+    const xc = (x1 + x2) / 2;
+    const yc = (y1 + y2) / 2;
+    const w = x2 - x1;
+    const h = y2 - y1;
+    return `${b.class_id} ${xc.toFixed(6)} ${yc.toFixed(6)} ${w.toFixed(6)} ${h.toFixed(6)}`;
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = scene.file.replace(/\.[^.]+$/, '') + '.txt';
+  a.click();
+  showToast("Đã tải xuống file YOLO TXT!");
+}
+
+// Slider View drag handling. Both image layers and their SVG overlays use the
+// measured base-image rectangle, so the divider cannot drift after resize.
+function setupSliderInteraction() {
+  const container = $('sliderStage');
+  const divider = $('sliderDivider');
+
+  function moveTo(clientX) {
+    if (!isDraggingSlider) return;
+    const rect = container.getBoundingClientRect();
+    let pct = ((clientX - rect.left) / rect.width) * 100;
+    pct = Math.max(2, Math.min(98, pct));
+    sliderPercent = pct;
+    updateSliderPosition(pct);
+  }
+
+  divider.addEventListener('pointerdown', e => {
+    isDraggingSlider = true;
+    divider.setPointerCapture(e.pointerId);
+    moveTo(e.clientX);
+    e.preventDefault();
+  });
+  window.addEventListener('pointermove', e => moveTo(e.clientX));
+  window.addEventListener('pointerup', () => isDraggingSlider = false);
+  window.addEventListener('pointercancel', () => isDraggingSlider = false);
+}
+
+function syncSliderWidth() {
+  const stage = $('sliderStage');
+  if (stage && stage.offsetWidth > 0 && stage.offsetHeight > 0) {
+    $('sliderInner').style.width = stage.offsetWidth + 'px';
+    $('sliderInner').style.height = stage.offsetHeight + 'px';
+    updateSliderPosition(sliderPercent);
+  }
+}
+
+function updateSliderPosition(pct) {
+  const stage = $('sliderStage');
+  if (!stage) return;
+  const stageW = stage.offsetWidth;
+  const stageH = stage.offsetHeight;
+  if (stageW > 0 && stageH > 0) {
+    $('sliderInner').style.width = stageW + 'px';
+    $('sliderInner').style.height = stageH + 'px';
+  }
+  $('sliderClip').style.width = pct + '%';
+  $('sliderDivider').style.left = pct + '%';
+}
+
+// Read the image locally; only selected models are sent for inference.
+function handleCustomImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onerror = () => showToast('Không thể đọc ảnh đã chọn.');
+  reader.onload = evt => {
+    const img = new Image();
+    img.onerror = () => showToast('Không thể giải mã ảnh đã chọn.');
+    img.onload = () => {
+      const scene = {
+        id: 'custom_' + Date.now(),
+        title: file.name.slice(0, 18),
+        file: file.name,
+        desc: `Ảnh người dùng (${img.naturalWidth}×${img.naturalHeight})`,
+        tag: 'Ảnh tải lên',
+        data_uri: evt.target.result,
+        width: img.naturalWidth,
+        height: img.naturalHeight
+      };
+      demoData.scenes.unshift(scene);
+      void selectScene(scene.id);
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateBenchmarkSummary() {
+  const base = BENCHMARK_DATA.find(d => d.model === 'yolo26m-bdd100k.pt');
+  const ptq = BENCHMARK_DATA.find(d => d.model === 'int8_yolo26m_640_openvino_model');
+  const qat = BENCHMARK_DATA.find(d => d.model === 'int8_yolo26m_qat_640_openvino_model');
+  if (!base || !ptq || !qat) return;
+  const temporary = BENCHMARK_DATA.some(d => d.benchmark_temporary);
+  const referenceLabel = temporary ? 'FP32 cũ · tạm' : 'FP16';
+  if ($('speedupSourceLabel')) $('speedupSourceLabel').textContent = `Tăng tốc so với YOLO26m ${referenceLabel} · 640×640`;
+  if ($('benchmarkAccuracyNote')) $('benchmarkAccuracyNote').textContent = temporary
+    ? 'TẠM: dùng benchmark FP32 lịch sử cho cả 6 model; đây chưa phải số đo FP16. Demo vẫn suy luận FP16.'
+    : BENCHMARK_DATA.some(d => d.accuracy_pending)
+    ? 'Accuracy baseline FP16 và Δ pp đang chờ đánh giá lại đủ validation.'
+    : 'Accuracy baseline và Δ pp dùng kết quả đánh giá FP16 đầy đủ.';
+  if ($('retentionKpi')) {
+    $('retentionKpi').textContent = base.map95 == null ? 'Chưa đo' : base.map95 > 0 ? `${(ptq.map95 / base.map95 * 100).toFixed(1)}%` : 'N/A';
+    $('retentionKpiDrop').textContent = ptq.drop == null ? 'Chờ baseline FP16' : `Δ ${ptq.drop.toFixed(2)} pp`;
+    $('retentionKpiDetail').textContent = base.map95 == null ? 'Chờ accuracy baseline FP16 trên 10.000 ảnh' : `${base.map95.toFixed(2)}% (${referenceLabel}) → ${ptq.map95.toFixed(2)}% (INT8 PTQ)`;
+    for (const [id, row] of [['ptqAccuracySummary', ptq], ['qatAccuracySummary', qat]]) $(id).textContent = `mAP@50–95 INT8: ${row.map95.toFixed(2)}%; ` + (row.drop == null ? 'chờ accuracy baseline FP16 để tính Δ pp.' : `Δ ${row.drop.toFixed(2)} pp so với baseline ${referenceLabel}.`);
+  }
+  $('compressionKpi').textContent = `${(100 * (1 - ptq.size / base.size)).toFixed(1)}%`;
+  $('compressionKpiDetail').textContent = `${base.size.toFixed(2)} MiB → ${ptq.size.toFixed(2)} MiB`;
+  $('latencyKpi').textContent = ptq.speedup == null ? 'Chưa đo' : `${ptq.speedup.toFixed(2)}x`;
+  $('latencyKpiDetail').textContent = `${base.lat.toFixed(1)} ms → ${ptq.lat.toFixed(1)} ms · 50 ảnh × 3${temporary ? ' · FP32 cũ, tạm' : ''}`;
+  if ($('latencyFps')) $('latencyFps').textContent = `${ptq.fps.toFixed(1)} FPS`;
+  const latencyLabel = temporary ? 'Độ trễ benchmark FP32 cũ (tạm)' : 'Độ trễ đo lại';
+  $('ptqLatencySummary').textContent = `${latencyLabel}: ${ptq.lat.toFixed(1)} ms (${ptq.fps.toFixed(1)} FPS), CPU 4 luồng.`;
+  $('qatLatencySummary').textContent = `${latencyLabel}: ${qat.lat.toFixed(1)} ms (${qat.fps.toFixed(1)} FPS), CPU 4 luồng. Chất lượng xem mAP ở bảng trên.`;
+}
+
+// Benchmark Table Rendering
+function renderBenchmarkTable(data, referenceFamily = 'YOLO26m') {
+  const reference = BENCHMARK_DATA.find(d => d.family === referenceFamily && d.role === 'baseline' && d.imgsz === '640x640');
+  $('benchmarkSpeedupReference').textContent = referenceFamily === 'YOLO26s' ? 'vs YOLO26s' : 'vs YOLO26m 640';
+  if (!reference) return;
+  $('benchmarkSpeedupReference').title = `${reference.model} · ${reference.imgsz} · ${reference.lat} ms`;
+  const tbody = $('benchmarkTableBody');
+  tbody.innerHTML = data.map(d => {
+    const isHighlight = d.model === 'int8_yolo26s_640_openvino_model';
+    const isBaseline = d.role === 'baseline';
+    const badgeClass = isHighlight ? 'candidate' : isBaseline ? 'baseline' : d.role === 'qat' ? 'qat' : 'nano';
+    const badgeText = isHighlight ? 'PTQ Winner ⭐' : isBaseline ? 'Baseline' : d.role === 'qat' ? 'QAT' : 'INT8';
+
+    return `
+      <tr class="${isHighlight ? 'highlight-row' : ''}">
+        <td>
+          <strong>${d.model}</strong>
+          ${isBaseline ? `<br><small>${d.benchmark_temporary ? 'Số FP32 cũ · tạm' : 'PyTorch FP16'}</small>` : ''}
+          ${isHighlight ? '<br><small style="color:var(--green-dark);font-weight:700">Winner được chọn</small>' : ''}
+        </td>
+        <td><span class="badge-pill ${badgeClass}">${badgeText}</span></td>
+        <td><span style="font-family:monospace">${d.imgsz}</span></td>
+        <td>
+          <div class="mini-bar-wrap">
+            <strong>${d.size.toFixed(1)}</strong>
+            <div class="mini-bar"><div class="mini-bar-fill" style="width:${(d.size/42.0*100)}%"></div></div>
+          </div>
+        </td>
+        <td><strong>${d.map95 == null ? 'Chưa đo FP16' : d.map95.toFixed(2) + '%'}</strong></td>
+        <td style="color:${d.drop > 1.0 ? 'var(--red)' : d.drop > 0 ? 'var(--ink)' : 'var(--green-dark)'}">
+          ${d.drop == null ? 'N/A' : d.drop === 0 ? '0.00 (mốc)' : `${d.drop > 0 ? '+' : ''}${d.drop.toFixed(2)}`}
+        </td>
+        <td>${d.map50 == null ? 'Chưa đo FP16' : d.map50.toFixed(2) + '%'}</td>
+        <td>${d.prec == null ? 'Chưa đo FP16' : d.prec.toFixed(2) + '%'}</td>
+        <td>${d.rec == null ? 'Chưa đo FP16' : d.rec.toFixed(2) + '%'}</td>
+        <td>${d.f1 == null ? 'Chưa đo FP16' : d.f1.toFixed(2) + '%'}</td>
+        <td>
+          <span style="font-family:monospace">${d.lat.toFixed(1)}</span>
+        </td>
+        <td><strong>${d.fps.toFixed(1)}</strong></td>
+        <td>
+          <span style="color:var(--accent);font-weight:750">${d.speedup == null ? 'Chưa đo đồng nhất' : (referenceFamily === 'YOLO26s' ? reference.lat / d.lat : d.speedup).toFixed(2) + 'x'}</span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterTable(filter) {
+  if (filter === 'all') {
+    renderBenchmarkTable(BENCHMARK_DATA);
+  } else if (filter === 'INT8') {
+    renderBenchmarkTable(BENCHMARK_DATA.filter(d => d.role !== 'baseline'));
+  } else {
+    renderBenchmarkTable(BENCHMARK_DATA.filter(d => d.family === filter), filter);
+  }
+}
+
+// Lightbox for Charts
+function openLightbox(src, title) {
+  $('modalImg').src = src;
+  $('modalTitle').textContent = title;
+  $('lightboxModal').classList.add('active');
+}
+function closeLightbox() {
+  $('lightboxModal').classList.remove('active');
+}
+
+// Window resize sync for slider
+window.addEventListener('resize', syncSliderWidth);
+
+// Start
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+<script src="demo_data/hardware_benchmark.js"></script>
+</body>
+</html>

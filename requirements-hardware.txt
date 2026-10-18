@@ -1,0 +1,5 @@
+# Optional native engines. Existing CPU demo only needs requirements.txt.
+-r requirements.txt
+onnx==1.23.2
+onnxruntime-gpu==1.30.0
+tensorrt-cu13==10.16.1.11

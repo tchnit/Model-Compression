@@ -1,0 +1,27 @@
+#hardware { scroll-margin-top:100px; }
+.hw-controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin:20px 0; }
+.hw-controls label { display:flex; flex-direction:column; gap:8px; font-size:12px; color:var(--muted); }
+.hw-controls select,.hw-controls input { width:100%; min-height:40px; padding:8px; border:1px solid var(--line); border-radius:7px; background:var(--surface-2); color:var(--ink); font:inherit; }
+.hw-controls select:focus,.hw-controls input:focus { outline:2px solid #06b6d4; outline-offset:2px; }
+.hw-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:16px 0; }
+.hw-preview-wrap { width:100%; max-width:1100px; align-self:center; }
+.hw-preview-stage { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:#111827; }
+.hw-preview-stage img { display:block; width:100%; height:auto; }
+.hw-preview-stage svg { position:absolute; inset:0; width:100%; height:100%; }
+.hw-preview-stage .bbox-rect { vector-effect:non-scaling-stroke; }
+.hw-preview-wrap figcaption { margin-top:8px; }
+#hardware button:disabled { opacity:.5; cursor:not-allowed; }
+.hw-table-wrap { width:100%; overflow-x:auto; margin:20px 0; }
+.hw-table { width:100%; border-collapse:collapse; font-size:12px; text-align:left; }
+.hw-table th,.hw-table td { padding:12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.hw-table th { color:var(--muted); }
+.hw-details { white-space:pre-wrap; overflow-wrap:anywhere; max-height:400px; overflow:auto; padding:16px; font-size:11px; }
+#hardware details { margin-top:16px; }
+#hwStatus { min-height:22px; }
+@media(max-width:600px) { .hw-controls { grid-template-columns:1fr 1fr; } #hardware .section-header { flex-wrap:wrap; gap:12px; } }
+
+@media(max-width:1440px) { header.app-header { height:auto; min-height:64px; flex-wrap:wrap; gap:10px; padding:12px 24px; } .nav-links { order:3; flex-basis:100%; overflow-x:auto; } .nav-link { white-space:nowrap; } #hardware { scroll-margin-top:140px; } }
+@media(max-width:600px) { header.app-header { padding:10px 14px; } .header-actions { flex-wrap:wrap; } .brand-badge { display:none; } .hw-controls { grid-template-columns:1fr; } }
+#hardware { gap:12px; }
+#hardware .hw-controls { margin:8px 0; }
+#hardware .hw-actions { margin:8px 0; }

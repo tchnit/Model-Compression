@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "models": {
+    "yolo26m": "YOLO26m · BDD100K",
+    "yolo26s": "YOLO26s · BDD100K"
+  },
+  "artifacts": {
+    "yolo26m_FP32": {
+      "artifact": "runtime_exports/yolo26m_fp32.onnx",
+      "url": "runtime_exports/yolo26m_fp32.onnx",
+      "sha256": "cf0ddc3a2d23e9d931e2c34ad2379e335b9e3c11034019f1c60ba59cf7bab5bd",
+      "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+      "input_dtype": "float32",
+      "precision_policy": "FP32 graph; compute precision depends on runtime kernels"
+    },
+    "yolo26m_FP16": {
+      "artifact": "runtime_exports/yolo26m_fp16.onnx",
+      "url": "runtime_exports/yolo26m_fp16.onnx",
+      "sha256": "fdddd7e1f17a34ac718ad7b63b23c244b28306e4c6029c7ad4aff4308f24e14e",
+      "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+      "input_dtype": "float16",
+      "precision_policy": "FP16 graph; compute precision depends on runtime kernels"
+    },
+    "yolo26m_INT8": {
+      "artifact": "runtime_exports/yolo26m_int8.onnx",
+      "url": "runtime_exports/yolo26m_int8.onnx",
+      "sha256": "8643ccdd2c95759a01c9a3adfed9fba06c384369ff112340bc5cebf3406cabef",
+      "source_sha256": "8246690d0d92816e110b33b7c47c5eabf264651658bb03003edfbbbd8c0e6a75",
+      "input_dtype": "float32",
+      "precision_policy": "PTQ QDQ: uint8 activations / int8 per-channel Conv weights; other operations floating point",
+      "calibration_sha256": "0f18ed36d36533527c23b1d94ac29f74d8bc3f8ac5567c40c0790c63ff1c1700",
+      "calibration_images": 128,
+      "quantized_convs": 112
+    },
+    "yolo26s_FP32": {
+      "artifact": "runtime_exports/yolo26s_fp32.onnx",
+      "url": "runtime_exports/yolo26s_fp32.onnx",
+      "sha256": "d9abd97a48914ad5a82cdfd0a13973773e06f1790e0f6f757a87f2bc5604a024",
+      "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+      "input_dtype": "float32",
+      "precision_policy": "FP32 graph; compute precision depends on runtime kernels"
+    },
+    "yolo26s_FP16": {
+      "artifact": "runtime_exports/yolo26s_fp16.onnx",
+      "url": "runtime_exports/yolo26s_fp16.onnx",
+      "sha256": "5cab402aedc912659e64314cd27e6a0a15fe39fa3639b473ad4630352160a3a1",
+      "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+      "input_dtype": "float16",
+      "precision_policy": "FP16 graph; compute precision depends on runtime kernels"
+    },
+    "yolo26s_INT8": {
+      "artifact": "runtime_exports/yolo26s_int8.onnx",
+      "url": "runtime_exports/yolo26s_int8.onnx",
+      "sha256": "09dd980fe35635240f2779d72f4acd3bf577fb5abc19e54041b6ecfa31f75033",
+      "source_sha256": "47a879aff374b22093da1744812f15b8b586e3b15b7a9b52a099f4c7d1e43ac0",
+      "input_dtype": "float32",
+      "precision_policy": "PTQ QDQ: uint8 activations / int8 per-channel Conv weights; other operations floating point",
+      "calibration_sha256": "0f18ed36d36533527c23b1d94ac29f74d8bc3f8ac5567c40c0790c63ff1c1700",
+      "calibration_images": 128,
+      "quantized_convs": 102
+    }
+  }
+}

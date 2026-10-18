@@ -1,0 +1,12 @@
+{
+  "package": "onnxruntime-web",
+  "version": "1.30.0",
+  "registry": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.30.0.tgz",
+  "files_sha256": {
+    "ort-wasm-simd-threaded.asyncify.wasm": "39f9f0894d478800487ed9f7dbe92618498db320cf55c8e3d89adff8dce658da",
+    "ort.webgpu.min.js": "7d65dad7eb4564ad98db9924a259af2e2c68ebfbdbf254fa5d728f1c5736e07a",
+    "ThirdPartyNotices.txt": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3",
+    "LICENSE": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+    "ort-wasm-simd-threaded.asyncify.mjs": "3d1c85995364bb643302fc6fd877a0c3ba5ae72401815e0f24828a53d9191e28"
+  }
+}

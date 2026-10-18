@@ -1,0 +1,143 @@
+import base64
+import http.client
+import json
+import re
+from io import BytesIO
+from pathlib import Path
+import socketserver
+import threading
+import unittest
+import tempfile
+from unittest.mock import patch
+
+from PIL import Image
+
+import run_demo
+
+
+class DemoServerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), run_demo.StudioRequestHandler)
+        cls.server.daemon_threads = True
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join()
+
+    def request(self, method, path, body=None, headers=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.server.server_address[1], timeout=5)
+        conn.request(method, path, body=body, headers=headers or {})
+        response = conn.getresponse()
+        payload = response.read()
+        conn.close()
+        return response.status, payload
+
+    def test_only_demo_assets_are_public(self):
+        self.assertEqual(self.request("GET", "/demo.html")[0], 200)
+        self.assertEqual(self.request("HEAD", "/demo_data/detections.json")[0], 200)
+        self.assertEqual(self.request("HEAD", "/benchmark_comparison.csv")[0], 200)
+        self.assertEqual(self.request("GET", "/PROGRESS_REPORT.md")[0], 404)
+        self.assertEqual(self.request("GET", "/demo_data/../PROGRESS_REPORT.md")[0], 404)
+        self.assertEqual(self.request("HEAD", "/models/yolo26m-bdd100k.pt")[0], 404)
+        with tempfile.TemporaryDirectory() as folder:
+            exports = Path(folder) / 'runtime_exports'; exports.mkdir()
+            for model in ['yolo26s','yolo26m']:
+                (exports / f'{model}_int8.onnx').write_bytes(b'public artifact fixture')
+            with patch.object(run_demo,'DIRECTORY',folder):
+                self.assertEqual(self.request('HEAD','/runtime_exports/yolo26s_int8.onnx')[0],200)
+                self.assertEqual(self.request('HEAD','/runtime_exports/yolo26m_int8.onnx')[0],200)
+        self.assertEqual(self.request('GET','/verification/browser_int8_calibration.json')[0],404)
+
+    def test_wasm_shared_memory_headers(self):
+        for method, path in [('GET','/demo.html'), ('HEAD','/demo_data/hardware_benchmark.js'),
+                             ('HEAD','/demo_data/vendor/onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs')]:
+            with self.subTest(method=method,path=path):
+                conn = http.client.HTTPConnection('127.0.0.1',self.server.server_address[1],timeout=5)
+                conn.request(method,path)
+                response = conn.getresponse()
+                self.assertEqual(response.status,200)
+                self.assertEqual(response.getheader('Cross-Origin-Opener-Policy'),'same-origin')
+                self.assertEqual(response.getheader('Cross-Origin-Embedder-Policy'),'require-corp')
+                response.read()
+                conn.close()
+
+    def test_live_comparison_pins_every_model_to_the_same_cpu_runtime(self):
+        self.assertEqual(run_demo.CPU_THREADS, 4)
+        self.assertTrue(run_demo.MODEL_CONFIGS)
+        self.assertEqual(len(run_demo.MODEL_CONFIGS), 10)
+        self.assertEqual({cfg["device"] for cfg in run_demo.MODEL_CONFIGS.values()}, {"cpu"})
+        self.assertEqual(
+            Path(run_demo.MODEL_CONFIGS["yolo26s_int8"]["path"]).name,
+            "int8_yolo26s_qat_640_openvino_model",
+        )
+        self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26s_fp32"]["path"]).name, "yolo26s-bdd100k.pt")
+        self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26s_ptq_int8"]["path"]).name, "int8_yolo26s_640_openvino_model")
+        self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26m_qat_int8"]["path"]).name, "int8_yolo26m_qat_640_openvino_model")
+        self.assertNotIn("yolo26s_ptq_480", run_demo.MODEL_CONFIGS)
+        self.assertNotIn("yolo26m_ptq_480", run_demo.MODEL_CONFIGS)
+
+    def test_built_in_scene_fallbacks_use_the_same_cpu_runtime(self):
+        data = json.loads(Path("demo_data/detections.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(data["scenes"]), 5)
+        for scene in data["scenes"]:
+            self.assertTrue(scene["data_uri"].startswith("data:image/jpeg;base64,"))
+            self.assertTrue((Path("demo_data/images") / scene["file"]).is_file())
+        self.assertEqual(set(data["models"]), set(run_demo.MODEL_CONFIGS))
+        self.assertEqual(set(data["detections"]), set(run_demo.MODEL_CONFIGS))
+        bundle = Path("demo_data/demo_bundle.js").read_text(encoding="utf-8")
+        self.assertEqual(json.loads(bundle.removeprefix("window.DEMO_DATA = ").rstrip(";\n")), data)
+        dashboard = Path('model-compression-yolo26-dashboard.html').read_text()
+        summary = re.search(r'<script id="benchmarkSummaryData" type="application/json">(.*?)</script>', dashboard, re.S)[1]
+        self.assertEqual(json.loads(summary), data['benchmarks'])
+        self.assertEqual(data['scenes'][1]['attributes']['timeofday'], 'night')
+        for model_key in run_demo.MODEL_CONFIGS:
+            records = data["detections"][model_key]
+            self.assertEqual(len(records), 5)
+            self.assertTrue(all(row["runtime"] == "CPU ×4 · 640×640" for row in records.values()))
+            if run_demo.MODEL_CONFIGS[model_key]['path'].endswith('.pt'):
+                self.assertTrue(all(row['runtime_settings']['parameter_dtype'] == 'torch.float16' for row in records.values()))
+
+    def test_predict_rejects_oversized_and_unknown_model_requests(self):
+        status, _ = self.request(
+            "POST",
+            "/api/predict",
+            b"{}",
+            {"Content-Type": "application/json", "Content-Length": str(run_demo.MAX_REQUEST_BYTES + 1)},
+        )
+        self.assertEqual(status, 413)
+
+        image = BytesIO()
+        Image.new("RGB", (1, 1)).save(image, "JPEG")
+        payload = json.dumps({
+            "image": base64.b64encode(image.getvalue()).decode(),
+            "models": ["not-a-model"],
+        }).encode()
+        status, body = self.request("POST", "/api/predict", payload, {"Content-Type": "application/json"})
+        self.assertEqual(status, 400)
+        self.assertIn("không hợp lệ", json.loads(body)["message"])
+
+    def test_malformed_uploads_are_client_errors(self):
+        for image in [None, 12, [], {}, 'AA==']:
+            with self.subTest(image=image):
+                status, _ = self.request('POST', '/api/predict', json.dumps({'image': image}),
+                                         {'Content-Type': 'application/json'})
+                self.assertEqual(status, 400)
+
+    def test_malformed_models_and_confidence_are_client_errors(self):
+        image = BytesIO()
+        Image.new('RGB', (1, 1)).save(image, 'JPEG')
+        encoded = base64.b64encode(image.getvalue()).decode()
+        for fields in [{'models': [{}]}, {'models': [None]}, {'conf': None}, {'conf': []}]:
+            with self.subTest(fields=fields):
+                payload = json.dumps({'image': encoded, **fields})
+                status, _ = self.request('POST', '/api/predict', payload, {'Content-Type': 'application/json'})
+                self.assertEqual(status, 400)
+
+
+if __name__ == "__main__":
+    unittest.main()
