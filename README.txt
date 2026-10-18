@@ -204,7 +204,7 @@ chuẩn hóa person/bike/motor sang pedestrian/bicycle/motorcycle.
 
 BENCHMARK HARDWARE / RUNTIME (18-10-2026)
 ========================================
-Mở http://127.0.0.1:8000/demo.html#hardware sau khi chạy run_demo.py.
+Mở http://127.0.0.1:8765/demo.html#hardware sau khi chạy run_demo.py.
 Chọn model, runtime, thiết bị, precision, ảnh, warmup/số lượt rồi bấm Chạy benchmark.
 Đổi lựa chọn không tự chạy. Có thể xuất toàn bộ số đo trong phiên thành JSON.
 

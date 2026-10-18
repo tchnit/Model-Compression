@@ -25,7 +25,7 @@ from inference_runtime import cpu_device, configure_cpu_backend
 import hardware_benchmark as hardware_bench
 
 HOST = "127.0.0.1"
-PORT = 8000
+PORT = 8765
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 CPU_THREADS = 4
 MAX_REQUEST_BYTES = 12 * 1024 * 1024

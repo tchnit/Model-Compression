@@ -90,8 +90,8 @@ Các chức năng chọn A/B mới suy luận, hàng đợi/cache theo ảnh-mod
 
 ```bash
 .venv/bin/python run_demo.py
-# http://127.0.0.1:8000/demo.html
-# http://127.0.0.1:8000/model-compression-yolo26-dashboard.html
+# http://127.0.0.1:8765/demo.html
+# http://127.0.0.1:8765/model-compression-yolo26-dashboard.html
 
 # Đo lại latency và dự đoán ảnh demo khi máy rảnh:
 .venv/bin/python refresh_demo_data.py
@@ -311,3 +311,7 @@ hiển thị Chưa đo/N/A; chạy bash rebenchmark_all.sh để đánh giá đ�
 ## Gán tạm benchmark FP32 lịch sử
 
 Theo yêu cầu người dùng, bảng/demo/KPI và CSV/Markdown tạm dùng trọn lượt benchmark trước FP16 từ verification/before_fp16_20261018_152947/. Sáu model cùng protocol cũ; không ghép latency FP32 baseline với INT8 của lượt mới. Mọi dòng mang benchmark_temporary và nguồn; UI ghi rõ số FP32 cũ, chưa phải kết quả FP16. Suy luận demo vẫn FP16. Snapshot FP16 thật trong demo_data/latency_benchmark.json và log/report được giữ nguyên. Chạy lại rebenchmark_all.sh sẽ thay dữ liệu tạm bằng số đo mới.
+
+## Cổng demo tránh dịch vụ đang chạy
+
+Đổi cổng mặc định 8000 → 8765, ngoài danh sách cổng người dùng yêu cầu tránh. URL khởi động, README và lệnh mở demo/dashboard đã cập nhật. API và asset dùng URL cùng origin. Đã chạy 7 kiểm thử server và kiểm tra HTTP 200 thực cho demo/dashboard/api/status trên 8765; không chạy lại suy luận hoặc benchmark.
