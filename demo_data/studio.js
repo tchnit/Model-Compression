@@ -306,6 +306,11 @@ function updateSceneView() {
   $('speedupDisplay').textContent = Number.isFinite(latB) && latB > 0 ? `${(latA / latB).toFixed(2)}x` : 'Chưa đo';
   $('telemetryTimeA').textContent = `${latA.toFixed(1)} ms (YOLO26m 640)`;
   $('telemetryTimeB').textContent = Number.isFinite(latB) ? `${latB.toFixed(1)} ms (${Number(infoB.fps).toFixed(1)} FPS)` : 'Chưa đo benchmark';
+  const formatMetrics = (side, info, selected) => selected
+    ? `Mô hình ${side} · ${info.name} · mAP@50: ${Number.isFinite(info.map50) ? `${info.map50.toFixed(2)}%` : 'Chưa đo'} · FPS: ${Number.isFinite(info.fps) ? info.fps.toFixed(1) : 'Chưa đo'}`
+    : `Mô hình ${side} · mAP@50: Chưa chọn · FPS: Chưa chọn`;
+  $('telemetryMetricsA').textContent = formatMetrics('A', infoA, currentModelA);
+  $('telemetryMetricsB').textContent = formatMetrics('B', infoB, currentModelB);
 
   const sizeA = infoA.size_mb;
   const sizeB = infoB.size_mb;

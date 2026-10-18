@@ -810,6 +810,12 @@ input[type="range"] {
   color: var(--ink-secondary);
   font-weight: 600;
 }
+.telemetry-model-metrics {
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--ink-secondary);
+}
 
 /* Benchmark Explorer Section */
 .section-panel {
