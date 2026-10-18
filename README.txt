@@ -24,6 +24,9 @@ python run_demo.py
 
 requirements.txt ưu tiên wheel PyTorch CPU từ https://download.pytorch.org/whl/cpu.
 Máy Ubuntu/Debian thiếu libGL.so.1 hoặc libgthread: cài libgl1 và libglib2.0-0 bằng apt.
+Riêng lỗi "libGL.so.1: cannot open shared object file", chạy bằng root:
+apt-get update && apt-get install -y libgl1
+Sau đó chạy lại python run_demo.py trong venv; pip không cài được thư viện hệ thống này.
 Nếu log báo thiếu numpy/PIL hoặc Python 3.10, dừng server và tạo môi trường mới:
 python3.12 -m venv .venv312
 source .venv312/bin/activate

@@ -31,6 +31,21 @@ class RuntimeStartupTests(unittest.TestCase):
                 run_demo.run()
         server.assert_not_called()
 
+    def test_missing_libgl_reports_system_package_instead_of_pip(self):
+        for error_type in (ImportError, OSError):
+            with self.subTest(error_type=error_type):
+                def import_without_libgl(module):
+                    if module == 'cv2':
+                        raise error_type('libGL.so.1: cannot open shared object file: No such file or directory')
+
+                with patch.object(run_demo.importlib, 'import_module', side_effect=import_without_libgl), \
+                        patch.object(run_demo.socketserver, 'ThreadingTCPServer') as server:
+                    with self.assertRaises(SystemExit) as raised:
+                        run_demo.run()
+                self.assertIn('apt-get update && apt-get install -y libgl1', str(raised.exception))
+                self.assertNotIn('pip install', str(raised.exception))
+                server.assert_not_called()
+
 
 class DemoServerTests(unittest.TestCase):
     @classmethod

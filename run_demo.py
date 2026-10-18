@@ -334,6 +334,13 @@ def check_runtime():
         try:
             importlib.import_module(module)
         except (ImportError, OSError) as error:
+            if 'libGL.so.1' in str(error):
+                raise SystemExit(
+                    f'Không tải được {module}: {error}\n'
+                    'Thiếu thư viện hệ thống OpenGL. Trên Ubuntu/Debian, chạy:\n'
+                    'apt-get update && apt-get install -y libgl1\n'
+                    'Sau đó chạy lại python run_demo.py trong venv đang kích hoạt.'
+                ) from error
             raise SystemExit(
                 f'Không tải được {module}: {error}\nPython đang chạy: {sys.executable}\n'
                 f'Cài thư viện trong môi trường này: {sys.executable} -m pip install -r requirements.txt'
