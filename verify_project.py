@@ -13,7 +13,9 @@ import sys
 
 import yaml
 
-from evaluate import artifact_info, canonical, DEFAULT_NAMES, read_frames, sha256, write_json
+from bdd100k_eval.artifacts import artifact_info, sha256
+from bdd100k_eval.dataset import canonical, DEFAULT_NAMES, read_frames
+from bdd100k_eval.reporting import write_json
 import json
 
 

@@ -147,7 +147,7 @@ def prepare(models, engines, calibration_list=None, calibration_count=128):
         import numpy as np
         import onnxruntime as ort
         from onnxruntime.quantization import CalibrationDataReader, QuantFormat, QuantType, quantize_static
-        from hardware_benchmark import preprocess
+        from bdd100k_eval.image_ops import preprocess
         images = select_calibration_images(calibration_list, calibration_count,
                                           ROOT / 'verification/image_manifest.json')
         evidence = ROOT / 'verification/browser_int8_calibration.json'

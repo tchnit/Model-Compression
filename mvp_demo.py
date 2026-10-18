@@ -177,7 +177,7 @@ class MVPService:
     def process(self, job, suffix):
         import cv2
         import numpy as np
-        from hardware_benchmark import decode_image
+        from bdd100k_eval.image_ops import decode_image
         import base64
         capture = writer = None
         started = time.perf_counter()
@@ -364,7 +364,7 @@ class MVPService:
         import numpy as np
         import torch
         from types import SimpleNamespace
-        from evaluate import canonical
+        from bdd100k_eval.dataset import canonical
         from ultralytics.engine.validator import BaseValidator
         from ultralytics.utils.metrics import ap_per_class, box_iou
         if not isinstance(payload, dict):

@@ -15,7 +15,9 @@ import cv2
 import numpy as np
 
 import run_demo as server
-from evaluate import artifact_info, distribution, sha256, read_frames
+from bdd100k_eval.artifacts import artifact_info, sha256
+from bdd100k_eval.dataset import read_frames
+from evaluate import distribution
 from inference_runtime import configure_cpu_backend, cpu_device
 
 
