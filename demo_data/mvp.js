@@ -1,6 +1,19 @@
 /* MVP sessions always call the Python/OpenVINO backend; no stored detections. */
+function mvpFrameAtTime(frames, time, fps) {
+  if (!frames?.length || !Number.isFinite(time) || !(fps > 0)) return null;
+  const timestamp = frame => frame.source_time_seconds ?? frame.time_seconds;
+  if (time + 1e-7 < timestamp(frames[0]) || time + 1e-7 >= timestamp(frames.at(-1)) + 1 / fps) return null;
+  let low = 0, high = frames.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (timestamp(frames[middle]) <= time + 1e-7) low = middle + 1; else high = middle;
+  }
+  return frames[low - 1] || null;
+}
+if (typeof module !== 'undefined') module.exports = {mvpFrameAtTime};
 (() => {
   'use strict';
+  if (typeof document === 'undefined') return;
   const root = document.getElementById('mvp');
   root.innerHTML = `
     <div class="mvp-hero"><div><div class="mvp-eyebrow">MVP · Phát hiện đối tượng giao thông</div>
@@ -24,7 +37,7 @@
       <label>Ngưỡng confidence <output id="mvpConfValue">0.25</output><input id="mvpConf" type="range" min="0.001" max="1" step="0.001" value="0.25"></label>
       <fieldset id="mvpClasses" class="mvp-classes"><legend>Lớp cần nhận diện</legend></fieldset>
       <div class="mvp-row" id="mvpDisplay"><label><input id="mvpBoxes" type="checkbox" checked> Hộp</label><label><input id="mvpLabels" type="checkbox" checked> Tên lớp</label><label><input id="mvpScores" type="checkbox" checked> Confidence</label></div>
-      <p>Pipeline end-to-end, không dùng NMS. Khi đổi cấu hình, bấm Chạy nhận diện để cập nhật cả hình và tệp xuất.</p>
+      <p>Rê chuột hoặc bấm hộp để xem chi tiết; bật/tắt hộp, nhãn ngay trên màn hình. Đổi ngưỡng/lớp hoặc cập nhật tệp xuất: bấm Chạy nhận diện. Pipeline không dùng NMS.</p>
       <button id="mvpRun" class="btn btn-primary" type="button" disabled>2. Chạy nhận diện</button>
       <div class="mvp-row"><button id="mvpStop" class="btn btn-outline-primary" type="button" disabled>Dừng tác vụ</button><button id="mvpClear" class="btn btn-outline-primary" type="button">Xóa dữ liệu</button></div>
     </aside><div class="mvp-workspace">
@@ -33,8 +46,12 @@
         <div class="mvp-metric"><span>Toàn bộ trên server</span><strong id="mvpTotal">—</strong><small>Sau upload, gồm khởi tạo</small></div>
         <div class="mvp-metric"><span>FPS xử lý video</span><strong id="mvpFps">—</strong><small>Gồm vẽ và mã hóa, không FPS phát</small></div>
         <div class="mvp-metric"><span>Đã xử lý</span><strong id="mvpProcessed">0</strong><small id="mvpProcessedUnit">ảnh / khung hình</small></div></div>
-      <div class="mvp-viewers"><figure class="mvp-viewer"><figcaption>Gốc <span id="mvpInputSize"></span></figcaption><div id="mvpOriginal"><div class="mvp-placeholder">Chọn dữ liệu của bạn hoặc một ảnh mẫu để bắt đầu.</div></div></figure>
-        <figure class="mvp-viewer"><figcaption>Kết quả nhận diện thật <span>OpenVINO INT8</span></figcaption><div id="mvpOutput"><div class="mvp-placeholder">Bấm Chạy nhận diện. Chưa có kết quả suy luận.</div></div></figure></div>
+      <figure class="mvp-viewer"><figcaption>Màn hình nhận diện <span id="mvpInputSize">OpenVINO INT8</span></figcaption>
+        <div class="mvp-stage" id="mvpStage"><div id="mvpMedia"><div class="mvp-placeholder">Chọn dữ liệu của bạn hoặc một ảnh mẫu để bắt đầu.</div></div>
+          <svg id="mvpOverlay" class="mvp-overlay" aria-label="Các đối tượng phát hiện" preserveAspectRatio="xMidYMid meet"></svg></div>
+        <div class="mvp-playback" id="mvpPlayback" hidden><button type="button" id="mvpPlay">Phát</button><input type="range" id="mvpSeek" min="0" max="0" step="0.001" value="0" aria-label="Tua video"><output id="mvpTime">0.0 / 0.0 s</output></div>
+        <p class="mvp-selection" id="mvpSelection" role="status">Bấm Chạy nhận diện để xem các hộp tương tác.</p>
+      </figure>
       <div class="mvp-card"><h2>3. Xem kết quả</h2><div id="mvpAccuracy" class="mvp-accuracy">Chưa có nhãn chuẩn để đánh giá độ chính xác</div>
         <p id="mvpTiming" style="margin-top:10px">Confidence là độ tin cậy của từng dự đoán, không phải độ chính xác. Thời gian khởi tạo/warm-up được tách riêng.</p>
         <div id="mvpCounts" class="mvp-counts"></div><p id="mvpFrameNote">Số phát hiện trên ảnh; chưa có tracking để đếm đối tượng duy nhất.</p>
@@ -48,6 +65,7 @@
   const $ = id => document.getElementById(id);
   let config, items = [], selected = -1, running = false, stopped = false, generation = 0, activeJob, upload;
   let accuracy = null, recorder = null, cameraStream = null, cameraTimer;
+  let player = null, videoCallback = null, currentFrame = null, selectedBox = -1;
   const objectURLs = new Set();
   function status(text) { $('mvpStatus').textContent = text; }
   function route() {
@@ -71,6 +89,7 @@
     return data;
   }
   function buttons() {
+    root.classList.toggle('mvp-processing', running);
     $('mvpRun').disabled = running || recorder?.state === 'recording' || !config?.available || !items.length;
     $('mvpStop').disabled = !running;
     for (const id of ['mvpFiles', 'mvpMode', 'mvpConf', 'mvpGroundTruth', 'mvpClasses', 'mvpBoxes', 'mvpLabels', 'mvpScores', 'mvpCamera']) $(id).disabled = running || (id === 'mvpConf' && $('mvpMode').value === 'evaluation');
@@ -101,22 +120,61 @@
       status(`Đã chọn ${items.length} tệp. Bấm Chạy nhận diện để xử lý.`);
     } catch (error) { status(error.message); list(); buttons(); }
   }
-  function media(item, container, source, output) {
-    container.querySelectorAll('video').forEach(video => video.pause());
-    container.replaceChildren();
+  function clearPlayer() {
+    if (videoCallback !== null && player?.cancelVideoFrameCallback) player.cancelVideoFrameCallback(videoCallback);
+    videoCallback = null;
+    if (player) {
+      for (const name of ['onload', 'onerror', 'onloadedmetadata', 'ontimeupdate', 'onseeked', 'onpause', 'onplay', 'onended']) player[name] = null;
+      if (player.tagName === 'VIDEO') player.pause();
+    }
+    player = null; currentFrame = null; selectedBox = -1;
+    $('mvpMedia').replaceChildren(); $('mvpOverlay').replaceChildren();
+    $('mvpPlayback').hidden = true;
+    $('mvpSelection').textContent = 'Bấm Chạy nhận diện để xem các hộp tương tác.';
+  }
+  function media(item) {
+    clearPlayer();
     const element = document.createElement(item.video ? 'video' : 'img');
-    element.src = source;
-    if (item.video) { element.controls = true; element.preload = 'metadata'; element.muted = true; element.playsInline = true; }
-    else element.alt = output ? 'Ảnh đã gắn kết quả nhận diện' : 'Ảnh gốc';
+    element.src = item.source;
+    if (item.video) { element.preload = 'metadata'; element.muted = true; element.playsInline = true; }
+    else element.alt = 'Ảnh với các hộp nhận diện tương tác';
     element.onerror = () => status('Trình duyệt không đọc được dữ liệu/codec này. Với video, hãy thử MP4 H.264 hoặc WebM VP8.');
-    container.append(element); return element;
+    $('mvpMedia').append(element); player = element;
+    if (item.video) {
+      $('mvpPlayback').hidden = false;
+      const update = time => {
+        const frame = element.ended && item.job?.status === 'completed' ? item.frames?.at(-1) : mvpFrameAtTime(item.frames, time, item.report?.source_fps);
+        if (frame !== currentFrame) { currentFrame = frame; selectedBox = -1; renderOverlay(); }
+        $('mvpSeek').value = time;
+        $('mvpTime').textContent = `${time.toFixed(1)} / ${Number.isFinite(element.duration) ? element.duration.toFixed(1) : '?'} s`;
+      };
+      element.onloadedmetadata = () => {
+        $('mvpSeek').max = Number.isFinite(element.duration) ? element.duration : (item.report?.total || 0) / (item.report?.source_fps || 1);
+        $('mvpSeek').disabled = !$('mvpSeek').max || +$('mvpSeek').max <= 0;
+        update(element.currentTime); renderOverlay();
+      };
+      element.ontimeupdate = () => { update(element.currentTime); table(currentFrame?.detections || [], currentFrame?.index || 0); };
+      element.onseeked = element.onpause = () => { update(element.currentTime); renderOverlay(); table(currentFrame?.detections || [], currentFrame?.index || 0); $('mvpPlay').textContent = element.paused ? 'Phát' : 'Tạm dừng'; };
+      element.onplay = () => { $('mvpPlay').textContent = 'Tạm dừng'; };
+      element.onended = () => { $('mvpPlay').textContent = 'Phát lại'; };
+      $('mvpPlay').textContent = 'Phát';
+      if (element.requestVideoFrameCallback) {
+        const onFrame = (_, metadata) => {
+          if (player !== element) return;
+          update(metadata.mediaTime);
+          videoCallback = element.requestVideoFrameCallback(onFrame);
+        };
+        videoCallback = element.requestVideoFrameCallback(onFrame);
+      }
+    } else element.onload = renderOverlay;
+    return element;
   }
   function preview() {
     const item = items[selected]; if (!item) return;
-    const original = media(item, $('mvpOriginal'), item.source, false);
+    media(item);
     const job = item.job, report = item.report;
     $('mvpInputSize').textContent = report?.width ? `${report.width} × ${report.height}` : '';
-    $('mvpOutput').replaceChildren(); $('mvpDownloads').replaceChildren();
+    $('mvpDownloads').replaceChildren();
     $('mvpInfer').textContent = report?.inference_mean_ms != null ? `${report.inference_mean_ms.toFixed(1)} ms` : '—';
     $('mvpTotal').textContent = report ? `${(report.timings.server_total_ms / 1000).toFixed(2)} s` : '—';
     $('mvpFps').textContent = item.video && report?.processing_fps ? report.processing_fps.toFixed(1) : '—';
@@ -126,29 +184,54 @@
     $('mvpTiming').textContent = report ? `Kết quả ở conf=${report.settings.conf}. Khởi tạo/warm-up: ${report.timings.initialization_ms.toFixed(1)} ms (0 nếu tái sử dụng). Pipeline trung bình: ${report.processed ? (report.timings.pipeline_ms / report.processed).toFixed(1) : '—'} ms. ${report.timing_scope} Thiết bị: ${report.runtime?.device_name || 'chưa khởi tạo'}. ${report.runtime?.thread_warning || ''}` : 'Confidence không phải độ chính xác. Chạy nhận diện để đo hiệu năng.';
     $('mvpAccuracy').textContent = accuracy ? `Đánh giá ${accuracy.images} ảnh · Precision ${(accuracy.precision * 100).toFixed(2)}% · Recall ${(accuracy.recall * 100).toFixed(2)}% · mAP50 ${(accuracy.map50 * 100).toFixed(2)}% · mAP50–95 ${(accuracy.map50_95 * 100).toFixed(2)}%. ${accuracy.protocol}` : 'Chưa có nhãn chuẩn để đánh giá độ chính xác';
     if (!report || !job.files.includes(item.video ? 'annotated.webm' : 'annotated.jpg')) {
-      const text = document.createElement('div'); text.className = 'mvp-placeholder'; text.textContent = job?.message || 'Chưa chạy nhận diện trên tệp này.'; $('mvpOutput').append(text);
+      $('mvpSelection').textContent = job?.message || 'Chưa chạy nhận diện trên tệp này.';
       table([], 0); return;
     }
-    const result = media(item, $('mvpOutput'), `${endpoint(job.id)}/files/${item.video ? 'annotated.webm' : 'annotated.jpg'}`, true);
-    if (item.video) {
-      const sync = (source, destination) => {
-        if (Number.isFinite(destination.duration) && Math.abs(destination.currentTime - source.currentTime) > .15) destination.currentTime = Math.min(source.currentTime, destination.duration);
-      };
-      for (const [source, destination] of [[original, result], [result, original]]) {
-        source.addEventListener('play', () => { sync(source, destination); if (destination.paused) destination.play().catch(() => {}); });
-        source.addEventListener('pause', () => { if (!destination.paused) destination.pause(); });
-        source.addEventListener('seeked', () => sync(source, destination));
-      }
-      result.ontimeupdate = () => {
-        const frame = item.frames[Math.min(item.frames.length - 1, Math.floor(result.currentTime * report.source_fps))];
-        table(frame?.detections || [], frame?.index || 0);
-      };
-    }
+    currentFrame = item.frames[0] || null; renderOverlay();
     table(item.frames[0]?.detections || [], 0);
     for (const filename of job.files) {
       const a = document.createElement('a'); a.href = `${endpoint(job.id)}/files/${filename}`; a.download = `${item.file.name}-${filename}`;
       a.textContent = filename.startsWith('annotated.') ? 'Tải ảnh/video nhận diện' : filename; $('mvpDownloads').append(a);
     }
+  }
+  function renderOverlay() {
+    const item = items[selected], overlay = $('mvpOverlay');
+    if (!item?.report || !currentFrame || !overlay.clientWidth || !overlay.clientHeight) {
+      overlay.replaceChildren();
+      if (item?.report && item.video) $('mvpSelection').textContent = 'Khung này chưa được xử lý; không có hộp nhận diện.';
+      return;
+    }
+    const {width, height} = item.report;
+    overlay.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    const colors = Object.fromEntries(Object.entries(config.names).map(([id, name]) => [name, config.colors[+id % config.colors.length]]));
+    const boxes = currentFrame.detections.map(box => ({class_name: box.class_name, conf: box.confidence, box_px: box.xyxy}));
+    const display = {boxes: $('mvpBoxes').checked, labels: $('mvpLabels').checked, scores: $('mvpScores').checked, colors, interactive: true};
+    overlay.innerHTML = display.boxes || display.labels || display.scores ? generateSvgElements(boxes, width, height,
+      Math.max(width / overlay.clientWidth, height / overlay.clientHeight), display) : '';
+    highlightSelection();
+  }
+  function highlightSelection() {
+    const boxes = currentFrame?.detections || [];
+    $('mvpOverlay').querySelectorAll('[data-box-index]').forEach(group => {
+      const active = +group.dataset.boxIndex === selectedBox;
+      group.classList.toggle('selected', active); group.setAttribute('aria-pressed', String(active));
+    });
+    $('mvpDetections').querySelectorAll('tr').forEach((row, i) => row.classList.toggle('selected', i === selectedBox));
+    const box = boxes[selectedBox];
+    if (!currentFrame) return;
+    $('mvpSelection').textContent = box ? `${box.class_name} · ${(box.confidence * 100).toFixed(1)}% · [${box.xyxy.map(x => x.toFixed(1)).join(', ')}] px` :
+      `${boxes.length} phát hiện · Rê chuột để xem; bấm hộp hoặc dòng trong bảng để chọn${items[selected]?.video ? '. Video tạm dừng khi chọn hộp.' : '.'}`;
+  }
+  function selectBox(index, frameIndex = currentFrame?.index) {
+    const item = items[selected];
+    const frame = item?.frames?.find(value => value.index === frameIndex);
+    if (player?.tagName === 'VIDEO') player.pause();
+    if (frame && frame !== currentFrame) {
+      currentFrame = frame; selectedBox = -1;
+      if (player?.tagName === 'VIDEO') player.currentTime = frame.source_time_seconds ?? frame.time_seconds;
+      renderOverlay();
+    }
+    selectedBox = selectedBox === index ? -1 : index; highlightSelection();
   }
   function table(boxes, index) {
     const counts = {};
@@ -157,15 +240,20 @@
       const chip = document.createElement('span'); chip.textContent = `${name}: ${count}`; return chip;
     }));
     $('mvpFrameNote').textContent = items[selected]?.video ? `Khung ${index + 1}: ${boxes.length} phát hiện. Đây là số phát hiện trong khung đang xem; chưa có tracking hoặc số đối tượng duy nhất.` : `${boxes.length} phát hiện trên ảnh. Không phát hiện đối tượng cũng là một kết quả hợp lệ.`;
-    const rows = boxes.map(box => {
+    if (!currentFrame) $('mvpFrameNote').textContent = 'Chưa có kết quả nhận diện cho ảnh/khung hình đang xem.';
+    const rows = boxes.map((box, boxIndex) => {
       const row = document.createElement('tr');
+      row.tabIndex = 0;
+      row.onclick = () => selectBox(boxIndex, index);
+      row.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectBox(boxIndex, index); } };
       for (const value of [index + 1, box.class_name, `${(box.confidence * 100).toFixed(1)}%`, box.xyxy.map(x => x.toFixed(1)).join(', ')]) {
         const cell = document.createElement('td'); cell.textContent = value; row.append(cell);
       }
       return row;
     });
-    if (!rows.length) { const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 4; cell.textContent = items[selected]?.report ? 'Không có đối tượng ở ngưỡng và lớp đã chọn.' : 'Chưa có kết quả.'; row.append(cell); rows.push(row); }
+    if (!rows.length) { const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 4; cell.textContent = currentFrame ? 'Không có đối tượng ở ngưỡng và lớp đã chọn.' : 'Chưa có kết quả.'; row.append(cell); rows.push(row); }
     $('mvpDetections').replaceChildren(...rows);
+    highlightSelection();
   }
   function sendFile(item, params, currentGeneration) {
     return new Promise((resolve, reject) => {
@@ -247,7 +335,7 @@
     objectURLs.forEach(value => URL.revokeObjectURL(value)); objectURLs.clear();
     running = false; activeJob = upload = null;
     $('mvpFiles').value = ''; $('mvpGroundTruth').value = ''; $('mvpProgress').value = 0;
-    $('mvpOriginal').replaceChildren(); $('mvpOutput').replaceChildren(); $('mvpDownloads').replaceChildren();
+    clearPlayer(); $('mvpDownloads').replaceChildren();
     for (const id of ['mvpInfer', 'mvpTotal', 'mvpFps']) $(id).textContent = '—';
     $('mvpProcessed').textContent = '0'; $('mvpInputSize').textContent = '';
     $('mvpAccuracy').textContent = 'Chưa có nhãn chuẩn để đánh giá độ chính xác'; table([], 0);
@@ -267,11 +355,29 @@
     $('mvpGroundTruthLabel').hidden = $('mvpGtHelp').hidden = !evaluation;
     $('mvpConf').value = evaluation ? '.001' : '.25'; $('mvpConfValue').textContent = $('mvpConf').value; accuracy = null; buttons();
   };
-  for (const id of ['mvpConf', 'mvpClasses', 'mvpBoxes', 'mvpLabels', 'mvpScores']) $(id).addEventListener('input', () => {
+  for (const id of ['mvpConf', 'mvpClasses']) $(id).addEventListener('input', () => {
     $('mvpConfValue').textContent = (+$('mvpConf').value).toFixed(3); accuracy = null;
     $('mvpAccuracy').textContent = $('mvpMode').value === 'evaluation' ? 'Cấu hình đã đổi; chạy lại để đánh giá theo nhãn chuẩn.' : 'Chưa có nhãn chuẩn để đánh giá độ chính xác';
     if (items.some(item => item.report)) status('Cấu hình đã đổi. Bấm Chạy nhận diện để cập nhật hình, số liệu và tệp xuất.');
   });
+  for (const id of ['mvpBoxes', 'mvpLabels', 'mvpScores']) $(id).addEventListener('input', () => {
+    renderOverlay();
+    if (items.some(item => item.report)) status('Đã cập nhật hiển thị. Tệp tải xuống giữ cấu hình lúc chạy; bấm Chạy nhận diện nếu muốn cập nhật tệp xuất.');
+  });
+  $('mvpOverlay').onclick = event => {
+    const group = event.target.closest('.bbox-group');
+    if (group) selectBox(+group.dataset.boxIndex);
+  };
+  $('mvpOverlay').onkeydown = event => {
+    const group = event.target.closest('.bbox-group');
+    if (group && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selectBox(+group.dataset.boxIndex); }
+  };
+  $('mvpPlay').onclick = () => {
+    if (player?.tagName !== 'VIDEO') return;
+    if (player.paused) player.play().catch(error => status(`Không phát được video: ${error.message}`)); else player.pause();
+  };
+  $('mvpSeek').oninput = () => { if (player?.tagName === 'VIDEO') { player.pause(); player.currentTime = +$('mvpSeek').value; } };
+  new ResizeObserver(renderOverlay).observe($('mvpStage'));
   $('mvpPresent').onclick = () => { const present = document.body.classList.toggle('mvp-present'); $('mvpPresent').textContent = present ? 'Thoát trình chiếu (Esc)' : 'Trình chiếu'; };
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.body.classList.remove('mvp-present'); $('mvpPresent').textContent = 'Trình chiếu'; } });
   $('mvpExportJSON').onclick = () => download(JSON.stringify(items.filter(x => x.report).map(x => ({filename: x.file.name, frames: x.frames})), null, 2), 'application/json', 'mvp-detections.json');
@@ -289,7 +395,8 @@
       const mime = ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm'].find(x => MediaRecorder.isTypeSupported(x));
       if (!mime) throw new Error('Trình duyệt chưa hỗ trợ ghi WebM. Hãy tải video từ thiết bị.');
       cameraStream = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 640, max: 1280}, height: {ideal: 480, max: 720}, frameRate: {ideal: 15, max: 30}}, audio: false});
-      const preview = document.createElement('video'); preview.autoplay = preview.muted = preview.playsInline = true; preview.srcObject = cameraStream; $('mvpOriginal').replaceChildren(preview);
+      clearPlayer();
+      const preview = document.createElement('video'); preview.autoplay = preview.muted = preview.playsInline = true; preview.srcObject = cameraStream; $('mvpMedia').replaceChildren(preview); player = preview;
       recorder = new MediaRecorder(cameraStream, {mimeType: mime}); const chunks = [], capturedGeneration = generation;
       recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
       recorder.onstop = () => {

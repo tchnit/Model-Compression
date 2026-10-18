@@ -399,7 +399,12 @@ Video xuất WebM VP8 ở FPS metadata đầu vào, không âm thanh; video FPS 
 Webcam ghi tối đa 10 giây rồi gửi server để nhận diện; cần HTTPS hoặc localhost, MediaRecorder và quyền camera.
 Webcam qua http://<IP-VPS> thường không khả dụng: tải video hoặc đặt ứng dụng sau HTTPS.
 Chế độ Trình chiếu phóng lớn hình/chỉ số, ẩn điều khiển phụ; Esc để thoát.
-Đổi confidence/lớp/hộp/nhãn cần Chạy lại để kết quả và tệp xuất nhất quán.
+MVP chỉ có một màn hình ảnh/video với lớp box SVG tương tác, dùng chung renderer với Studio.
+Rê chuột xem tooltip; bấm box/dòng bảng hoặc Enter/Space để chọn, video tạm dừng khi chọn.
+Bật/tắt hộp, tên lớp, confidence đổi hiển thị ngay; dữ liệu phát hiện và chỉ số không thay đổi.
+Đổi confidence/lớp cần Chạy lại. Tệp xuất giữ cấu hình lúc chạy; Chạy lại để cập nhật tệp xuất theo tùy chọn hiển thị.
+Video có nút phát/tạm dừng và thanh tua riêng; box theo timestamp khung nguồn, không giữ box trên phần chưa xử lý.
+Kiểm tra frontend: node test_mvp_overlay.js.
 
 Suy luận: timer engine từ Ultralytics/OpenVINO. Pipeline: tiền xử lý + inference + hậu xử lý/API.
 FPS xử lý: số frame / thời gian xử lý tuần tự, gồm vẽ/mã hóa/đọc frame tiếp; không phải FPS phát.

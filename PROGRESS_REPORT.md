@@ -5,6 +5,13 @@ Cập nhật ngày 18/10/2026 sau rà soát mã nguồn, runtime và bằng ch�
 
 ## MVP – Demo & Đánh giá (18/10/2026)
 
+Theo yêu cầu mới, MVP dùng một màn hình ảnh/video và box SVG tương tác thay
+cho hai màn hình gốc/kết quả. Dùng chung renderer với Studio; hover/tooltip,
+chọn box và dòng bảng, bật/tắt hộp/tên/confidence ngay, điều khiển phát/tua video.
+Video dừng khi chọn box; overlay theo timestamp nguồn và không lặp box cuối
+trên phần video chưa được xử lý. Tùy chọn hiển thị không làm thay đổi metric;
+tệp xuất vẫn giữ cấu hình lần chạy cho đến khi chạy lại.
+
 Bổ sung sửa tương thích VPS: đã tái hiện lỗi OpenVINO thread protocol với
 CPU affinity giới hạn còn 2 CPU. Demo/MVP yêu cầu tối đa 4 luồng, chấp nhận
 OpenVINO sử dụng ít hơn khi lập lịch giới hạn, vẫn yêu cầu CPU và 1 stream.

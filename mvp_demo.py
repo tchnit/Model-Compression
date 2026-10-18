@@ -267,6 +267,11 @@ class MVPService:
                         raise OSError('Không ghi được ảnh kết quả')
                 frame = dict(index=job['processed'], time_seconds=job['processed'] / fps if fps else 0,
                              detections=boxes, inference_ms=infer_ms, pipeline_ms=pipeline_ms)
+                if capture:
+                    timestamp = float(capture.get(cv2.CAP_PROP_POS_MSEC)) / 1000
+                    previous = job['frames'][-1]['source_time_seconds'] if job['frames'] else -1
+                    frame['source_time_seconds'] = (timestamp if math.isfinite(timestamp) and timestamp >= 0 and timestamp > previous
+                                                    else previous + 1 / fps if job['frames'] else 0)
                 with self.lock:
                     job['frames'].append(frame)
                     job['processed'] += 1
