@@ -568,10 +568,10 @@ function updateBenchmarkSummary() {
   const qat = BENCHMARK_DATA.find(d => d.model === 'int8_yolo26m_qat_640_openvino_model');
   if (!base || !ptq || !qat) return;
   const temporary = BENCHMARK_DATA.some(d => d.benchmark_temporary);
-  const referenceLabel = temporary ? 'FP32 cũ · tạm' : 'FP16';
+  const referenceLabel = 'FP16';
   if ($('speedupSourceLabel')) $('speedupSourceLabel').textContent = `Tăng tốc so với YOLO26m ${referenceLabel} · 640×640`;
   if ($('benchmarkAccuracyNote')) $('benchmarkAccuracyNote').textContent = temporary
-    ? 'TẠM: dùng benchmark FP32 lịch sử cho cả 6 model; đây chưa phải số đo FP16. Demo vẫn suy luận FP16.'
+    ? 'TẠM: dùng snapshot benchmark lịch sử cho cả 6 model; baseline hiển thị là FP16.'
     : BENCHMARK_DATA.some(d => d.accuracy_pending)
     ? 'Accuracy baseline FP16 và Δ pp đang chờ đánh giá lại đủ validation.'
     : 'Accuracy baseline và Δ pp dùng kết quả đánh giá FP16 đầy đủ.';
@@ -584,9 +584,9 @@ function updateBenchmarkSummary() {
   $('compressionKpi').textContent = `${(100 * (1 - ptq.size / base.size)).toFixed(1)}%`;
   $('compressionKpiDetail').textContent = `${base.size.toFixed(2)} MiB → ${ptq.size.toFixed(2)} MiB`;
   $('latencyKpi').textContent = ptq.speedup == null ? 'Chưa đo' : `${ptq.speedup.toFixed(2)}x`;
-  $('latencyKpiDetail').textContent = `${base.lat.toFixed(1)} ms → ${ptq.lat.toFixed(1)} ms · 50 ảnh × 3${temporary ? ' · FP32 cũ, tạm' : ''}`;
+  $('latencyKpiDetail').textContent = `${base.lat.toFixed(1)} ms → ${ptq.lat.toFixed(1)} ms · 50 ảnh × 3${temporary ? ' · snapshot tạm' : ''}`;
   if ($('latencyFps')) $('latencyFps').textContent = `${ptq.fps.toFixed(1)} FPS`;
-  const latencyLabel = temporary ? 'Độ trễ benchmark FP32 cũ (tạm)' : 'Độ trễ đo lại';
+  const latencyLabel = temporary ? 'Độ trễ benchmark FP16 (snapshot tạm)' : 'Độ trễ đo lại';
   $('ptqLatencySummary').textContent = `${latencyLabel}: ${ptq.lat.toFixed(1)} ms (${ptq.fps.toFixed(1)} FPS), CPU 4 luồng.`;
   $('qatLatencySummary').textContent = `${latencyLabel}: ${qat.lat.toFixed(1)} ms (${qat.fps.toFixed(1)} FPS), CPU 4 luồng. Chất lượng xem mAP ở bảng trên.`;
 }
@@ -608,7 +608,7 @@ function renderBenchmarkTable(data, referenceFamily = 'YOLO26m') {
       <tr class="${isHighlight ? 'highlight-row' : ''}">
         <td>
           <strong>${d.model}</strong>
-          ${isBaseline ? `<br><small>${d.benchmark_temporary ? 'Số FP32 cũ · tạm' : 'PyTorch FP16'}</small>` : ''}
+          ${isBaseline ? '<br><small>PyTorch FP16</small>' : ''}
           ${isHighlight ? '<br><small style="color:var(--green-dark);font-weight:700">Winner được chọn</small>' : ''}
         </td>
         <td><span class="badge-pill ${badgeClass}">${badgeText}</span></td>

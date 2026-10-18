@@ -80,8 +80,9 @@ def parse_eval_dir(eval_dir: str) -> List[Dict[str, Any]]:
         m_path = Path(m_path_raw) if m_path_raw else Path(lbl)
         is_pt = m_path.suffix.lower() == ".pt"
         accuracy_precision = args.get("precision", "FP32") if is_pt else "INT8"
-        accuracy_available = not is_pt or (accuracy_precision == "FP16" and
-            m.get("runtime", {}).get("validation", {}).get("parameter_dtype") == "torch.float16")
+        expected_accuracy_dtype = "torch.float16" if accuracy_precision == "FP16" else "torch.float32"
+        accuracy_available = not is_pt or (
+            m.get("runtime", {}).get("validation", {}).get("parameter_dtype") == expected_accuracy_dtype)
         
         artifact_exists = bool(m_path_raw) and m_path.exists()
         if artifact_exists and m.get("artifact", {}).get("files"):
@@ -97,7 +98,10 @@ def parse_eval_dir(eval_dir: str) -> List[Dict[str, Any]]:
                         and ("ov_threads" not in snapshot_runtime
                              or snapshot_runtime["ov_threads"] == snapshot_protocol["threads"]))
         if is_pt:
-            verified = verified and snapshot_runtime.get("precision") == "FP16" and snapshot_runtime.get("parameter_dtype") == "torch.float16"
+            expected_latency_precision = snapshot_protocol.get("pytorch_precision")
+            expected_latency_dtype = "torch.float16" if expected_latency_precision == "FP16" else "torch.float32"
+            verified = (verified and snapshot_runtime.get("precision") == expected_latency_precision
+                        and snapshot_runtime.get("parameter_dtype") == expected_latency_dtype)
         latency_protocol = {"source": eval_dir, "runtime": m.get("runtime", {}),
                             "requested_threads": args.get("threads")}
         if verified:
@@ -195,7 +199,7 @@ SPEEDUP_REFERENCE_IMGSZ = 640
 
 
 def apply_reference_speedup(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Use YOLO26m FP16 at 640x640 as the single speedup reference.
+    """Use the YOLO26m baseline at 640x640 as the single speedup reference.
 
     Accuracy drop remains relative to the baseline at the same model family and
     resolution, because a resolution change also changes the task difficulty.

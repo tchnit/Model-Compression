@@ -47,7 +47,7 @@ class BenchmarkAggregationTests(unittest.TestCase):
             (run / 'report.json').write_text(json.dumps(report))
             (root / 'demo_data').mkdir()
             snapshot = {'protocol': {'imgsz': 640, 'rect': False, 'threads': 4, 'device': 'CPU',
-                                    'images': [], 'repeats': 3}, 'models': {model.name: {
+                                    'images': [], 'repeats': 3, 'pytorch_precision': 'FP16'}, 'models': {model.name: {
                 'artifact': artifact, 'runtime': {'torch_threads': 4, 'device': 'CPU', 'precision': 'FP16', 'parameter_dtype': 'torch.float16'},
                 'latency': {'mean': 10, 'p95': 12}}}}
             path = root / 'demo_data/latency_benchmark.json'
@@ -62,9 +62,15 @@ class BenchmarkAggregationTests(unittest.TestCase):
                 (run / 'report.json').write_text(json.dumps(report))
                 self.assertEqual(parse_eval_dir(str(run))[0]['map50_95_pct'], 30)
                 snapshot['models'][model.name]['runtime']['precision'] = 'FP32'
+                snapshot['models'][model.name]['runtime']['parameter_dtype'] = 'torch.float32'
                 path.write_text(json.dumps(snapshot))
                 self.assertFalse(parse_eval_dir(str(run))[0]['latency_verified'])
+                snapshot['protocol']['pytorch_precision'] = 'FP32'
+                path.write_text(json.dumps(snapshot))
+                self.assertTrue(parse_eval_dir(str(run))[0]['latency_verified'])
+                snapshot['protocol']['pytorch_precision'] = 'FP16'
                 snapshot['models'][model.name]['runtime']['precision'] = 'FP16'
+                snapshot['models'][model.name]['runtime']['parameter_dtype'] = 'torch.float16'
                 report['protocol']['args'].pop('precision')
                 (run / 'report.json').write_text(json.dumps(report))
                 self.assertIsNone(parse_eval_dir(str(run))[0]['map50_95_pct'])

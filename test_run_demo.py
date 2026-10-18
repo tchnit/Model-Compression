@@ -9,7 +9,7 @@ import socketserver
 import threading
 import unittest
 import tempfile
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from PIL import Image
 
@@ -122,6 +122,11 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26s_fp32"]["path"]).name, "yolo26s-bdd100k.pt")
         self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26s_ptq_int8"]["path"]).name, "int8_yolo26s_640_openvino_model")
         self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26m_qat_int8"]["path"]).name, "int8_yolo26m_qat_640_openvino_model")
+        self.assertEqual(
+            {key: run_demo.MODEL_CONFIGS[key].get('precision') for key in
+             ('yolo26m_fp32', 'yolo26s_fp32', 'yolo26s_fp32_pack')},
+            {'yolo26m_fp32': 'FP32', 'yolo26s_fp32': 'FP32', 'yolo26s_fp32_pack': 'FP32'},
+        )
         self.assertNotIn("yolo26s_ptq_480", run_demo.MODEL_CONFIGS)
         self.assertNotIn("yolo26m_ptq_480", run_demo.MODEL_CONFIGS)
 
@@ -144,7 +149,43 @@ class DemoServerTests(unittest.TestCase):
             self.assertEqual(len(records), 5)
             self.assertTrue(all(row["runtime"] == "CPU ×4 · 640×640" for row in records.values()))
             if run_demo.MODEL_CONFIGS[model_key]['path'].endswith('.pt'):
-                self.assertTrue(all(row['runtime_settings']['parameter_dtype'] == 'torch.float16' for row in records.values()))
+                precision = run_demo.MODEL_CONFIGS[model_key].get('precision', 'FP16')
+                dtype = 'torch.float32' if precision == 'FP32' else 'torch.float16'
+                self.assertTrue(all(row['runtime_settings']['parameter_dtype'] == dtype for row in records.values()))
+        for model_key in ('yolo26m_fp32', 'yolo26s_fp32', 'yolo26s_fp32_pack'):
+            self.assertIn('FP16', data['models'][model_key]['name'])
+
+    def test_fp16_display_baseline_runs_with_fp32_tensors(self):
+        image = BytesIO()
+        Image.new('RGB', (1, 1)).save(image, 'JPEG')
+        encoded = base64.b64encode(image.getvalue()).decode()
+
+        class Result:
+            boxes = []
+            names = {}
+
+        class Model:
+            def __call__(self, *args, **kwargs):
+                return [Result()]
+
+        config = {'path': 'models/yolo26m-bdd100k.pt', 'task': None, 'device': 'cpu', 'precision': 'FP32'}
+        runtime = {'device': 'CPU', 'torch_threads': 4, 'precision': 'FP32',
+                   'parameter_dtype': 'torch.float32', 'input_dtype': 'torch.float32'}
+        with patch.dict(run_demo.MODEL_CONFIGS, {'yolo26m_fp32': config}, clear=True), \
+                patch.dict(run_demo.LOADED_MODELS, {}, clear=True), \
+                patch.object(run_demo, 'get_model', return_value=Model()), \
+                patch.object(run_demo, 'configure_cpu_backend', return_value=runtime) as configure, \
+                patch.object(run_demo, 'cpu_device', return_value='cpu'):
+            run_demo.WARMED_MODELS.clear()
+            run_demo.MODEL_RUNTIMES.clear()
+            status, body = self.request('POST', '/api/predict',
+                                        json.dumps({'image': encoded, 'models': ['yolo26m_fp32']}),
+                                        {'Content-Type': 'application/json'})
+        self.assertEqual(status, 200)
+        configure.assert_called_once_with(ANY, config['path'], 4, 'FP32', strict_threads=False)
+        result = json.loads(body)['detections']['yolo26m_fp32']
+        self.assertEqual(result['runtime_settings']['precision'], 'FP32')
+        self.assertEqual(result['runtime_settings']['parameter_dtype'], 'torch.float32')
 
     def test_predict_rejects_oversized_and_unknown_model_requests(self):
         status, _ = self.request(

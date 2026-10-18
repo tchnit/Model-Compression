@@ -93,7 +93,7 @@ def main():
     protocol = {"platform": platform.platform(), "logical_cpus": os.cpu_count(), "created_at": datetime.now(timezone.utc).isoformat(), "imgsz": 640,
                 "rect": False, "conf": 0.001, "iou": 0.7, "max_det": 300,
                 "threads": 4, "device": "CPU", "exclusive_host": False, "warmup": 5, "repeats": 3,
-                "pytorch_precision": "FP16", "export_precision": "artifact-defined",
+                "pytorch_precision": "FP32", "export_precision": "artifact-defined",
                 "images": [{"name": p.name, "sha256": sha256(p)} for p in images],
                 "versions": versions,
                 "timing": "predict wall; excludes image decode, model setup and warmup"}
@@ -108,7 +108,7 @@ def main():
         options = dict(imgsz=640, rect=False, device=cpu_device(path), verbose=False,
                        conf=0.001, iou=0.7, max_det=300)
         model(np.zeros((640, 640, 3), dtype=np.uint8), **options)
-        runtime = configure_cpu_backend(model, path, 4)
+        runtime = configure_cpu_backend(model, path, 4, config.get('precision', 'FP16'))
         for _ in range(5):
             model(cv2.imread(str(images[0])), **options)
         if key in measured_keys:

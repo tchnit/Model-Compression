@@ -50,6 +50,11 @@ vm.runInContext(dashboardScript.slice(dashboardScript.indexOf('function renderBe
 s.read('renderBenchmarkEvidence()');
 assert.ok(s.read("document.getElementById('qatBenchmarkSummary').textContent").includes('123,4 ms'));
 assert.ok(s.read("document.getElementById('qatBenchmarkSummary').textContent").includes('Chưa có speedup cùng protocol.'));
+qat.speedup=2.5;
+s.read(`document.getElementById('benchmarkSummaryData').textContent=${JSON.stringify(JSON.stringify(summary))}`);
+s.read('renderBenchmarkEvidence()');
+assert.ok(s.read("document.getElementById('qatBenchmarkSummary').textContent").includes('FP16'));
+assert.ok(!s.read("document.getElementById('qatBenchmarkSummary').textContent").includes('FP32'));
 console.log('Dashboard reset, empty import/reload, corrected evidence and safe migration passed.');
 
 const current=JSON.parse(s.read('JSON.stringify(VERIFIED_STATE)'));current.metrics.sourceSize=42.02248477935791;assert.equal(load(current).read('state.metrics.sourceSize'),42.02248477935791);

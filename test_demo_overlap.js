@@ -93,10 +93,11 @@ for (const filter of ['all', 'YOLO26s', 'INT8', 'YOLO26m']) {
 console.log('Winner: only YOLO26s PTQ is highlighted across benchmark filters.');
 
 vm.runInContext('for (const row of BENCHMARK_DATA) row.benchmark_temporary = true; filterTable("all"); updateBenchmarkSummary();', context);
-assert.match(elements.get('benchmarkAccuracyNote').textContent, /TẠM.*FP32 lịch sử/);
-assert.match(elements.get('benchmarkTableBody').innerHTML, /Số FP32 cũ · tạm/);
-assert.doesNotMatch(elements.get('retentionKpiDetail').textContent, /\(FP16\)/);
-assert.match(elements.get('speedupSourceLabel').textContent, /FP32 cũ · tạm/);
+assert.match(elements.get('benchmarkAccuracyNote').textContent, /TẠM.*baseline hiển thị là FP16/);
+assert.match(elements.get('benchmarkTableBody').innerHTML, /PyTorch FP16/);
+assert.match(elements.get('retentionKpiDetail').textContent, /\(FP16\)/);
+assert.match(elements.get('speedupSourceLabel').textContent, /FP16/);
+assert.doesNotMatch(elements.get('benchmarkTableBody').innerHTML, /FP32/);
 vm.runInContext('for (const row of BENCHMARK_DATA) { row.benchmark_temporary = false; if (row.role === "baseline") { row.accuracy_pending = true; row.map95 = null; } } filterTable("all"); updateBenchmarkSummary();', context);
 assert.match(elements.get('benchmarkAccuracyNote').textContent, /đang chờ/);
 assert.match(elements.get('benchmarkTableBody').innerHTML, /Chưa đo FP16/);

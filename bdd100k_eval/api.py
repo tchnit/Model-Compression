@@ -145,6 +145,7 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                             model(np.zeros((imgsz, imgsz, 3), dtype=np.uint8), imgsz=imgsz, conf=0.10,
                                   verbose=False, rect=False, device=cpu_device(MODEL_CONFIGS[m_key]['path']))
                             MODEL_RUNTIMES[m_key] = configure_cpu_backend(model, MODEL_CONFIGS[m_key]['path'], CPU_THREADS,
+                                                                        MODEL_CONFIGS[m_key].get('precision', 'FP16'),
                                                                         strict_threads=False)
                             model(np.zeros((imgsz, imgsz, 3), dtype=np.uint8), imgsz=imgsz, conf=0.10,
                                   verbose=False, rect=False, device=cpu_device(MODEL_CONFIGS[m_key]['path']))

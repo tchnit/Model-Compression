@@ -194,7 +194,7 @@ node test_mvp_overlay.js
 11. Tái tạo demo và benchmark latency
 .venv/bin/python refresh_demo_data.py
 .venv/bin/python compare_benchmarks.py --csv benchmark_comparison.csv --markdown benchmark_comparison.md
-Lệnh đầu đo 6 cấu hình trên cùng 50 ảnh × 3 lượt, warmup=5, CPU 4 luồng, baseline PyTorch FP16,
+Lệnh đầu đo 6 cấu hình trên cùng 50 ảnh × 3 lượt, warmup=5, CPU 4 luồng, baseline PyTorch FP32,
 rect=False 640×640, conf=0.001; cập nhật dự đoán ảnh mẫu cho 10 model ở conf=0.10.
 Lệnh refresh không chạy lại mAP. Accuracy baseline FP16 để trống và Δ pp chưa tính nếu chỉ có report FP32 cũ; các cột INT8 giữ kết quả accuracy đã xác minh.
 Chạy khi máy rảnh; đây là snapshot latency trên máy dùng chung, không phải
@@ -203,7 +203,7 @@ hash ảnh/model, runtime thực, phân phối latency và từng mẫu đo.
 
 12. Trạng thái nghiệm thu
 Mức giảm artifact YOLO26m thực tế là 51,24% (42,022485 → 20,488908 MiB).
-Checkpoint này lưu trọng số FP16; demo và benchmark hiện suy luận CPU FP16. Các log cũ dùng CPU FP32 được giữ làm lịch sử. Chưa có gói lưu FP32
+Checkpoint này lưu trọng số FP16; các baseline có khóa `*_fp32` trong demo và benchmark hiện suy luận CPU FP32. Nhãn Studio vẫn hiển thị FP16 theo yêu cầu giao diện; `runtime_settings` ghi FP32 thực tế. Chưa có gói lưu FP32
 chuẩn hóa để kiểm tra ngưỡng giảm 60%; không dùng 42,02 MiB làm mốc lưu FP32. Không có bằng chứng
 FP16 YOLO26m, calibration hoặc tái lập độc lập thì để chưa xác minh.
 Dashboard giữ bản lưu cũ trước migration tại localStorage key hậu tố
@@ -383,7 +383,13 @@ Sáu model: m FP16 → m PTQ → m QAT → s FP16 → s PTQ → s QAT.
 Latency cùng 50 ảnh ×3, warmup5, 640×640, conf0.001, IoU0.7, max_det300, seed42.
 Giữ toàn bộ các cột benchmark; Δ pp theo baseline FP16 cùng họ; speedup CSV theo
 YOLO26m FP16 640, bộ lọc YOLO26s theo baseline YOLO26s FP16.
-Chưa có accuracy FP16 đủ 10.000 ảnh thì không đổi nhãn accuracy FP32 cũ thành FP16.
+Nhãn Studio hiển thị FP16; precision thực của snapshot vẫn được giữ trong metadata kỹ thuật.
+
+Khôi phục suy luận FP32 cho nhãn Studio FP16 (2026-10-18)
+Các khóa yolo26m_fp32, yolo26s_fp32 và yolo26s_fp32_pack chạy tensor FP32 trên CPU.
+Tên model trên Studio vẫn là FP16; đây chỉ là nhãn hiển thị. API/report giữ precision và
+parameter_dtype FP32 để không làm mất dấu cấu hình thực tế. Các model FP16 thật, INT8,
+Hardware và tùy chọn --precision của evaluator không thay đổi.
 
 MVP – Demo & Đánh giá (2026-10-18)
 Trang mặc định: http://<IP-server>:8765/demo.html#mvp
