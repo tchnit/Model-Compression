@@ -4,7 +4,8 @@
 from __future__ import annotations
 from inference_runtime import cpu_device, configure_cpu_backend
 import hashlib
-from evaluate import artifact_info
+from bdd100k_eval.artifacts import artifact_info, get_dir_size_mib
+from bdd100k_eval.reporting import format_table, export_csv
 import argparse
 import csv
 import glob
@@ -14,14 +15,6 @@ from pathlib import Path
 from bdd100k_eval.config import ROOT
 import time
 from typing import Any, Dict, List, Optional
-
-
-def get_dir_size_mib(path: Path) -> float:
-    if not path.exists():
-        return 0.0
-    if path.is_file():
-        return path.stat().st_size / (1024 * 1024)
-    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file()) / (1024 * 1024)
 
 
 def find_eval_dirs(custom_dirs: Optional[List[str]] = None) -> List[str]:
@@ -241,33 +234,6 @@ def apply_reference_speedup(records: List[Dict[str, Any]]) -> List[Dict[str, Any
     return records
 
 
-def format_table(headers: List[str], rows: List[List[str]], align_right: Optional[List[bool]] = None) -> str:
-    if not rows:
-        return "(Không có dữ liệu)"
-    cols = len(headers)
-    widths = [len(h) for h in headers]
-    for row in rows:
-        for i in range(cols):
-            val = str(row[i]) if i < len(row) else ""
-            if len(val) > widths[i]:
-                widths[i] = len(val)
-
-    if align_right is None:
-        align_right = [False] * cols
-
-    def build_line(values, fill=" "):
-        cells = []
-        for i, val in enumerate(values):
-            w = widths[i]
-            cells.append(val.rjust(w, fill) if align_right[i] else val.ljust(w, fill))
-        return "| " + " | ".join(cells) + " |"
-
-    separator = "|-" + "-|-".join(["-" * w for w in widths]) + "-|"
-    header_line = build_line(headers)
-    data_lines = [build_line(row) for row in rows]
-    return "\n".join([header_line, separator] + data_lines)
-
-
 def percent(value):
     return f"{value:.2f}%" if value is not None else "N/A (chưa đo FP16)"
 
@@ -280,13 +246,6 @@ def export_markdown(headers: List[str], rows: List[List[str]], out_path: str, ti
 
     lines = [f"# {title}\n", format_table(headers, rows, align_right=align)]
     Path(out_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
-def export_csv(headers: List[str], rows: List[List[str]], out_path: str) -> None:
-    with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.writer(f)
-        writer.writerow(headers)
-        writer.writerows(rows)
 
 
 def run_live_latency_benchmark(

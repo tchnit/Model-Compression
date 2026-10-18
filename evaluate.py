@@ -21,6 +21,8 @@ import subprocess
 import sys
 import threading
 import time
+from bdd100k_eval.artifacts import sha256, artifact_info
+from bdd100k_eval.reporting import json_default, write_json
 
 DEFAULT_NAMES = ["pedestrian", "rider", "car", "truck", "bus", "train",
                  "motorcycle", "bicycle", "traffic light", "traffic sign"]
@@ -30,47 +32,6 @@ ALIASES = {"person": "pedestrian", "bike": "bicycle", "motor": "motorcycle"}
 def canonical(name):
     name = str(name).strip().lower().replace("_", " ")
     return ALIASES.get(name, name)
-
-
-def json_default(value):
-    if isinstance(value, (datetime, date)):
-        return value.isoformat()
-
-    if isinstance(value, Path):
-        return str(value)
-
-    raise TypeError(
-        f"Không thể chuyển {type(value).__name__} sang JSON"
-    )
-
-
-def write_json(path, obj):
-    content = json.dumps(
-        obj,
-        ensure_ascii=False,
-        indent=2,
-        allow_nan=False,
-        default=json_default,
-    )
-    Path(path).write_text(content, encoding="utf-8")
-
-
-def sha256(path):
-    h = hashlib.sha256()
-    with Path(path).open("rb") as f:
-        for block in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(block)
-    return h.hexdigest()
-
-
-def artifact_info(path):
-    path = Path(path)
-    files = [path] if path.is_file() else sorted(p for p in path.rglob("*") if p.is_file())
-    if not files:
-        raise ValueError(f"Artifact rỗng: {path}")
-    return {"path": str(path), "size_mib": sum(p.stat().st_size for p in files) / 2**20,
-            "files": [{"name": p.name if path.is_file() else str(p.relative_to(path)),
-                       "sha256": sha256(p)} for p in files]}
 
 
 def read_frames(path):

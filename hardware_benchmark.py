@@ -12,16 +12,12 @@ from importlib import metadata
 from pathlib import Path
 
 from bdd100k_eval.config import ROOT
+from bdd100k_eval.artifacts import sha256
 EXPORTS = ROOT / 'runtime_exports'
 THREADS = 4
 NAMES = ['person', 'rider', 'car', 'truck', 'bus', 'train', 'motor', 'bike', 'traffic light', 'traffic sign']
 MODELS = {'yolo26m': 'YOLO26m · Baseline / PTQ', 'yolo26s': 'YOLO26s · Baseline / PTQ',
           'yolo26m_qat': 'YOLO26m · QAT INT8', 'yolo26s_qat': 'YOLO26s · QAT INT8'}
-
-
-def sha256(path):
-    with open(path, 'rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
 def decode_image(value, max_pixels=20_000_000):

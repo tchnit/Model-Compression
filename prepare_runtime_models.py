@@ -9,12 +9,8 @@ import tempfile
 from pathlib import Path
 
 from bdd100k_eval.config import ROOT
+from bdd100k_eval.artifacts import sha256 as digest
 OUT = ROOT / 'runtime_exports'
-
-
-def digest(path):
-    with open(path, 'rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
 def write_browser_manifest(manifest):

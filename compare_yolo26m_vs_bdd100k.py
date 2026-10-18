@@ -24,12 +24,13 @@ import json
 import statistics
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import cv2
 import numpy as np
 import torch
 from ultralytics import YOLO
+from bdd100k_eval.artifacts import sha256 as compute_sha256
 
 # Bảng ánh xạ ngữ nghĩa giữa MS COCO (80 lớp) và BDD100K (10 lớp)
 COCO_TO_BDD_MAP = {
@@ -45,18 +46,9 @@ COCO_TO_BDD_MAP = {
 }
 
 
-def compute_sha256(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def get_model_stats(model_path: str) -> Dict[str, Any]:
     stat = os.stat(model_path)
     size_mb = stat.st_size / (1024 * 1024)
-    size_mib = stat.st_size / (1024 * 1024 * 1.048576)
     sha = compute_sha256(model_path)
 
     yolo = YOLO(model_path)

@@ -14,6 +14,7 @@ import sys
 import time
 from tempfile import TemporaryDirectory
 from typing import Any, Dict, List, Optional
+from bdd100k_eval.reporting import format_table, export_csv
 
 
 DEFAULT_BASELINE = "models/yolo26m-bdd100k.pt"
@@ -23,33 +24,6 @@ DEFAULT_YOLO26S = "models/int8_yolo26s_640_openvino_model"
 DEFAULT_YOLO26S_BASELINE = "models/yolo26s-bdd100k.pt"
 DEFAULT_IMAGES = "data/bdd100k/images/val"
 DEFAULT_LABELS = "data/bdd100k/labels/bdd100k_labels_images_val.json"
-
-
-def format_table(headers: List[str], rows: List[List[str]], align_right: Optional[List[bool]] = None) -> str:
-    if not rows:
-        return "(Không có dữ liệu)"
-    cols = len(headers)
-    widths = [len(h) for h in headers]
-    for row in rows:
-        for i in range(cols):
-            val = str(row[i]) if i < len(row) else ""
-            if len(val) > widths[i]:
-                widths[i] = len(val)
-
-    if align_right is None:
-        align_right = [False] * cols
-
-    def build_line(values, fill=" "):
-        cells = []
-        for i, val in enumerate(values):
-            w = widths[i]
-            cells.append(val.rjust(w, fill) if align_right[i] else val.ljust(w, fill))
-        return "| " + " | ".join(cells) + " |"
-
-    separator = "|-" + "-|-".join(["-" * w for w in widths]) + "-|"
-    header_line = build_line(headers)
-    data_lines = [build_line(row) for row in rows]
-    return "\n".join([header_line, separator] + data_lines)
 
 
 def parse_report_and_compare(report_path: Path) -> Dict[str, Any]:
@@ -194,13 +168,6 @@ def parse_report_and_compare(report_path: Path) -> Dict[str, Any]:
     ])
 
     return {"headers": headers, "rows": rows, "align_right": align_right}
-
-
-def export_csv(headers: List[str], rows: List[List[str]], out_path: Path) -> None:
-    with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.writer(f)
-        writer.writerow(headers)
-        writer.writerows(rows)
 
 
 def export_markdown(headers: List[str], rows: List[List[str]], out_path: Path, title: str) -> None:
