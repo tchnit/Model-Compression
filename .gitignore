@@ -89,9 +89,9 @@ coverage.xml
 *.safetensors
 *.blob
 
-# Model checkpoints directory
-/models/
-!/models/.gitkeep
+# Version deployment models, including checkpoints and OpenVINO binary weights.
+!/models/
+!/models/**
 
 # Runtime exports (keep manifest metadata, ignore compiled binaries)
 /runtime_exports/*

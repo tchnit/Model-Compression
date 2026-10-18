@@ -185,7 +185,7 @@ class DemoServerTests(unittest.TestCase):
                         self.assertEqual(status, 503)
                         self.assertEqual(error['code'], 'model_artifact_missing')
                         self.assertIn('models/' + Path(cfg['path']).name, error['message'])
-                        self.assertIn('máy gốc', error['message'])
+                        self.assertIn('git pull', error['message'])
                         self.assertEqual(run_demo.LOADED_MODELS, {})
                 self.assertTrue(run_demo.INFERENCE_SLOT.acquire(blocking=False))
                 run_demo.INFERENCE_SLOT.release()

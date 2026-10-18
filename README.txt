@@ -9,7 +9,7 @@ Chạy chỉ baseline vẫn cho accuracy/latency, nhưng không có mAP drop cho
 
 2. Cài đặt trên máy khác (Python 3.12)
 Các bản NumPy đang ghim yêu cầu Python >=3.12; bộ này được kiểm tra với Python 3.12 trên Linux x86_64.
-Sao chép source, models/, demo_data/ và runtime_exports/ nếu dùng Hardware.
+git clone/pull lấy source, models/ và demo_data/; sao chép thêm runtime_exports/ nếu dùng Hardware.
 Đánh giá accuracy còn cần data/bdd100k/; không sao chép thư mục .venv từ máy cũ.
 
 Máy CPU (demo, PyTorch/OpenVINO/ONNX Runtime, export ONNX và calibration ONNX):
@@ -37,8 +37,8 @@ python run_demo.py
 Server kiểm tra Python và thư viện runtime trước khi mở cổng; chưa tải model ở bước này.
 
 Nếu API báo model_artifact_missing hoặc "Model không sẵn sàng", thiếu artifact trên máy đích.
-models/ bị loại khỏi Git: git clone/pull chỉ lấy code, không lấy trọng số.
-Sao chép models/ từ máy gốc vào thư mục dự án trên VPS, giữ nguyên tên và cấu trúc:
+models/ được lưu trên Git: chạy git pull để tải các checkpoint và artifact OpenVINO.
+Nếu sao chép thủ công, giữ nguyên tên và cấu trúc trong thư mục dự án trên VPS:
 - models/yolo26m-bdd100k.pt
 - models/int8_yolo26m_640_openvino_model/ (đầy đủ model.xml, model.bin, metadata.yaml)
 - Các model khác muốn sử dụng: sao chép checkpoint hoặc toàn bộ thư mục OpenVINO tương ứng.

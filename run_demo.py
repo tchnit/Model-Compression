@@ -119,7 +119,7 @@ def get_model(model_key):
             artifact = os.path.relpath(cfg['path'], DIRECTORY)
             raise FileNotFoundError(
                 f'Thiếu model {model_key}: {artifact}. '
-                'Thư mục models/ không được lưu trên Git; hãy sao chép model từ máy gốc '
+                'Hãy chạy git pull để cập nhật models/ hoặc sao chép model từ máy gốc '
                 '(OpenVINO cần cả thư mục chứa XML, BIN và metadata.yaml).'
             )
         from ultralytics import YOLO
@@ -362,7 +362,7 @@ def run():
     check_runtime()
     for key, cfg in MODEL_CONFIGS.items():
         if not os.path.exists(cfg['path']):
-            print(f"[!] Thiếu model {key}: {cfg['path']}. Sao chép từ máy gốc; git pull không tải models/.",
+            print(f"[!] Thiếu model {key}: {cfg['path']}. Chạy git pull để cập nhật models/.",
                   file=sys.stderr)
 
     print("[*] Đang khởi động AI Model Compression Studio...")
