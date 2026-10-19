@@ -14,11 +14,13 @@ import importlib
 import socketserver
 import json
 import base64
+import math
 import threading
 import time
 from urllib.parse import unquote, urlsplit, parse_qs
 import re
 import shutil
+import tempfile
 from bdd100k_eval.inference_runtime import cpu_device, configure_cpu_backend
 from bdd100k_eval import hardware_benchmark as hardware_bench
 from bdd100k_eval.mvp_demo import MVPService, MODEL_KEY as MVP_MODEL_KEY
@@ -27,6 +29,79 @@ from bdd100k_eval.config import (HOST, PORT, DIRECTORY, CPU_THREADS, MAX_REQUEST
                                   MAX_IMAGE_PIXELS, PUBLIC_FILES, MODEL_CONFIGS, BROWSER_ONNX_MODELS)
 
 INFERENCE_SLOT = threading.BoundedSemaphore(1)
+HUGGINGFACE_INFERENCE_SLOT = threading.BoundedSemaphore(1)
+HUGGINGFACE_MODEL_KEY = 'yolo26s_export_int8_640'
+HUGGINGFACE_SPACE = 'kiioss/m38-edge-labeling'
+HUGGINGFACE_CPU = 'Intel(R) Xeon(R) Platinum 8559C'
+_HUGGINGFACE_CLIENT = None
+
+
+def get_huggingface_client():
+    global _HUGGINGFACE_CLIENT
+    if _HUGGINGFACE_CLIENT is None:
+        from gradio_client import Client
+        _HUGGINGFACE_CLIENT = Client(HUGGINGFACE_SPACE, verbose=False, httpx_kwargs={'timeout': 60.0})
+    return _HUGGINGFACE_CLIENT
+
+
+def predict_on_huggingface(image, width, height, conf):
+    """Run the one model installed on the remote Space and normalize its response."""
+    import cv2
+    from gradio_client import handle_file
+
+    encoded, buffer = cv2.imencode('.png', image)
+    if not encoded:
+        raise RuntimeError('Không thể chuẩn bị ảnh cho Hugging Face')
+    with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+        image_file.write(buffer.tobytes())
+        image_file.flush()
+        started = time.perf_counter()
+        result = get_huggingface_client().predict(
+            image_input=handle_file(image_file.name),
+            conf_threshold=conf,
+            iou_threshold=0.45,
+            api_name='/xeon_bridge',
+        )
+        request_time_ms = (time.perf_counter() - started) * 1000
+
+    if not isinstance(result, dict) or result.get('success') is not True or not isinstance(result.get('detections'), list):
+        raise RuntimeError('Hugging Face trả về dữ liệu không hợp lệ')
+    boxes = []
+    for detection in result['detections']:
+        try:
+            xyxy = [float(value) for value in detection['bbox_xyxy']]
+            if len(xyxy) != 4:
+                raise ValueError
+            class_id = int(detection['class_id'])
+            class_name = str(detection['class_name'])
+            confidence = float(detection['confidence'])
+            if not all(math.isfinite(value) for value in xyxy) or not 0 <= confidence <= 1:
+                raise ValueError
+        except (KeyError, TypeError, ValueError) as error:
+            raise RuntimeError('Hugging Face trả về detection không hợp lệ') from error
+        boxes.append({
+            'class_id': class_id,
+            'class_name': class_name,
+            'conf': round(confidence, 3),
+            'box_norm': [round(xyxy[0] / width, 4), round(xyxy[1] / height, 4),
+                         round(xyxy[2] / width, 4), round(xyxy[3] / height, 4)],
+            'box_px': [round(value, 1) for value in xyxy],
+        })
+    server_wall_ms = float(result.get('total_wall_ms', result.get('real_inference_ms', 0)))
+    server_cpu = str(result.get('server_cpu') or HUGGINGFACE_CPU)
+    return {
+        'inference_time_ms': round(server_wall_ms, 1),
+        'runtime': f'Hugging Face · {server_cpu} · API {request_time_ms:.1f} ms',
+        'runtime_settings': {
+            'provider': 'huggingface',
+            'server_cpu': server_cpu,
+            'server_inference_ms': float(result.get('real_inference_ms', server_wall_ms)),
+            'server_wall_ms': server_wall_ms,
+            'request_time_ms': round(request_time_ms, 1),
+        },
+        'detections_count': len(boxes),
+        'boxes': boxes,
+    }
 
 # The OpenVINO exports run on CPU.  Pin the PyTorch reference to the same
 # device, otherwise Ultralytics will silently select CUDA for `.pt` models and
@@ -129,12 +204,34 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                 target_models = payload.get('models', list(MODEL_CONFIGS.keys()))
                 if not isinstance(target_models, list) or not target_models or any(not isinstance(key, str) or key not in MODEL_CONFIGS for key in target_models):
                     raise ValueError('Danh sách model không hợp lệ')
+                processor = payload.get('processor', 'host')
+                if processor not in ('host', 'huggingface'):
+                    raise ValueError('CPU suy luận không hợp lệ')
                 try:
                     conf_thresh = float(payload.get('conf', 0.10))
                 except (TypeError, ValueError) as error:
                     raise ValueError('conf phải thuộc [0, 1]') from error
                 if not 0 <= conf_thresh <= 1:
                     raise ValueError('conf phải thuộc [0, 1]')
+                if processor == 'huggingface':
+                    if target_models != [HUGGINGFACE_MODEL_KEY]:
+                        raise ValueError('CPU Hugging Face chỉ hỗ trợ YOLO26s INT8 export 640')
+                    if not HUGGINGFACE_INFERENCE_SLOT.acquire(blocking=False):
+                        self.send_json(503, {'status': 'error', 'message': 'CPU Hugging Face đang xử lý ảnh khác'})
+                        return
+                    try:
+                        detection = predict_on_huggingface(img, w, h, conf_thresh)
+                    except Exception as error:
+                        print(f'[!] Hugging Face inference failed: {error}', file=sys.stderr)
+                        self.send_json(502, {'status': 'error', 'message': f'Không gọi được CPU Hugging Face: {error}'})
+                        return
+                    finally:
+                        HUGGINGFACE_INFERENCE_SLOT.release()
+                    self.send_json(200, {
+                        'status': 'success', 'width': w, 'height': h,
+                        'detections': {HUGGINGFACE_MODEL_KEY: detection},
+                    })
+                    return
                 cpu_name = hardware_bench.cpu_name()
                 max_threads = min(hardware_bench.int8_cpu_thread_limit(cpu_name, CPU_THREADS)
                                   if 'int8' in key else CPU_THREADS for key in target_models)

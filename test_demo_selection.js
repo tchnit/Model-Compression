@@ -6,12 +6,14 @@ const scripts = ['overlays.js', 'studio.js'].map(name => fs.readFileSync(`${__di
 const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
-const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26s_baseline_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8'];
+const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26s_baseline_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8', 'yolo26s_export_int8_640'];
 for (const side of ['A', 'B']) {
   const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
   const cores = html.match(new RegExp(`<select class="model-select" id="coreSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...cores.matchAll(/<option value="([^"]+)"/g)].map(match => Number(match[1])), [1, 2, 3]);
+  const processors = html.match(new RegExp(`<select class="model-select" id="processorSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
+  assert.deepEqual([...processors.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['host', 'huggingface']);
 }
 assert.doesNotMatch(html, /applyPreset\('qat'\)/);
 assert.doesNotMatch(html, /Tỷ Lệ Nén Trọng Số|Tăng Tốc Suy Luận \(CPU\)|Bảo Toàn mAP50–95|Precision Trên Tập Validation/);
@@ -136,6 +138,7 @@ async function studio() {
     assert.deepEqual(s.requests[0].payload.models, ['a']);
     assert.equal(s.requests[0].payload.threads, 3);
     assert.equal(s.requests[0].payload.image, scene.data_uri);
+    assert.equal(s.requests[0].payload.processor, 'host');
     s.finish(0);
     await selected;
     assert.ok(scene.live_detections['a:3']);
@@ -154,6 +157,25 @@ async function studio() {
     s.finish(2);
     await rerun;
     assert.ok(scene.live_detections['a:1']);
+  }
+
+  // The remote CPU switches to the only matching Space artifact and does not reuse host cache/core settings.
+  {
+    const s = await studio();
+    const selected = s.context.selectProcessor('A', 'huggingface');
+    await tick();
+    assert.deepEqual(s.requests[0].payload.models, ['yolo26s_export_int8_640']);
+    assert.equal(s.requests[0].payload.processor, 'huggingface');
+    assert.equal(s.element('coreSelectA').disabled, true);
+    s.finish(0);
+    await selected;
+    assert.ok(s.data.scenes[0].live_detections['yolo26s_export_int8_640:huggingface']);
+    const host = s.context.selectModel('A', 'a');
+    await tick();
+    assert.equal(s.requests[1].payload.processor, 'host');
+    assert.equal(s.element('processorSelectA').value, 'host');
+    s.finish(1);
+    await host;
   }
 
   // Xeon E5-2696 v4 exposes only 1–3 cores for INT8 models.

@@ -19,6 +19,8 @@ let currentModelA = '';
 let currentModelB = '';
 let currentThreadsA = 3;
 let currentThreadsB = 3;
+let currentProcessorA = 'host';
+let currentProcessorB = 'host';
 let currentConf = 0.25;
 let currentViewMode = 'split'; // split, slider, toggle
 let selectedToggleModel = 'A';
@@ -30,6 +32,7 @@ let serverCpuThreads = null;
 let serverInt8CpuThreads = null;
 const liveSceneRequests = new Map();
 let inferenceQueue = Promise.resolve();
+const HUGGINGFACE_MODEL_KEY = 'yolo26s_export_int8_640';
 
 // DOM helper
 const $ = id => document.getElementById(id);
@@ -37,7 +40,9 @@ const $ = id => document.getElementById(id);
 function inferenceSelection(side) {
   const modelKey = side === 'A' ? currentModelA : currentModelB;
   const threads = side === 'A' ? currentThreadsA : currentThreadsB;
-  return { modelKey, threads, signature: `${modelKey}:${threads}` };
+  const processor = side === 'A' ? currentProcessorA : currentProcessorB;
+  return { modelKey, threads, processor,
+    signature: processor === 'host' ? `${modelKey}:${threads}` : `${modelKey}:huggingface` };
 }
 
 function modelThreadLimit(modelKey) {
@@ -99,7 +104,7 @@ function updateInferenceStatus() {
     item.modelKey && items.findIndex(other => other.signature === item.signature) === index
       && liveSceneRequests.has(`${currentSceneId}:${item.signature}`));
   $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
-  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(item => `${demoData.models[item.modelKey].name} (CPU ×${item.threads})`).join(', ')} tuần tự...`;
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(item => `${demoData.models[item.modelKey].name} (${item.processor === 'host' ? `CPU ×${item.threads}` : 'Hugging Face'})`).join(', ')} tuần tự...`;
 }
 
 function inferScene(scene, sides) {
@@ -108,7 +113,7 @@ function inferScene(scene, sides) {
     demoData.models[item.modelKey]
       && items.findIndex(other => other.signature === item.signature) === index
       && !scene.live_detections?.[item.signature]);
-  return Promise.all(selections.map(({ modelKey, threads, signature }) => {
+  return Promise.all(selections.map(({ modelKey, threads, processor, signature }) => {
     const requestKey = `${scene.id}:${signature}`;
     if (liveSceneRequests.has(requestKey)) return liveSceneRequests.get(requestKey);
 
@@ -120,7 +125,7 @@ function inferScene(scene, sides) {
         const res = await fetch('/api/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey], threads })
+          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey], threads, processor })
         });
         const result = await res.json();
         if (!res.ok || result.status !== 'success') throw new Error(result.message || `HTTP ${res.status}`);
@@ -156,6 +161,11 @@ function inferScene(scene, sides) {
 }
 
 function selectModel(side, modelKey) {
+  if (modelKey !== HUGGINGFACE_MODEL_KEY && (side === 'A' ? currentProcessorA : currentProcessorB) === 'huggingface') {
+    if (side === 'A') currentProcessorA = 'host';
+    else currentProcessorB = 'host';
+    $(`processorSelect${side}`).value = 'host';
+  }
   if (side === 'A') {
     currentModelA = modelKey;
     currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(modelKey));
@@ -168,6 +178,19 @@ function selectModel(side, modelKey) {
   updateSceneView();
   const scene = demoData.scenes.find(s => s.id === currentSceneId);
   return inferScene(scene, [side]);
+}
+
+function selectProcessor(side, processor) {
+  if (!['host', 'huggingface'].includes(processor)) return Promise.resolve();
+  if (side === 'A') currentProcessorA = processor;
+  else currentProcessorB = processor;
+  if (processor === 'huggingface') {
+    if (side === 'A') currentModelA = HUGGINGFACE_MODEL_KEY;
+    else currentModelB = HUGGINGFACE_MODEL_KEY;
+    $(`modelSelect${side}`).value = HUGGINGFACE_MODEL_KEY;
+  }
+  updateSceneView();
+  return inferScene(demoData.scenes.find(s => s.id === currentSceneId), [side]);
 }
 
 function selectThreads(side, value) {
@@ -224,6 +247,12 @@ async function initApp() {
   });
   $('modelSelectB').addEventListener('change', e => {
     void selectModel('B', e.target.value);
+  });
+  $('processorSelectA').addEventListener('change', e => {
+    void selectProcessor('A', e.target.value);
+  });
+  $('processorSelectB').addEventListener('change', e => {
+    void selectProcessor('B', e.target.value);
   });
   $('coreSelectA').addEventListener('change', e => {
     void selectThreads('A', e.target.value);
@@ -293,6 +322,8 @@ function applyPreset(preset) {
     currentModelA = 'yolo26m_ptq_int8';
     currentModelB = 'yolo26s_ptq_int8';
   }
+  currentProcessorA = currentProcessorB = 'host';
+  $('processorSelectA').value = $('processorSelectB').value = 'host';
   $('modelSelectA').value = currentModelA;
   $('modelSelectB').value = currentModelB;
   updateSceneView();
@@ -384,6 +415,8 @@ function updateSceneView() {
   $('labelBInfo').textContent = currentModelB ? `${infoB.badge} · ${infoB.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
   $('modelPathA').textContent = infoA.path || '';
   $('modelPathB').textContent = infoB.path || '';
+  $('coreSelectA').disabled = currentProcessorA === 'huggingface';
+  $('coreSelectB').disabled = currentProcessorB === 'huggingface';
 
   $('panelTitleA').textContent = infoA.name;
   $('panelTitleB').textContent = infoB.name;
@@ -431,9 +464,9 @@ function renderBoundingBoxes() {
   const liveSignatures = Object.keys(scene.live_detections || {});
   const pendingA = liveSceneRequests.has(`${scene.id}:${selectionA.signature}`);
   const pendingB = liveSceneRequests.has(`${scene.id}:${selectionB.signature}`);
-  const recordA = !pendingA && (liveRecordA || (!liveSignatures.some(key => key.startsWith(`${currentModelA}:`))
+  const recordA = !pendingA && (liveRecordA || (selectionA.processor === 'host' && !liveSignatures.some(key => key.startsWith(`${currentModelA}:`))
     ? demoData.detections[currentModelA]?.[scene.id] : null));
-  const recordB = !pendingB && (liveRecordB || (!liveSignatures.some(key => key.startsWith(`${currentModelB}:`))
+  const recordB = !pendingB && (liveRecordB || (selectionB.processor === 'host' && !liveSignatures.some(key => key.startsWith(`${currentModelB}:`))
     ? demoData.detections[currentModelB]?.[scene.id] : null));
   const detA = recordA?.boxes || [];
   const detB = recordB?.boxes || [];

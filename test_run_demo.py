@@ -226,6 +226,67 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertIn("không hợp lệ", json.loads(body)["message"])
 
+    def test_huggingface_processor_uses_remote_model_without_loading_local_artifact(self):
+        image = BytesIO()
+        Image.new('RGB', (2, 2)).save(image, 'PNG')
+        encoded = base64.b64encode(image.getvalue()).decode()
+        detection = {
+            'inference_time_ms': 40.0,
+            'runtime': f'Hugging Face · {run_demo.HUGGINGFACE_CPU}',
+            'runtime_settings': {'provider': 'huggingface'},
+            'detections_count': 0,
+            'boxes': [],
+        }
+        with patch.object(run_demo, 'predict_on_huggingface', return_value=detection) as remote, \
+                patch.object(run_demo, 'get_model') as local:
+            status, body = self.request('POST', '/api/predict', json.dumps({
+                'image': encoded,
+                'models': [run_demo.HUGGINGFACE_MODEL_KEY],
+                'processor': 'huggingface',
+            }), {'Content-Type': 'application/json'})
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['detections'][run_demo.HUGGINGFACE_MODEL_KEY], detection)
+        remote.assert_called_once()
+        local.assert_not_called()
+
+        status, body = self.request('POST', '/api/predict', json.dumps({
+            'image': encoded,
+            'models': ['yolo26s_ptq_int8'],
+            'processor': 'huggingface',
+        }), {'Content-Type': 'application/json'})
+        self.assertEqual(status, 400)
+        self.assertIn('chỉ hỗ trợ', json.loads(body)['message'])
+
+    def test_huggingface_response_is_normalized_and_temp_image_is_removed(self):
+        import numpy as np
+
+        uploaded_path = None
+
+        class Client:
+            def predict(self, **kwargs):
+                nonlocal uploaded_path
+                uploaded_path = kwargs['image_input']['path']
+                self.assert_file_exists = Path(uploaded_path).is_file()
+                return {
+                    'success': True,
+                    'server_cpu': run_demo.HUGGINGFACE_CPU,
+                    'real_inference_ms': 12.5,
+                    'total_wall_ms': 20.0,
+                    'detections': [{
+                        'class_id': 2, 'class_name': 'car', 'confidence': 0.8765,
+                        'bbox_xyxy': [10, 20, 30, 40],
+                    }],
+                }
+
+        client = Client()
+        with patch.object(run_demo, 'get_huggingface_client', return_value=client):
+            result = run_demo.predict_on_huggingface(np.zeros((100, 200, 3), dtype=np.uint8), 200, 100, 0.25)
+        self.assertTrue(client.assert_file_exists)
+        self.assertFalse(Path(uploaded_path).exists())
+        self.assertEqual(result['inference_time_ms'], 20.0)
+        self.assertEqual(result['boxes'][0]['box_norm'], [0.05, 0.2, 0.15, 0.4])
+        self.assertEqual(result['runtime_settings']['provider'], 'huggingface')
+
     def test_malformed_uploads_are_client_errors(self):
         for image in [None, 12, [], {}, 'AA==']:
             with self.subTest(image=image):
@@ -293,7 +354,7 @@ class DemoServerTests(unittest.TestCase):
         encoded = base64.b64encode(image.getvalue()).decode()
         for fields in [{'models': [{}]}, {'models': [None]}, {'conf': None}, {'conf': []},
                        {'threads': 0}, {'threads': run_demo.CPU_THREADS + 1},
-                       {'threads': '2'}, {'threads': True}]:
+                       {'threads': '2'}, {'threads': True}, {'processor': 'unknown'}]:
             with self.subTest(fields=fields):
                 payload = json.dumps({'image': encoded, **fields})
                 status, _ = self.request('POST', '/api/predict', payload, {'Content-Type': 'application/json'})

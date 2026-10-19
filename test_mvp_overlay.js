@@ -9,6 +9,7 @@ assert.match(source, /const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8'/);
 assert.match(source, /YOLO26s Baseline \(FP32\)/);
 assert.match(source, /YOLO26m Baseline \(FP32\)/);
 assert.match(source, /SỐ CORE CPU HOST SERVER/);
+assert.match(source, /Intel\(R\) Xeon\(R\) Platinum 8559C · Hugging Face/);
 assert.doesNotMatch(source, /mvpFrameAtTime|mvpFiles|mvpGroundTruth|mvpCamera/);
 
 const converted = mvpBuildBDD100KJson([
@@ -40,7 +41,8 @@ const model = {name: 'YOLO26s PTQ INT8 640 (OpenVINO)', badge: 'INT8', size_mb: 
 const models = {
   yolo26s_ptq_int8: model,
   yolo26s_fp32: {...model, name: 'YOLO26s Baseline (FP16)', path: 'yolo26s.pt'},
-  yolo26m_fp32: {...model, name: 'YOLO26m Baseline (FP16)', path: 'yolo26m.pt'}
+  yolo26m_fp32: {...model, name: 'YOLO26m Baseline (FP16)', path: 'yolo26m.pt'},
+  yolo26s_export_int8_640: {...model, name: 'YOLO26s INT8 export 640 (OpenVINO)', path: 'export.xml'}
 };
 const context = vm.createContext({
   window: {DEMO_DATA: {scenes: [{id: 'scene_01', title: 'Scene', file: 'scene.jpg', data_uri: 'data:image/jpeg;base64,AA', width: 1280, height: 720}], models}, addEventListener() {}},
@@ -71,6 +73,7 @@ vm.runInContext(source, context);
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].models, ['yolo26s_ptq_int8']);
   assert.equal(requests[0].threads, 3);
+  assert.equal(requests[0].processor, 'host');
   assert.equal(elements.get('mvpFps').textContent, '20.0 FPS');
   assert.equal(elements.get('mvpMap50').textContent, '51.44%');
   await handlers.get('mvpRunDetection:click')();
@@ -80,5 +83,11 @@ vm.runInContext(source, context);
   assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');
   assert.equal(elements.get('mvpPanelModel').textContent, 'YOLO26s Baseline (FP32)');
   assert.equal(elements.get('mvpModelInfo').textContent, 'OpenVINO FP32 · 36.56 MiB');
+  handlers.get('mvpProcessorSelect:change')({target: {value: 'huggingface'}});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(requests.at(-1).models[0], 'yolo26s_export_int8_640');
+  assert.equal(requests.at(-1).processor, 'huggingface');
+  assert.equal(elements.get('mvpCoreSelect').disabled, true);
+  assert.match(elements.get('mvpCpuInfo').textContent, /Platinum 8559C · Hugging Face/);
   console.log('MVP single-model Studio flow, CPU selection, live FPS and BDD100K export PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });

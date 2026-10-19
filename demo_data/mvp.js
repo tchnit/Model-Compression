@@ -25,10 +25,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   if (typeof document === 'undefined') return;
 
   const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8';
+  const HUGGINGFACE_MODEL_KEY = 'yolo26s_export_int8_640';
   const MODEL_NAMES = {
     yolo26s_ptq_int8: 'YOLO26s PTQ INT8 640 (OpenVINO)',
     yolo26s_baseline_fp32: 'YOLO26s Baseline (FP32)',
-    yolo26m_baseline_fp32: 'YOLO26m Baseline (FP32)'
+    yolo26m_baseline_fp32: 'YOLO26m Baseline (FP32)',
+    yolo26s_export_int8_640: 'YOLO26s INT8 export 640 (OpenVINO)'
   };
   const MODEL_SOURCES = {yolo26s_baseline_fp32: 'yolo26s_fp32', yolo26m_baseline_fp32: 'yolo26m_fp32'};
   const MODEL_SIZES = {yolo26s_baseline_fp32: 36.56, yolo26m_baseline_fp32: 78.13};
@@ -55,6 +57,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
               <option value="yolo26s_ptq_int8" selected>YOLO26s PTQ INT8 640 (OpenVINO)</option>
               <option value="yolo26s_baseline_fp32">YOLO26s Baseline (FP32)</option>
               <option value="yolo26m_baseline_fp32">YOLO26m Baseline (FP32)</option>
+              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
+            </select>
+            <span class="select-label"><span>CPU SUY LUẬN</span></span>
+            <select class="model-select" id="mvpProcessorSelect">
+              <option value="host" selected>CPU host server</option>
+              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C · Hugging Face</option>
             </select>
             <span class="select-label"><span>SỐ CORE CPU HOST SERVER</span></span>
             <select class="model-select" id="mvpCoreSelect">
@@ -118,10 +126,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   let currentSceneId = scenes[0].id;
   let currentModelKey = DEFAULT_MODEL_KEY;
   let currentThreads = 3;
+  let currentProcessor = 'host';
   let currentConf = 0.25;
   let serverOnline = false;
   let serverCpuThreads = null;
   let serverInt8CpuThreads = null;
+  let hostCpuDescription = 'CPU host server: đang kiểm tra…';
   let inferenceQueue = Promise.resolve();
   const pending = new Set();
   const enabledClasses = new Set(Object.keys(CLASS_COLORS));
@@ -146,7 +156,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   }
 
   function scene() { return scenes.find(item => item.id === currentSceneId) || scenes[0]; }
-  function signature() { return `${currentModelKey}:${currentThreads}`; }
+  function signature() { return currentProcessor === 'host' ? `${currentModelKey}:${currentThreads}` : `${currentModelKey}:huggingface`; }
   function record() { return scene().mvpDetections[signature()]; }
   function filteredBoxes() { return (record()?.boxes || []).filter(box => box.conf >= currentConf && enabledClasses.has(box.class_name)); }
 
@@ -168,12 +178,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
         currentThreads = Math.min(3, currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads);
         populateCoreSelect();
       }
-      byId('mvpCpuInfo').textContent = `CPU host server: ${status.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core${serverInt8CpuThreads < serverCpuThreads ? ` · INT8 tối đa ${serverInt8CpuThreads} core` : ''}`;
+      hostCpuDescription = `CPU host server: ${status.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core${serverInt8CpuThreads < serverCpuThreads ? ` · INT8 tối đa ${serverInt8CpuThreads} core` : ''}`;
       render();
       return inferScene(scene());
     } catch (_) {
       serverOnline = false;
-      byId('mvpCpuInfo').textContent = 'CPU host server: không kết nối';
+      hostCpuDescription = 'CPU host server: không kết nối';
       render();
       return undefined;
     }
@@ -217,8 +227,10 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const sizeMb = MODEL_SIZES[currentModelKey] || model.size_mb;
     byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'OpenVINO FP32' : model.badge} · ${sizeMb.toFixed(2)} MiB`;
     byId('mvpModelPath').textContent = currentModelKey.includes('fp32') ? `models/${currentModelKey.replace('baseline_', '')}_openvino_model` : model.path;
+    byId('mvpCpuInfo').textContent = currentProcessor === 'host'
+      ? hostCpuDescription : 'CPU từ xa: Intel(R) Xeon(R) Platinum 8559C · Hugging Face';
     byId('mvpPanelModel').textContent = modelName;
-    byId('mvpRuntime').textContent = result?.runtime || `${modelName} · CPU ×${currentThreads}`;
+    byId('mvpRuntime').textContent = result?.runtime || `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : 'Hugging Face'}`;
     byId('mvpBoxCount').textContent = result ? boxes.length : '—';
     byId('mvpLatency').textContent = result ? `${result.inference_time_ms.toFixed(1)} ms · ${result.runtime}` : serverOnline ? 'Chưa suy luận' : 'AI Server offline';
     const fps = result?.inference_time_ms > 0 ? 1000 / result.inference_time_ms : null;
@@ -228,8 +240,9 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const busy = pending.has(`${current.id}:${signature()}`);
     byId('mvpLoading').classList.toggle('active', busy);
     byId('mvpRunDetection').disabled = busy || !serverOnline;
-    byId('mvpCoreSelect').disabled = busy;
-    byId('mvpLoadingText').textContent = `${modelName} · CPU ×${currentThreads}`;
+    byId('mvpCoreSelect').disabled = busy || currentProcessor === 'huggingface';
+    byId('mvpProcessorSelect').disabled = busy;
+    byId('mvpLoadingText').textContent = `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : 'Hugging Face'}`;
     renderExport(boxes, current, width, height, !!result);
   }
 
@@ -242,7 +255,8 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   function inferScene(target, force = false) {
     if (!serverOnline) { toast('AI Server đang offline.'); return Promise.resolve(); }
     const modelKey = currentModelKey;
-    const requestSignature = `${modelKey}:${currentThreads}`;
+    const processor = currentProcessor;
+    const requestSignature = processor === 'host' ? `${modelKey}:${currentThreads}` : `${modelKey}:huggingface`;
     const requestKey = `${target.id}:${requestSignature}`;
     if (!force && target.mvpDetections[requestSignature]) { render(); return Promise.resolve(); }
     if (pending.has(requestKey)) return inferenceQueue;
@@ -252,7 +266,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
       try {
         const response = await fetch('/api/predict', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({image: target.data_uri, conf: 0.10, models: [modelKey], threads})
+          body: JSON.stringify({image: target.data_uri, conf: 0.10, models: [modelKey], threads, processor})
         });
         const payload = await response.json();
         if (!response.ok || payload.status !== 'success') throw new Error(payload.message || `HTTP ${response.status}`);
@@ -331,8 +345,20 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpModelSelect').value = currentModelKey;
     byId('mvpModelSelect').addEventListener('change', event => {
       currentModelKey = event.target.value;
+      if (currentProcessor === 'huggingface' && currentModelKey !== HUGGINGFACE_MODEL_KEY) {
+        currentProcessor = 'host';
+        byId('mvpProcessorSelect').value = 'host';
+      }
       const limit = currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
       if (limit) { currentThreads = Math.min(currentThreads, limit); populateCoreSelect(); }
+      render(); inferScene(scene());
+    });
+    byId('mvpProcessorSelect').addEventListener('change', event => {
+      currentProcessor = event.target.value;
+      if (currentProcessor === 'huggingface') {
+        currentModelKey = HUGGINGFACE_MODEL_KEY;
+        byId('mvpModelSelect').value = currentModelKey;
+      }
       render(); inferScene(scene());
     });
     byId('mvpClassFilters').innerHTML = Object.keys(CLASS_COLORS).map(name => `<label class="class-check"><input type="checkbox" value="${name}" checked><span class="class-color-dot" style="background:${CLASS_COLORS[name]}"></span><span>${name}</span></label>`).join('');

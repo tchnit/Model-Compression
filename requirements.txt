@@ -14,3 +14,4 @@ torchvision==0.29.1
 onnx==1.23.2
 onnxruntime==1.30.0
 packaging==26.3
+gradio_client==2.7.2

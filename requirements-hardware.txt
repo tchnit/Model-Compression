@@ -14,3 +14,4 @@ onnx==1.23.2
 packaging==26.3
 onnxruntime-gpu==1.30.0
 tensorrt-cu13==10.16.1.11
+gradio_client==2.7.2
