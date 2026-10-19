@@ -10,7 +10,7 @@ import socketserver
 import threading
 import unittest
 import tempfile
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from PIL import Image
 
@@ -241,21 +241,21 @@ class DemoServerTests(unittest.TestCase):
                 patch.object(run_demo, 'get_model') as local:
             status, body = self.request('POST', '/api/predict', json.dumps({
                 'image': encoded,
-                'models': [run_demo.HUGGINGFACE_MODEL_KEY],
+                'models': ['yolo26s_ptq_int8'],
                 'processor': 'huggingface',
             }), {'Content-Type': 'application/json'})
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body)['detections'][run_demo.HUGGINGFACE_MODEL_KEY], detection)
-        remote.assert_called_once()
+        self.assertEqual(json.loads(body)['detections']['yolo26s_ptq_int8'], detection)
+        remote.assert_called_once_with(ANY, 2, 2, 0.10, 'yolo26s_ptq_int8')
         local.assert_not_called()
 
         status, body = self.request('POST', '/api/predict', json.dumps({
             'image': encoded,
-            'models': ['yolo26s_ptq_int8'],
+            'models': ['yolo26m_qat_int8'],
             'processor': 'huggingface',
         }), {'Content-Type': 'application/json'})
         self.assertEqual(status, 400)
-        self.assertIn('chỉ hỗ trợ', json.loads(body)['message'])
+        self.assertIn('chưa có', json.loads(body)['message'])
 
     def test_huggingface_response_is_normalized_and_temp_image_is_removed(self):
         import numpy as np
@@ -267,8 +267,10 @@ class DemoServerTests(unittest.TestCase):
                 nonlocal uploaded_path
                 uploaded_path = kwargs['image_input']['path']
                 self.assert_file_exists = Path(uploaded_path).is_file()
+                self.model_key = kwargs['model_key']
                 return {
                     'success': True,
+                    'model_key': 'yolo26s_baseline_fp32',
                     'server_cpu': run_demo.HUGGINGFACE_CPU,
                     'real_inference_ms': 12.5,
                     'total_wall_ms': 20.0,
@@ -280,9 +282,12 @@ class DemoServerTests(unittest.TestCase):
 
         client = Client()
         with patch.object(run_demo, 'get_huggingface_client', return_value=client):
-            result = run_demo.predict_on_huggingface(np.zeros((100, 200, 3), dtype=np.uint8), 200, 100, 0.25)
+            result = run_demo.predict_on_huggingface(
+                np.zeros((100, 200, 3), dtype=np.uint8), 200, 100, 0.25, 'yolo26s_fp32'
+            )
         self.assertTrue(client.assert_file_exists)
         self.assertFalse(Path(uploaded_path).exists())
+        self.assertEqual(client.model_key, 'yolo26s_baseline_fp32')
         self.assertEqual(result['inference_time_ms'], 20.0)
         self.assertEqual(result['boxes'][0]['box_norm'], [0.05, 0.2, 0.15, 0.4])
         self.assertEqual(result['runtime_settings']['provider'], 'huggingface')

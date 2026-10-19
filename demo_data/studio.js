@@ -32,7 +32,6 @@ let serverCpuThreads = null;
 let serverInt8CpuThreads = null;
 const liveSceneRequests = new Map();
 let inferenceQueue = Promise.resolve();
-const HUGGINGFACE_MODEL_KEY = 'yolo26s_export_int8_640';
 
 // DOM helper
 const $ = id => document.getElementById(id);
@@ -161,11 +160,6 @@ function inferScene(scene, sides) {
 }
 
 function selectModel(side, modelKey) {
-  if (modelKey !== HUGGINGFACE_MODEL_KEY && (side === 'A' ? currentProcessorA : currentProcessorB) === 'huggingface') {
-    if (side === 'A') currentProcessorA = 'host';
-    else currentProcessorB = 'host';
-    $(`processorSelect${side}`).value = 'host';
-  }
   if (side === 'A') {
     currentModelA = modelKey;
     currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(modelKey));
@@ -184,11 +178,6 @@ function selectProcessor(side, processor) {
   if (!['host', 'huggingface'].includes(processor)) return Promise.resolve();
   if (side === 'A') currentProcessorA = processor;
   else currentProcessorB = processor;
-  if (processor === 'huggingface') {
-    if (side === 'A') currentModelA = HUGGINGFACE_MODEL_KEY;
-    else currentModelB = HUGGINGFACE_MODEL_KEY;
-    $(`modelSelect${side}`).value = HUGGINGFACE_MODEL_KEY;
-  }
   updateSceneView();
   return inferScene(demoData.scenes.find(s => s.id === currentSceneId), [side]);
 }

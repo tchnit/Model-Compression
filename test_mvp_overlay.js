@@ -85,7 +85,7 @@ vm.runInContext(source, context);
   assert.equal(elements.get('mvpModelInfo').textContent, 'OpenVINO FP32 · 36.56 MiB');
   handlers.get('mvpProcessorSelect:change')({target: {value: 'huggingface'}});
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(requests.at(-1).models[0], 'yolo26s_export_int8_640');
+  assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');
   assert.equal(requests.at(-1).processor, 'huggingface');
   assert.equal(elements.get('mvpCoreSelect').disabled, true);
   assert.match(elements.get('mvpCpuInfo').textContent, /Platinum 8559C · Hugging Face/);

@@ -31,6 +31,15 @@ from bdd100k_eval.config import (HOST, PORT, DIRECTORY, CPU_THREADS, MAX_REQUEST
 INFERENCE_SLOT = threading.BoundedSemaphore(1)
 HUGGINGFACE_INFERENCE_SLOT = threading.BoundedSemaphore(1)
 HUGGINGFACE_MODEL_KEY = 'yolo26s_export_int8_640'
+HUGGINGFACE_MODEL_KEYS = {
+    HUGGINGFACE_MODEL_KEY: HUGGINGFACE_MODEL_KEY,
+    'yolo26s_ptq_int8': 'yolo26s_ptq_int8',
+    'yolo26m_ptq_int8': 'yolo26m_ptq_int8',
+    'yolo26s_baseline_fp32': 'yolo26s_baseline_fp32',
+    'yolo26m_baseline_fp32': 'yolo26m_baseline_fp32',
+    'yolo26s_fp32': 'yolo26s_baseline_fp32',
+    'yolo26m_fp32': 'yolo26m_baseline_fp32',
+}
 HUGGINGFACE_SPACE = 'kiioss/m38-edge-labeling'
 HUGGINGFACE_CPU = 'Intel(R) Xeon(R) Platinum 8559C'
 _HUGGINGFACE_CLIENT = None
@@ -44,8 +53,8 @@ def get_huggingface_client():
     return _HUGGINGFACE_CLIENT
 
 
-def predict_on_huggingface(image, width, height, conf):
-    """Run the one model installed on the remote Space and normalize its response."""
+def predict_on_huggingface(image, width, height, conf, model_key):
+    """Run the selected model on the remote Space and normalize its response."""
     import cv2
     from gradio_client import handle_file
 
@@ -58,9 +67,10 @@ def predict_on_huggingface(image, width, height, conf):
         started = time.perf_counter()
         result = get_huggingface_client().predict(
             image_input=handle_file(image_file.name),
+            model_key=HUGGINGFACE_MODEL_KEYS[model_key],
             conf_threshold=conf,
             iou_threshold=0.45,
-            api_name='/xeon_bridge',
+            api_name='/xeon_bridge_model',
         )
         request_time_ms = (time.perf_counter() - started) * 1000
 
@@ -214,13 +224,13 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if not 0 <= conf_thresh <= 1:
                     raise ValueError('conf phải thuộc [0, 1]')
                 if processor == 'huggingface':
-                    if target_models != [HUGGINGFACE_MODEL_KEY]:
-                        raise ValueError('CPU Hugging Face chỉ hỗ trợ YOLO26s INT8 export 640')
+                    if len(target_models) != 1 or target_models[0] not in HUGGINGFACE_MODEL_KEYS:
+                        raise ValueError('Model đã chọn chưa có trên CPU Hugging Face')
                     if not HUGGINGFACE_INFERENCE_SLOT.acquire(blocking=False):
                         self.send_json(503, {'status': 'error', 'message': 'CPU Hugging Face đang xử lý ảnh khác'})
                         return
                     try:
-                        detection = predict_on_huggingface(img, w, h, conf_thresh)
+                        detection = predict_on_huggingface(img, w, h, conf_thresh, target_models[0])
                     except Exception as error:
                         print(f'[!] Hugging Face inference failed: {error}', file=sys.stderr)
                         self.send_json(502, {'status': 'error', 'message': f'Không gọi được CPU Hugging Face: {error}'})
@@ -229,7 +239,7 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                         HUGGINGFACE_INFERENCE_SLOT.release()
                     self.send_json(200, {
                         'status': 'success', 'width': w, 'height': h,
-                        'detections': {HUGGINGFACE_MODEL_KEY: detection},
+                        'detections': {target_models[0]: detection},
                     })
                     return
                 cpu_name = hardware_bench.cpu_name()

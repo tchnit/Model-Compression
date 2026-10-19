@@ -25,7 +25,6 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   if (typeof document === 'undefined') return;
 
   const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8';
-  const HUGGINGFACE_MODEL_KEY = 'yolo26s_export_int8_640';
   const MODEL_NAMES = {
     yolo26s_ptq_int8: 'YOLO26s PTQ INT8 640 (OpenVINO)',
     yolo26s_baseline_fp32: 'YOLO26s Baseline (FP32)',
@@ -345,20 +344,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpModelSelect').value = currentModelKey;
     byId('mvpModelSelect').addEventListener('change', event => {
       currentModelKey = event.target.value;
-      if (currentProcessor === 'huggingface' && currentModelKey !== HUGGINGFACE_MODEL_KEY) {
-        currentProcessor = 'host';
-        byId('mvpProcessorSelect').value = 'host';
-      }
       const limit = currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
       if (limit) { currentThreads = Math.min(currentThreads, limit); populateCoreSelect(); }
       render(); inferScene(scene());
     });
     byId('mvpProcessorSelect').addEventListener('change', event => {
       currentProcessor = event.target.value;
-      if (currentProcessor === 'huggingface') {
-        currentModelKey = HUGGINGFACE_MODEL_KEY;
-        byId('mvpModelSelect').value = currentModelKey;
-      }
       render(); inferScene(scene());
     });
     byId('mvpClassFilters').innerHTML = Object.keys(CLASS_COLORS).map(name => `<label class="class-check"><input type="checkbox" value="${name}" checked><span class="class-color-dot" style="background:${CLASS_COLORS[name]}"></span><span>${name}</span></label>`).join('');
