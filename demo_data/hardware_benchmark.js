@@ -111,7 +111,10 @@
       && (choice.engine !== 'wasm' || (preview.result.protocol?.cpu_threads ?? 1) === threads)
       && ['model','engine','device','precision'].every(key => preview.result[key] === choice[key]);
   }
-  async function hash(buffer) { return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',buffer)),b => b.toString(16).padStart(2,'0')).join(''); }
+  async function hash(buffer, subtle = globalThis.crypto?.subtle) {
+    // Plain HTTP LAN pages do not expose SubtleCrypto; the server verifies tracked artifacts in tests.
+    return subtle ? Array.from(new Uint8Array(await subtle.digest('SHA-256',buffer)),b => b.toString(16).padStart(2,'0')).join('') : null;
+  }
   async function browserBenchmark(ort, c, imageURI, protocol, adapter, status, baseURL) {
     ort.env.wasm.wasmPaths = new URL('demo_data/vendor/onnxruntime-web/', baseURL).href;
     ort.env.wasm.numThreads = c.engine === 'wasm' ? protocol.cpu_threads : 1;
@@ -129,7 +132,7 @@
     if (!modelResponse.ok) throw new Error('Không tải được ONNX artifact.');
     const modelBytes = await modelResponse.arrayBuffer();
     const artifactHash = await hash(modelBytes);
-    if (artifactHash !== c.sha256) throw new Error('SHA256 artifact không trùng manifest; quét lại cấu hình.');
+    if (artifactHash && artifactHash !== c.sha256) throw new Error('SHA256 artifact không trùng manifest; quét lại cấu hình.');
     // Bind the measured device to the adapter shown above, including on hybrid-GPU laptops.
     const gpuDevice = c.engine === 'webgpu' ? await adapter.requestDevice({
       requiredFeatures:[...adapter.features], requiredLimits:{
@@ -175,7 +178,7 @@
       return {status:'success', timestamp:new Date().toISOString(), location:'browser', model:c.model,engine:c.engine,device:c.device,precision:c.precision, runtime_name:runtimeName(c.engine),
         warmup:protocol.warmup,repeats:protocol.repeats,conf:protocol.conf,
         ...statistics(samples_ms), samples_ms, load_ms, boxes, detections_count:boxes.length,
-        image_sha256:await hash(rawImage), runtime:{artifact:c.artifact,sha256:artifactHash,source_sha256:c.source_sha256,version:ort.env.versions,
+        image_sha256:await hash(rawImage), runtime:{artifact:c.artifact,sha256:artifactHash || c.sha256,sha256_verified:!!artifactHash,source_sha256:c.source_sha256,version:ort.env.versions,
           graph_precision:c.precision,input_dtype:fp16 ? 'float16' : 'float32',output_dtype:outputType,output_format:c.output_format || 'end2end',
           precision_policy:c.precision_policy,calibration_sha256:c.calibration_sha256,
           calibration_images:c.calibration_images,quantized_convs:c.quantized_convs,
@@ -191,7 +194,7 @@
           accuracy:'single-image microbenchmark, not mAP'}};
     } finally { try { await session.release(); } finally { gpuDevice?.destroy(); image.close?.(); } }
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = {floatToHalf, halfToFloat, geometry, decode, statistics, isFallback, browserCapabilities, webgpuReason, previewMatches, wasmThreadLimit};
+  if (typeof module !== 'undefined' && module.exports) module.exports = {floatToHalf, halfToFloat, geometry, decode, statistics, isFallback, browserCapabilities, webgpuReason, previewMatches, wasmThreadLimit, hash};
   if (typeof document === 'undefined') {
     if (typeof importScripts === 'function') self.onmessage = async ({data}) => {
       try {

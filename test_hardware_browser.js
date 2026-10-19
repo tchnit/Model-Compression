@@ -1,7 +1,14 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
-const {floatToHalf, halfToFloat, geometry, decode, statistics, isFallback, browserCapabilities, webgpuReason, previewMatches, wasmThreadLimit} = require('./demo_data/hardware_benchmark.js');
+const {floatToHalf, halfToFloat, geometry, decode, statistics, isFallback, browserCapabilities, webgpuReason, previewMatches, wasmThreadLimit, hash} = require('./demo_data/hardware_benchmark.js');
+Promise.all([
+  hash(new TextEncoder().encode('abc'), null),
+  hash(new TextEncoder().encode('abc'), crypto.webcrypto.subtle),
+]).then(([unavailable, digest]) => {
+  assert.equal(unavailable, null);
+  assert.equal(digest, 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+}).catch(error => { console.error(error); process.exitCode = 1; });
 assert.equal(wasmThreadLimit(8,true,true),8);
 assert.equal(wasmThreadLimit(8,false,true),1);
 assert.equal(wasmThreadLimit(8,true,false),1);
