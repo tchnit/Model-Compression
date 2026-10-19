@@ -192,6 +192,7 @@ node test_hardware_browser.js
 node test_mvp_overlay.js
 
 11. Tái tạo demo và benchmark latency
+Bảng so sánh 6 cấu hình trong demo ghi CPU đo: 11th Gen Intel(R) Core(TM) i7-11800H.
 .venv/bin/python refresh_demo_data.py
 .venv/bin/python compare_benchmarks.py --csv benchmark_comparison.csv --markdown benchmark_comparison.md
 Lệnh đầu đo 6 cấu hình trên cùng 50 ảnh × 3 lượt, warmup=5, CPU 4 luồng, baseline PyTorch FP32,
