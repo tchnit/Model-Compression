@@ -397,6 +397,7 @@ Khởi chạy: kích hoạt venv rồi python run_demo.py (0.0.0.0:8765).
 Không cần cài thêm dependency ngoài requirements.txt hiện có.
 Model chính thức: models/int8_yolo26s_640_openvino_model/ (tên thật là _model, không phải _models).
 MVP dùng get_model() cache chung, mỗi bên chọn từ CPU ×1 đến mức affinity/cgroup cho phép, mặc định ×3, 1 stream, 640×640; A chạy xong mới đến B và không dùng kết quả mẫu lưu sẵn.
+Nút Nhận diện xóa kết quả live của cấu hình A/B hiện tại rồi chạy lại tuần tự với số CPU đang chọn.
 Trên VPS/container, OpenVINO có thể giới hạn số luồng thấp hơn theo CPU khả dụng/chính sách lập lịch.
 Demo dùng số luồng thực và hiển thị cảnh báo; báo cáo ghi requested_threads, ov_threads, thread_protocol_matches.
 Benchmark/evaluate/refresh_demo_data vẫn yêu cầu đúng số luồng protocol; sai cấu hình sẽ dừng kèm số thực tế.

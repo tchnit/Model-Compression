@@ -18,6 +18,7 @@ assert.doesNotMatch(html, /Tỷ Lệ Nén Trọng Số|Tăng Tốc Suy Luận \(
 assert.match(html, /telemetry-label">Tốc độ của mô hình A<\/span>/);
 assert.match(html, /telemetry-label">Tốc độ của mô hình B<\/span>/);
 assert.match(html, /telemetry-label">mAP@50 · Mô hình B − Mô hình A<\/span>/);
+assert.match(html, /id="runDetectionBtn"[^>]*>Nhận diện<\/button>/);
 
 async function studio() {
   const elements = new Map();
@@ -142,6 +143,13 @@ async function studio() {
     await retuned;
     assert.ok(scene.live_detections['a:1']);
     assert.equal(s.read('currentThreadsA'), 1);
+    const rerun = s.context.runDetection();
+    await tick();
+    assert.ok(!scene.live_detections['a:1']);
+    assert.equal(s.requests[2].payload.threads, 1);
+    s.finish(2);
+    await rerun;
+    assert.ok(scene.live_detections['a:1']);
   }
 
   // Concurrent selections are serialized and the same scene/model is reused.

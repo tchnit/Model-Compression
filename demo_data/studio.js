@@ -152,6 +152,24 @@ function selectThreads(side, value) {
   return inferScene(demoData.scenes.find(s => s.id === currentSceneId), [side]);
 }
 
+function runDetection() {
+  if (!isServerOnline) {
+    showToast('AI Server đang offline.');
+    return Promise.resolve();
+  }
+  const sides = ['A', 'B'].filter(side => inferenceSelection(side).modelKey);
+  if (!sides.length) {
+    showToast('Hãy chọn ít nhất một mô hình.');
+    return Promise.resolve();
+  }
+  const scene = demoData.scenes.find(item => item.id === currentSceneId);
+  if (!scene.live_detections) scene.live_detections = {};
+  sides.forEach(side => delete scene.live_detections[inferenceSelection(side).signature]);
+  const request = inferScene(scene, sides);
+  renderBoundingBoxes();
+  return request;
+}
+
 // Initialize Application
 async function initApp() {
   if (!demoData) {
@@ -378,13 +396,17 @@ function renderBoundingBoxes() {
     if (el) el.setAttribute('viewBox', `0 0 ${w} ${h}`);
   });
 
-  const liveRecordA = scene.live_detections?.[inferenceSelection('A').signature];
-  const liveRecordB = scene.live_detections?.[inferenceSelection('B').signature];
+  const selectionA = inferenceSelection('A');
+  const selectionB = inferenceSelection('B');
+  const liveRecordA = scene.live_detections?.[selectionA.signature];
+  const liveRecordB = scene.live_detections?.[selectionB.signature];
   const liveSignatures = Object.keys(scene.live_detections || {});
-  const recordA = liveRecordA || (!liveSignatures.some(key => key.startsWith(`${currentModelA}:`))
-    ? demoData.detections[currentModelA]?.[scene.id] : null);
-  const recordB = liveRecordB || (!liveSignatures.some(key => key.startsWith(`${currentModelB}:`))
-    ? demoData.detections[currentModelB]?.[scene.id] : null);
+  const pendingA = liveSceneRequests.has(`${scene.id}:${selectionA.signature}`);
+  const pendingB = liveSceneRequests.has(`${scene.id}:${selectionB.signature}`);
+  const recordA = !pendingA && (liveRecordA || (!liveSignatures.some(key => key.startsWith(`${currentModelA}:`))
+    ? demoData.detections[currentModelA]?.[scene.id] : null));
+  const recordB = !pendingB && (liveRecordB || (!liveSignatures.some(key => key.startsWith(`${currentModelB}:`))
+    ? demoData.detections[currentModelB]?.[scene.id] : null));
   const detA = recordA?.boxes || [];
   const detB = recordB?.boxes || [];
   const timeA = recordA?.inference_time_ms;

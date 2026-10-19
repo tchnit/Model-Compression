@@ -341,6 +341,10 @@ select.model-select {
 select.model-select:focus {
   border-color: var(--accent);
 }
+.run-detection-btn {
+  width: 100%;
+  margin-top: 8px;
+}
 .model-path {
   color: var(--muted);
   font: 10px/1.4 monospace;
