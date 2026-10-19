@@ -19,6 +19,14 @@ import run_demo
 
 
 class RuntimeStartupTests(unittest.TestCase):
+    def test_huggingface_uses_each_selected_model_key(self):
+        expected = {
+            'yolo26s_fp32', 'yolo26s_baseline_fp32', 'yolo26s_ptq_int8',
+            'yolo26m_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8',
+        }
+        self.assertEqual({key: run_demo.HUGGINGFACE_MODEL_KEYS[key] for key in expected},
+                         {key: key for key in expected})
+
     def test_unsupported_python_stops_before_binding_port(self):
         with patch.object(run_demo.sys, 'version_info', (3, 10)), \
                 patch.object(run_demo.socketserver, 'ThreadingTCPServer') as server:
@@ -288,7 +296,7 @@ class DemoServerTests(unittest.TestCase):
                 self.model_key = kwargs['model_key']
                 return {
                     'success': True,
-                    'model_key': 'yolo26s_baseline_fp32',
+                    'model_key': 'yolo26s_fp32',
                     'server_cpu': run_demo.HUGGINGFACE_CPU,
                     'real_inference_ms': 12.5,
                     'total_wall_ms': 20.0,
@@ -305,7 +313,7 @@ class DemoServerTests(unittest.TestCase):
             )
         self.assertTrue(client.assert_file_exists)
         self.assertFalse(Path(uploaded_path).exists())
-        self.assertEqual(client.model_key, 'yolo26s_baseline_fp32')
+        self.assertEqual(client.model_key, 'yolo26s_fp32')
         self.assertEqual(result['inference_time_ms'], 20.0)
         self.assertEqual(result['boxes'][0]['box_norm'], [0.05, 0.2, 0.15, 0.4])
         self.assertEqual(result['runtime_settings']['provider'], 'huggingface')

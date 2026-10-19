@@ -37,8 +37,8 @@ HUGGINGFACE_MODEL_KEYS = {
     'yolo26m_ptq_int8': 'yolo26m_ptq_int8',
     'yolo26s_baseline_fp32': 'yolo26s_baseline_fp32',
     'yolo26m_baseline_fp32': 'yolo26m_baseline_fp32',
-    'yolo26s_fp32': 'yolo26s_baseline_fp32',
-    'yolo26m_fp32': 'yolo26m_baseline_fp32',
+    'yolo26s_fp32': 'yolo26s_fp32',
+    'yolo26m_fp32': 'yolo26m_fp32',
 }
 HUGGINGFACE_SPACE = 'kiioss/m38-edge-labeling'
 HUGGINGFACE_SPACE_URL = 'https://kiioss-m38-edge-labeling.hf.space'
