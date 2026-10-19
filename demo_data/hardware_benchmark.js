@@ -235,7 +235,7 @@
       const image = el('Preview'), overlay = el('PreviewBoxes'), uri = currentImage();
       overlay.replaceChildren();
       if (image.getAttribute('src') !== (uri || '')) image.src = uri || '';
-      el('PreviewCaption').textContent = 'Ảnh đầu vào · Bấm Chạy benchmark để xem box phát hiện.';
+      el('PreviewCaption').textContent = 'Ảnh đầu vào';
       const conf = el('Conf').value === '' ? NaN : Number(el('Conf').value);
       if (!previewMatches(preview,choice(),uri,conf,Number(el('Threads').value)) || !image.complete || !image.naturalWidth) return;
       const result = preview.result;
@@ -263,7 +263,7 @@
       el('PrecisionInfo').textContent = precisionState + (c?.engine === 'wasm' && c.precision === 'FP16'
         ? '. FP16 là precision của graph; kernel WASM có thể tính một số phép toán bằng FP32.'
         : c?.precision === 'INT8' ? '. INT8 lượng tử hóa Conv; các lớp khác vẫn có thể dùng số thực.' : '');
-      if (!busy) el('Status').textContent = reason || `${c.artifact} · ${c.device} · ${c.precision}. Sẵn sàng; bấm Chạy benchmark.`;
+      if (!busy) el('Status').textContent = reason || 'Sẵn sàng.';
     }
     function updateDevices() {
       const old = el('Device').value;
@@ -296,7 +296,7 @@
         if (browser) {
           const gpuReason = webgpuReason({engine:'webgpu',precision:'FP32'},adapter,window.isSecureContext,!!navigator.gpu);
           const platform = navigator.userAgentData?.platform || navigator.platform || 'không rõ nền tảng';
-          el('Hardware').textContent = `CPU client (${platform}): ${navigator.hardwareConcurrency || '?'} luồng logic · WASM hỗ trợ chọn tối đa ${maxThreads} luồng. ${gpuReason || `WebGPU sẵn sàng: ${adapter.info?.description || adapter.info?.device || adapter.info?.vendor || 'GPU trình duyệt'}${adapter.features.has('shader-f16') ? ' · hỗ trợ FP16' : ' · FP32'}.`}`;
+          el('Hardware').textContent = `CPU client (${platform}): ${navigator.hardwareConcurrency || '?'} luồng · WebGPU: ${gpuReason ? 'không khả dụng' : adapter.info?.description || adapter.info?.device || adapter.info?.vendor || 'sẵn sàng'}`;
         } else {
           const h = caps.hardware;
           el('Hardware').textContent = `Máy backend Python: ${h.openvino_devices.CPU?.name || h.cpu} · ${h.logical_cpus} CPU logic · CUDA: ${h.gpu || 'không khả dụng'}.`;
@@ -364,7 +364,7 @@
         preview = {image,result}; renderPreview();
         records.push(result); renderResults();
         el('Details').textContent = JSON.stringify(result,null,2);
-        el('Status').textContent = `Hoàn tất: ${result.detections_count} hộp · CPU ${result.protocol.cpu_threads} luồng · p50 ${result.p50_ms.toFixed(2)} ms · p95 ${result.p95_ms.toFixed(2)} ms · tải/khởi tạo ${result.load_ms.toFixed(0)} ms (ngoài thời gian đo).`
+        el('Status').textContent = `Hoàn tất: ${result.detections_count} hộp.`
           + (c.engine === 'wasm' && result.protocol.cpu_threads !== threads ? ` Runtime chỉ dùng được ${result.protocol.cpu_threads}/${threads} luồng đã chọn.` : '');
       } catch (error) { el('Status').textContent = `Không ghi kết quả: ${error.message}`; }
       finally {
