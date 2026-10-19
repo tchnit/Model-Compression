@@ -43,7 +43,7 @@ HUGGINGFACE_MODEL_KEYS = {
 HUGGINGFACE_SPACE = 'kiioss/m38-edge-labeling'
 HUGGINGFACE_SPACE_URL = 'https://kiioss-m38-edge-labeling.hf.space'
 HUGGINGFACE_CPU = 'Intel(R) Xeon(R) Platinum 8559C'
-HUGGINGFACE_CPU_THREADS = 3
+HUGGINGFACE_CPU_THREADS = 8
 _HUGGINGFACE_CLIENT = None
 
 

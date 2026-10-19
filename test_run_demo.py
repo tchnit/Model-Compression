@@ -274,7 +274,7 @@ class DemoServerTests(unittest.TestCase):
             'threads': run_demo.HUGGINGFACE_CPU_THREADS + 1,
         }), {'Content-Type': 'application/json'})
         self.assertEqual(status, 400)
-        self.assertIn('[1, 3]', json.loads(body)['message'])
+        self.assertIn('[1, 8]', json.loads(body)['message'])
 
     def test_huggingface_client_uses_a_verified_ca_bundle(self):
         with patch.object(run_demo, '_HUGGINGFACE_CLIENT', None), \

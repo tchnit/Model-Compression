@@ -54,7 +54,7 @@ const context = vm.createContext({
   CLASS_COLORS: {car: '#fff'}, generateSvgElements: () => '', navigator: {clipboard: {writeText: async () => {}}},
   Blob, URL: {createObjectURL: () => 'blob:test', revokeObjectURL() {}}, setTimeout() {}, console,
   fetch: async (url, options) => {
-    if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3})};
+    if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3, huggingface_cpu_threads: 8})};
     requests.push(JSON.parse(options.body));
     const key = requests.at(-1).models[0];
     return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {[key]: {inference_time_ms: 50, runtime: 'CPU ×3', boxes: []}}})};
@@ -89,6 +89,7 @@ vm.runInContext(source, context);
   assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');
   assert.equal(requests.at(-1).processor, 'huggingface');
   assert.equal(requests.at(-1).threads, 3);
+  assert.match(elements.get('mvpCoreSelect').innerHTML, /value="8">CPU ×8/);
   assert.equal(elements.get('mvpCoreSelect').disabled, false);
   handlers.get('mvpCoreSelect:change')({target: {value: '1'}});
   await new Promise(resolve => setImmediate(resolve));

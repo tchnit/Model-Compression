@@ -83,7 +83,7 @@ async function studio() {
       set src(value) { queueMicrotask(() => this.onload()); }
     },
     fetch(url, options) {
-      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3 }) });
+      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3, huggingface_cpu_threads: 8 }) });
       assert.equal(url, '/api/predict');
       return new Promise((resolve, reject) => {
         requests.push({ payload: JSON.parse(options.body), resolve, reject });
@@ -178,6 +178,7 @@ async function studio() {
     assert.deepEqual(s.requests[0].payload.models, ['yolo26s_ptq_int8']);
     assert.equal(s.requests[0].payload.processor, 'huggingface');
     assert.equal(s.requests[0].payload.threads, 3);
+    assert.match(s.element('coreSelectA').innerHTML, /value="8">CPU ×8/);
     assert.equal(s.element('coreSelectA').disabled, false);
     s.finish(0);
     await selected;
