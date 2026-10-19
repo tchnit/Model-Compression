@@ -12,13 +12,16 @@ const CLASS_COLORS = {
 };
 
 async function readApiJson(response) {
+  let data;
   try {
-    return await response.json();
+    data = await response.json();
   } catch {
     const type = response?.headers?.get?.('content-type') || 'text/html';
     const url = response?.url || 'API backend';
     throw new Error(`Backend trả về HTTP ${response?.status || '?'} (${type}) thay vì JSON tại ${url}. Kiểm tra URL/proxy của backend.`);
   }
+  if (!response.ok && data?.detail && !data.message) throw new Error(data.detail);
+  return data;
 }
 
 function generateSvgElements(boxes, w, h, labelScale = 1, display = {}) {

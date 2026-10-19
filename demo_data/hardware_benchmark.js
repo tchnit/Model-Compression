@@ -282,7 +282,7 @@
       caps = null;
       renderPreview();
       try {
-        const response = await fetch(browser ? 'demo_data/browser_models.json' : 'api/benchmark/capabilities');
+        const response = await fetch(browser ? 'demo_data/browser_models.json' : 'api/benchmark/capabilities', browser ? undefined : {headers:{'Accept':'application/json'}});
         const data = await readApiJson(response);
         if (!response.ok) throw new Error(data.message || 'Không đọc được danh sách model.');
         let nextAdapter = null;
@@ -357,7 +357,7 @@
         else if (c.engine === 'webgpu') result = await browserBenchmark(await loadOrt(),c,image,{...protocol,cpu_threads:1},adapter,
           status => { el('Status').textContent = status; },location.href);
         else {
-          const response = await fetch('api/benchmark/run', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...choice(),...protocol,image})});
+          const response = await fetch('api/benchmark/run', {method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({...choice(),...protocol,image})});
           result = await readApiJson(response); if (!response.ok) throw new Error(result.message || 'Benchmark thất bại.');
         }
         result.image_label = imageLabel;

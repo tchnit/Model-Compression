@@ -68,6 +68,10 @@ vm.runInContext(source, context);
     readApiJson({status: 502, url: 'https://proxy.invalid/api/predict', headers: {get: () => 'text/html'}, json: async () => { throw new SyntaxError('Unexpected token <'); }}),
     /HTTP 502 \(text\/html\).*thay vì JSON.*proxy\.invalid/
   );
+  await assert.rejects(
+    readApiJson({ok: false, json: async () => ({detail: 'Origin không phản hồi'})}),
+    /Origin không phản hồi/
+  );
   await ready();
   assert.equal(elements.get('mvpModelSelect').value, 'yolo26s_ptq_int8');
   const sceneInfo = elements.get('mvpSceneList').children[0].children[1];

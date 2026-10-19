@@ -78,7 +78,7 @@ function showToast(msg) {
 // Check Backend AI Server Status
 async function checkServerStatus() {
   try {
-    const res = await fetch('api/status');
+    const res = await fetch('api/status', {headers: {'Accept': 'application/json'}});
     if (res.ok) {
       const data = await readApiJson(res);
       if (data.status === 'online') {
@@ -139,7 +139,7 @@ function inferScene(scene, sides) {
         if (currentSceneId !== scene.id || !stillSelected) return;
         const res = await fetch('api/predict', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey], threads, processor })
         });
         const result = await readApiJson(res);
