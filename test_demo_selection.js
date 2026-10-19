@@ -13,6 +13,7 @@ for (const side of ['A', 'B']) {
   const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
   assert.deepEqual([...select.matchAll(/<option value="[^"]+">([^<]+)<\/option>/g)].map(match => match[1]), expectedModelNames);
+  assert.deepEqual([...select.matchAll(/<optgroup label="([^"]+)">/g)].map(match => match[1]), ['YOLO26s', 'YOLO26m']);
   const cores = html.match(new RegExp(`<select class="model-select" id="coreSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...cores.matchAll(/<option value="([^"]+)"/g)].map(match => Number(match[1])), [1, 2, 3]);
   const processors = html.match(new RegExp(`<select class="model-select" id="processorSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
