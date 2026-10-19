@@ -57,8 +57,9 @@ const context = vm.createContext({
   fetch: async (url, options) => {
     if (url === 'api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3, huggingface_cpu_threads: 8})};
     requests.push(JSON.parse(options.body));
-    const key = requests.at(-1).models[0];
-    return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {[key]: {inference_time_ms: 50, runtime: 'CPU ×3', boxes: []}}})};
+    const {models: [key], processor, threads} = requests.at(-1);
+    const runtime = `${processor === 'huggingface' ? 'Intel(R) Xeon(R) Platinum 8559C · ' : ''}CPU ×${threads}`;
+    return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {[key]: {inference_time_ms: 50, runtime, boxes: []}}})};
   }
 });
 vm.runInContext(source, context);
@@ -98,6 +99,8 @@ vm.runInContext(source, context);
   assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');
   assert.equal(requests.at(-1).processor, 'huggingface');
   assert.equal(requests.at(-1).threads, 3);
+  assert.equal(elements.get('mvpRuntime').textContent, 'Intel(R) Xeon(R) Platinum 8559C\nCPU ×3');
+  assert.equal(elements.get('mvpLatency').textContent, '50.0 ms\nIntel(R) Xeon(R) Platinum 8559C\nCPU ×3');
   assert.match(elements.get('mvpLoadingText').textContent, /CPU ×3/);
   assert.doesNotMatch(elements.get('mvpLoadingText').textContent, /Hugging Face/);
   assert.match(elements.get('mvpCoreSelect').innerHTML, /value="8">CPU ×8/);

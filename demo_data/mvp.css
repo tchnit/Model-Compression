@@ -11,6 +11,7 @@ body:not(.mvp-active) #mvp { display:none; }
 #mvp .mvp-accent,#mvp #mvpConfValue,#mvp #mvpExportCount { color:var(--accent); font-family:monospace; }
 #mvp .mvp-model-dot { width:8px; height:8px; border-radius:50%; background:#34d399; }
 #mvp .mvp-telemetry { grid-template-columns:repeat(3,minmax(0,1fr)); }
+#mvpRuntime, #mvpLatency { white-space:pre-line; }
 #mvp .mvp-export-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 #mvp .mvp-preview-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:11px; font-weight:700; color:var(--muted); }
 #mvp .export-card h3 { font-size:14px; font-weight:750; margin-bottom:6px; }
