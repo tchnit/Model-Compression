@@ -48,6 +48,12 @@ MODEL_CONFIGS = {
         'device': 'cpu',
         'precision': 'FP32',
     },
+    'yolo26m_baseline_fp32': {
+        'path': os.path.join(DIRECTORY, 'models', 'yolo26m_fp32_openvino_model'),
+        'task': 'detect',
+        'device': 'cpu',
+        'precision': 'FP32',
+    },
     'yolo26m_ptq_int8': {
         'path': os.path.join(DIRECTORY, 'models', 'int8_yolo26m_640_openvino_model'),
         'task': 'detect',
@@ -66,6 +72,12 @@ MODEL_CONFIGS = {
     'yolo26s_fp32': {
         'path': os.path.join(DIRECTORY, 'models', 'yolo26s-bdd100k.pt'),
         'task': None,
+        'device': 'cpu',
+        'precision': 'FP32',
+    },
+    'yolo26s_baseline_fp32': {
+        'path': os.path.join(DIRECTORY, 'models', 'yolo26s_fp32_openvino_model'),
+        'task': 'detect',
         'device': 'cpu',
         'precision': 'FP32',
     },

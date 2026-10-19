@@ -5,13 +5,14 @@ const BENCHMARK_DATA = window.DEMO_DATA?.benchmarks || [];
 // App State
 let demoData = window.DEMO_DATA || null;
 const MODEL_ALIASES = {
-  yolo26s_baseline_fp32: {backend: 'yolo26s_fp32', name: 'YOLO26s Baseline (FP32)'},
-  yolo26m_baseline_fp32: {backend: 'yolo26m_fp32', name: 'YOLO26m Baseline (FP32)'}
+  yolo26s_baseline_fp32: {source: 'yolo26s_fp32', name: 'YOLO26s Baseline (FP32)', size_mb: 36.56},
+  yolo26m_baseline_fp32: {source: 'yolo26m_fp32', name: 'YOLO26m Baseline (FP32)', size_mb: 78.13}
 };
 if (demoData) for (const [alias, config] of Object.entries(MODEL_ALIASES)) {
-  const source = demoData.models[config.backend];
-  if (source) demoData.models[alias] = {...source, name: config.name, badge: 'CPU FP32'};
-  demoData.detections[alias] = {...(demoData.detections[config.backend] || {})};
+  const source = demoData.models[config.source];
+  if (source) demoData.models[alias] = {...source, name: config.name, badge: 'OpenVINO FP32', size_mb: config.size_mb,
+    path: `models/${alias.replace('baseline_', '')}_openvino_model`};
+  demoData.detections[alias] = {...(demoData.detections[config.source] || {})};
 }
 let currentSceneId = 'scene_01';
 let currentModelA = '';
@@ -116,15 +117,14 @@ function inferScene(scene, sides) {
       try {
         const stillSelected = ['A', 'B'].some(side => inferenceSelection(side).signature === signature);
         if (currentSceneId !== scene.id || !stillSelected) return;
-        const backendKey = MODEL_ALIASES[modelKey]?.backend || modelKey;
         const res = await fetch('/api/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [backendKey], threads })
+          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey], threads })
         });
         const result = await res.json();
         if (!res.ok || result.status !== 'success') throw new Error(result.message || `HTTP ${res.status}`);
-        const detection = result.detections[backendKey];
+        const detection = result.detections[modelKey];
         if (!detection) throw new Error('Server không trả về kết quả model đã chọn');
         if (!demoData.detections[modelKey]) demoData.detections[modelKey] = {};
         const record = {

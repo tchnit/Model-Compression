@@ -27,9 +27,11 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8';
   const MODEL_NAMES = {
     yolo26s_ptq_int8: 'YOLO26s PTQ INT8 640 (OpenVINO)',
-    yolo26s_fp32: 'YOLO26s Baseline (FP32)',
-    yolo26m_fp32: 'YOLO26m Baseline (FP32)'
+    yolo26s_baseline_fp32: 'YOLO26s Baseline (FP32)',
+    yolo26m_baseline_fp32: 'YOLO26m Baseline (FP32)'
   };
+  const MODEL_SOURCES = {yolo26s_baseline_fp32: 'yolo26s_fp32', yolo26m_baseline_fp32: 'yolo26m_fp32'};
+  const MODEL_SIZES = {yolo26s_baseline_fp32: 36.56, yolo26m_baseline_fp32: 78.13};
   const root = document.getElementById('mvp');
   root.innerHTML = `
     <div class="studio-container mvp-single">
@@ -51,8 +53,8 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
             <span class="select-label"><span>MÔ HÌNH</span><span id="mvpModelInfo">INT8 · OpenVINO</span></span>
             <select class="model-select" id="mvpModelSelect" aria-label="Mô hình nhận diện">
               <option value="yolo26s_ptq_int8" selected>YOLO26s PTQ INT8 640 (OpenVINO)</option>
-              <option value="yolo26s_fp32">YOLO26s Baseline (FP32)</option>
-              <option value="yolo26m_fp32">YOLO26m Baseline (FP32)</option>
+              <option value="yolo26s_baseline_fp32">YOLO26s Baseline (FP32)</option>
+              <option value="yolo26m_baseline_fp32">YOLO26m Baseline (FP32)</option>
             </select>
             <span class="select-label"><span>SỐ CORE CPU HOST SERVER</span></span>
             <select class="model-select" id="mvpCoreSelect">
@@ -111,7 +113,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
 
   const byId = id => document.getElementById(id);
   const data = window.DEMO_DATA;
-  if (!data?.scenes?.length || Object.keys(MODEL_NAMES).some(key => !data.models?.[key])) return;
+  if (!data?.scenes?.length || Object.keys(MODEL_NAMES).some(key => !data.models?.[MODEL_SOURCES[key] || key])) return;
   const scenes = data.scenes.map(scene => ({...scene, mvpDetections: {}}));
   let currentSceneId = scenes[0].id;
   let currentModelKey = DEFAULT_MODEL_KEY;
@@ -197,7 +199,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const current = scene();
     const result = record();
     const boxes = filteredBoxes();
-    const model = data.models[currentModelKey];
+    const model = data.models[MODEL_SOURCES[currentModelKey] || currentModelKey];
     const modelName = MODEL_NAMES[currentModelKey];
     const image = byId('mvpImage');
     const source = current.data_uri || current.image_url;
@@ -212,8 +214,9 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpOverlay').innerHTML = generateSvgElements(boxes, width, height);
     byId('mvpSceneTitle').textContent = current.title;
     byId('mvpSceneDesc').textContent = current.desc || '';
-    byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'CPU FP32' : model.badge} · ${model.size_mb.toFixed(2)} MiB`;
-    byId('mvpModelPath').textContent = model.path;
+    const sizeMb = MODEL_SIZES[currentModelKey] || model.size_mb;
+    byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'OpenVINO FP32' : model.badge} · ${sizeMb.toFixed(2)} MiB`;
+    byId('mvpModelPath').textContent = currentModelKey.includes('fp32') ? `models/${currentModelKey.replace('baseline_', '')}_openvino_model` : model.path;
     byId('mvpPanelModel').textContent = modelName;
     byId('mvpRuntime').textContent = result?.runtime || `${modelName} · CPU ×${currentThreads}`;
     byId('mvpBoxCount').textContent = result ? boxes.length : '—';

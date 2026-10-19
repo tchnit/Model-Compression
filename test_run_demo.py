@@ -117,7 +117,7 @@ class DemoServerTests(unittest.TestCase):
         available = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
         self.assertEqual(run_demo.CPU_THREADS, available)
         self.assertTrue(run_demo.MODEL_CONFIGS)
-        self.assertEqual(len(run_demo.MODEL_CONFIGS), 10)
+        self.assertEqual(len(run_demo.MODEL_CONFIGS), 12)
         self.assertEqual({cfg["device"] for cfg in run_demo.MODEL_CONFIGS.values()}, {"cpu"})
         self.assertEqual(
             Path(run_demo.MODEL_CONFIGS["yolo26s_int8"]["path"]).name,
@@ -125,6 +125,8 @@ class DemoServerTests(unittest.TestCase):
         )
         self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26s_fp32"]["path"]).name, "yolo26s-bdd100k.pt")
         self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26s_ptq_int8"]["path"]).name, "int8_yolo26s_640_openvino_model")
+        self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26s_baseline_fp32"]["path"]).name, "yolo26s_fp32_openvino_model")
+        self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26m_baseline_fp32"]["path"]).name, "yolo26m_fp32_openvino_model")
         self.assertEqual(Path(run_demo.MODEL_CONFIGS["yolo26m_qat_int8"]["path"]).name, "int8_yolo26m_qat_640_openvino_model")
         self.assertEqual(
             {key: run_demo.MODEL_CONFIGS[key].get('precision') for key in
@@ -140,15 +142,16 @@ class DemoServerTests(unittest.TestCase):
         for scene in data["scenes"]:
             self.assertTrue(scene["data_uri"].startswith("data:image/jpeg;base64,"))
             self.assertTrue((Path("demo_data/images") / scene["file"]).is_file())
-        self.assertEqual(set(data["models"]), set(run_demo.MODEL_CONFIGS))
-        self.assertEqual(set(data["detections"]), set(run_demo.MODEL_CONFIGS))
+        live_only = {'yolo26s_baseline_fp32', 'yolo26m_baseline_fp32'}
+        self.assertEqual(set(data["models"]), set(run_demo.MODEL_CONFIGS) - live_only)
+        self.assertEqual(set(data["detections"]), set(run_demo.MODEL_CONFIGS) - live_only)
         bundle = Path("demo_data/demo_bundle.js").read_text(encoding="utf-8")
         self.assertEqual(json.loads(bundle.removeprefix("window.DEMO_DATA = ").rstrip(";\n")), data)
         dashboard = Path('model-compression-yolo26-dashboard.html').read_text()
         summary = re.search(r'<script id="benchmarkSummaryData" type="application/json">(.*?)</script>', dashboard, re.S)[1]
         self.assertEqual(json.loads(summary), data['benchmarks'])
         self.assertEqual(data['scenes'][1]['attributes']['timeofday'], 'night')
-        for model_key in run_demo.MODEL_CONFIGS:
+        for model_key in set(run_demo.MODEL_CONFIGS) - live_only:
             records = data["detections"][model_key]
             self.assertEqual(len(records), 5)
             self.assertTrue(all(row["runtime"] == "CPU ×4 · 640×640" for row in records.values()))
