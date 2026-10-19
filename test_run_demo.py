@@ -252,10 +252,11 @@ class DemoServerTests(unittest.TestCase):
                 'image': encoded,
                 'models': ['yolo26s_ptq_int8'],
                 'processor': 'huggingface',
+                'threads': 2,
             }), {'Content-Type': 'application/json'})
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)['detections']['yolo26s_ptq_int8'], detection)
-        remote.assert_called_once_with(ANY, 2, 2, 0.10, 'yolo26s_ptq_int8')
+        remote.assert_called_once_with(ANY, 2, 2, 0.10, 'yolo26s_ptq_int8', 2)
         local.assert_not_called()
 
         status, body = self.request('POST', '/api/predict', json.dumps({
@@ -265,6 +266,15 @@ class DemoServerTests(unittest.TestCase):
         }), {'Content-Type': 'application/json'})
         self.assertEqual(status, 400)
         self.assertIn('chưa có', json.loads(body)['message'])
+
+        status, body = self.request('POST', '/api/predict', json.dumps({
+            'image': encoded,
+            'models': ['yolo26s_ptq_int8'],
+            'processor': 'huggingface',
+            'threads': run_demo.HUGGINGFACE_CPU_THREADS + 1,
+        }), {'Content-Type': 'application/json'})
+        self.assertEqual(status, 400)
+        self.assertIn('[1, 3]', json.loads(body)['message'])
 
     def test_huggingface_client_uses_a_verified_ca_bundle(self):
         with patch.object(run_demo, '_HUGGINGFACE_CLIENT', None), \
@@ -294,12 +304,15 @@ class DemoServerTests(unittest.TestCase):
                 uploaded_path = kwargs['image_input']['path']
                 self.assert_file_exists = Path(uploaded_path).is_file()
                 self.model_key = kwargs['model_key']
+                self.cpu_threads = kwargs['cpu_threads']
+                self.api_name = kwargs['api_name']
                 return {
                     'success': True,
                     'model_key': 'yolo26s_fp32',
                     'server_cpu': run_demo.HUGGINGFACE_CPU,
                     'real_inference_ms': 12.5,
                     'total_wall_ms': 20.0,
+                    'runtime_cpu_threads': 2,
                     'detections': [{
                         'class_id': 2, 'class_name': 'car', 'confidence': 0.8765,
                         'bbox_xyxy': [10, 20, 30, 40],
@@ -309,14 +322,18 @@ class DemoServerTests(unittest.TestCase):
         client = Client()
         with patch.object(run_demo, 'get_huggingface_client', return_value=client):
             result = run_demo.predict_on_huggingface(
-                np.zeros((100, 200, 3), dtype=np.uint8), 200, 100, 0.25, 'yolo26s_fp32'
+                np.zeros((100, 200, 3), dtype=np.uint8), 200, 100, 0.25, 'yolo26s_fp32', 2
             )
         self.assertTrue(client.assert_file_exists)
         self.assertFalse(Path(uploaded_path).exists())
         self.assertEqual(client.model_key, 'yolo26s_fp32')
+        self.assertEqual(client.cpu_threads, 2)
+        self.assertEqual(client.api_name, '/xeon_bridge_model_threads')
         self.assertEqual(result['inference_time_ms'], 20.0)
+        self.assertIn('CPU ×2', result['runtime'])
         self.assertEqual(result['boxes'][0]['box_norm'], [0.05, 0.2, 0.15, 0.4])
         self.assertEqual(result['runtime_settings']['provider'], 'huggingface')
+        self.assertEqual(result['runtime_settings']['runtime_threads'], 2)
 
     def test_malformed_uploads_are_client_errors(self):
         for image in [None, 12, [], {}, 'AA==']:

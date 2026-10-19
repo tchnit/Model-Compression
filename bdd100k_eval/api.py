@@ -43,6 +43,7 @@ HUGGINGFACE_MODEL_KEYS = {
 HUGGINGFACE_SPACE = 'kiioss/m38-edge-labeling'
 HUGGINGFACE_SPACE_URL = 'https://kiioss-m38-edge-labeling.hf.space'
 HUGGINGFACE_CPU = 'Intel(R) Xeon(R) Platinum 8559C'
+HUGGINGFACE_CPU_THREADS = 3
 _HUGGINGFACE_CLIENT = None
 
 
@@ -76,7 +77,7 @@ def get_huggingface_client():
     return _HUGGINGFACE_CLIENT
 
 
-def predict_on_huggingface(image, width, height, conf, model_key):
+def predict_on_huggingface(image, width, height, conf, model_key, threads):
     """Run the selected model on the remote Space and normalize its response."""
     import cv2
     from gradio_client import handle_file
@@ -93,7 +94,8 @@ def predict_on_huggingface(image, width, height, conf, model_key):
             model_key=HUGGINGFACE_MODEL_KEYS[model_key],
             conf_threshold=conf,
             iou_threshold=0.45,
-            api_name='/xeon_bridge_model',
+            cpu_threads=threads,
+            api_name='/xeon_bridge_model_threads',
         )
         request_time_ms = (time.perf_counter() - started) * 1000
 
@@ -122,12 +124,15 @@ def predict_on_huggingface(image, width, height, conf, model_key):
         })
     server_wall_ms = float(result.get('total_wall_ms', result.get('real_inference_ms', 0)))
     server_cpu = str(result.get('server_cpu') or HUGGINGFACE_CPU)
+    runtime_threads = int(result.get('runtime_cpu_threads', threads))
     return {
         'inference_time_ms': round(server_wall_ms, 1),
-        'runtime': f'Hugging Face · {server_cpu} · API {request_time_ms:.1f} ms',
+        'runtime': f'Hugging Face · {server_cpu} · CPU ×{runtime_threads} · API {request_time_ms:.1f} ms',
         'runtime_settings': {
             'provider': 'huggingface',
             'server_cpu': server_cpu,
+            'requested_threads': threads,
+            'runtime_threads': runtime_threads,
             'server_inference_ms': float(result.get('real_inference_ms', server_wall_ms)),
             'server_wall_ms': server_wall_ms,
             'request_time_ms': round(request_time_ms, 1),
@@ -200,6 +205,7 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                 'cpu_name': cpu_name,
                 'cpu_threads': CPU_THREADS,
                 'int8_cpu_threads': hardware_bench.int8_cpu_thread_limit(cpu_name, CPU_THREADS),
+                'huggingface_cpu_threads': HUGGINGFACE_CPU_THREADS,
             })
             return
 
@@ -249,11 +255,18 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if processor == 'huggingface':
                     if len(target_models) != 1 or target_models[0] not in HUGGINGFACE_MODEL_KEYS:
                         raise ValueError('Model đã chọn chưa có trên CPU Hugging Face')
+                    threads = payload.get('threads', HUGGINGFACE_CPU_THREADS)
+                    if type(threads) is not int or not 1 <= threads <= HUGGINGFACE_CPU_THREADS:
+                        raise ValueError(
+                            f'threads phải là số nguyên thuộc [1, {HUGGINGFACE_CPU_THREADS}] cho CPU Hugging Face'
+                        )
                     if not HUGGINGFACE_INFERENCE_SLOT.acquire(blocking=False):
                         self.send_json(503, {'status': 'error', 'message': 'CPU Hugging Face đang xử lý ảnh khác'})
                         return
                     try:
-                        detection = predict_on_huggingface(img, w, h, conf_thresh, target_models[0])
+                        detection = predict_on_huggingface(
+                            img, w, h, conf_thresh, target_models[0], threads
+                        )
                     except Exception as error:
                         print(f'[!] Hugging Face inference failed: {error}', file=sys.stderr)
                         self.send_json(502, {'status': 'error', 'message': f'Không gọi được CPU Hugging Face: {error}'})

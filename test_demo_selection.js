@@ -168,7 +168,7 @@ async function studio() {
     assert.ok(scene.live_detections['a:1']);
   }
 
-  // The remote CPU runs the selected Space artifact and does not reuse host cache/core settings.
+  // The remote CPU runs the selected Space artifact with the selected core count.
   {
     const s = await studio();
     s.element('processorSelectA').value = 'huggingface';
@@ -177,15 +177,23 @@ async function studio() {
     await tick();
     assert.deepEqual(s.requests[0].payload.models, ['yolo26s_ptq_int8']);
     assert.equal(s.requests[0].payload.processor, 'huggingface');
-    assert.equal(s.element('coreSelectA').disabled, true);
+    assert.equal(s.requests[0].payload.threads, 3);
+    assert.equal(s.element('coreSelectA').disabled, false);
     s.finish(0);
     await selected;
-    assert.ok(s.data.scenes[0].live_detections['yolo26s_ptq_int8:huggingface']);
+    assert.ok(s.data.scenes[0].live_detections['yolo26s_ptq_int8:huggingface:3']);
+    const retuned = s.context.selectThreads('A', '1');
+    await tick();
+    assert.equal(s.requests[1].payload.threads, 1);
+    s.finish(1);
+    await retuned;
+    assert.ok(s.data.scenes[0].live_detections['yolo26s_ptq_int8:huggingface:1']);
     const host = s.context.selectModel('A', 'a');
     await tick();
-    assert.equal(s.requests[1].payload.processor, 'huggingface');
+    assert.equal(s.requests[2].payload.processor, 'huggingface');
+    assert.equal(s.requests[2].payload.threads, 1);
     assert.equal(s.element('processorSelectA').value, 'huggingface');
-    s.finish(1);
+    s.finish(2);
     await host;
   }
 

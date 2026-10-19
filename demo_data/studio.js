@@ -41,6 +41,7 @@ let isDraggingSlider = false;
 let isServerOnline = false;
 let serverCpuThreads = null;
 let serverInt8CpuThreads = null;
+let huggingFaceCpuThreads = 3;
 const liveSceneRequests = new Map();
 let inferenceQueue = Promise.resolve();
 
@@ -52,16 +53,17 @@ function inferenceSelection(side) {
   const threads = side === 'A' ? currentThreadsA : currentThreadsB;
   const processor = side === 'A' ? currentProcessorA : currentProcessorB;
   return { modelKey, threads, processor,
-    signature: processor === 'host' ? `${modelKey}:${threads}` : `${modelKey}:huggingface` };
+    signature: processor === 'host' ? `${modelKey}:${threads}` : `${modelKey}:huggingface:${threads}` };
 }
 
-function modelThreadLimit(modelKey) {
+function modelThreadLimit(modelKey, processor = 'host') {
+  if (processor === 'huggingface') return huggingFaceCpuThreads;
   return modelKey.includes('int8') ? (serverInt8CpuThreads || serverCpuThreads || 3) : (serverCpuThreads || 3);
 }
 
-function populateCoreSelect(id, modelKey, selected) {
+function populateCoreSelect(id, modelKey, selected, processor = 'host') {
   const select = $(id);
-  select.innerHTML = Array.from({ length: modelThreadLimit(modelKey) }, (_, index) =>
+  select.innerHTML = Array.from({ length: modelThreadLimit(modelKey, processor) }, (_, index) =>
     `<option value="${index + 1}">CPU ×${index + 1}</option>`).join('');
   select.value = String(selected);
 }
@@ -83,11 +85,13 @@ async function checkServerStatus() {
         isServerOnline = true;
         serverCpuThreads = Number.isInteger(data.cpu_threads) && data.cpu_threads > 0 ? data.cpu_threads : null;
         serverInt8CpuThreads = Number.isInteger(data.int8_cpu_threads) && data.int8_cpu_threads > 0 ? data.int8_cpu_threads : serverCpuThreads;
+        huggingFaceCpuThreads = Number.isInteger(data.huggingface_cpu_threads) && data.huggingface_cpu_threads > 0
+          ? data.huggingface_cpu_threads : 3;
         if (serverCpuThreads) {
-          currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(currentModelA));
-          currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(currentModelB));
-          populateCoreSelect('coreSelectA', currentModelA, currentThreadsA);
-          populateCoreSelect('coreSelectB', currentModelB, currentThreadsB);
+          currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(currentModelA, currentProcessorA));
+          currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(currentModelB, currentProcessorB));
+          populateCoreSelect('coreSelectA', currentModelA, currentThreadsA, currentProcessorA);
+          populateCoreSelect('coreSelectB', currentModelB, currentThreadsB, currentProcessorB);
         }
         $('processorHostA').textContent = data.cpu_name || 'CPU không rõ tên';
         $('processorHostB').textContent = data.cpu_name || 'CPU không rõ tên';
@@ -115,7 +119,7 @@ function updateInferenceStatus() {
     item.modelKey && items.findIndex(other => other.signature === item.signature) === index
       && liveSceneRequests.has(`${currentSceneId}:${item.signature}`));
   $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
-  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(item => `${demoData.models[item.modelKey].name} (${item.processor === 'host' ? `CPU ×${item.threads}` : 'Hugging Face'})`).join(', ')} tuần tự...`;
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(item => `${demoData.models[item.modelKey].name} (${item.processor === 'host' ? `CPU ×${item.threads}` : `Hugging Face · CPU ×${item.threads}`})`).join(', ')} tuần tự...`;
 }
 
 function inferScene(scene, sides) {
@@ -174,12 +178,12 @@ function inferScene(scene, sides) {
 function selectModel(side, modelKey) {
   if (side === 'A') {
     currentModelA = modelKey;
-    currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(modelKey));
-    populateCoreSelect('coreSelectA', modelKey, currentThreadsA);
+    currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(modelKey, currentProcessorA));
+    populateCoreSelect('coreSelectA', modelKey, currentThreadsA, currentProcessorA);
   } else {
     currentModelB = modelKey;
-    currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(modelKey));
-    populateCoreSelect('coreSelectB', modelKey, currentThreadsB);
+    currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(modelKey, currentProcessorB));
+    populateCoreSelect('coreSelectB', modelKey, currentThreadsB, currentProcessorB);
   }
   updateSceneView();
   const scene = demoData.scenes.find(s => s.id === currentSceneId);
@@ -188,8 +192,15 @@ function selectModel(side, modelKey) {
 
 function selectProcessor(side, processor) {
   if (!['host', 'huggingface'].includes(processor)) return Promise.resolve();
-  if (side === 'A') currentProcessorA = processor;
-  else currentProcessorB = processor;
+  if (side === 'A') {
+    currentProcessorA = processor;
+    currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(currentModelA, processor));
+    populateCoreSelect('coreSelectA', currentModelA, currentThreadsA, processor);
+  } else {
+    currentProcessorB = processor;
+    currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(currentModelB, processor));
+    populateCoreSelect('coreSelectB', currentModelB, currentThreadsB, processor);
+  }
   updateSceneView();
   return inferScene(demoData.scenes.find(s => s.id === currentSceneId), [side]);
 }
@@ -197,7 +208,8 @@ function selectProcessor(side, processor) {
 function selectThreads(side, value) {
   const threads = Number(value);
   const modelKey = side === 'A' ? currentModelA : currentModelB;
-  if (!Number.isInteger(threads) || threads < 1 || threads > modelThreadLimit(modelKey)) return Promise.resolve();
+  const processor = side === 'A' ? currentProcessorA : currentProcessorB;
+  if (!Number.isInteger(threads) || threads < 1 || threads > modelThreadLimit(modelKey, processor)) return Promise.resolve();
   if (side === 'A') currentThreadsA = threads;
   else currentThreadsB = threads;
   updateSceneView();
@@ -416,8 +428,8 @@ function updateSceneView() {
   $('labelBInfo').textContent = currentModelB ? `${infoB.badge} · ${infoB.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
   $('modelPathA').textContent = infoA.path || '';
   $('modelPathB').textContent = infoB.path || '';
-  $('coreSelectA').disabled = currentProcessorA === 'huggingface';
-  $('coreSelectB').disabled = currentProcessorB === 'huggingface';
+  $('coreSelectA').disabled = false;
+  $('coreSelectB').disabled = false;
 
   $('panelTitleA').textContent = infoA.name;
   $('panelTitleB').textContent = infoB.name;

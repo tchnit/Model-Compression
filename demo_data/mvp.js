@@ -127,6 +127,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   let serverOnline = false;
   let serverCpuThreads = null;
   let serverInt8CpuThreads = null;
+  let huggingFaceCpuThreads = 3;
   let inferenceQueue = Promise.resolve();
   const pending = new Set();
   const enabledClasses = new Set(Object.keys(CLASS_COLORS));
@@ -151,12 +152,13 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   }
 
   function scene() { return scenes.find(item => item.id === currentSceneId) || scenes[0]; }
-  function signature() { return currentProcessor === 'host' ? `${currentModelKey}:${currentThreads}` : `${currentModelKey}:huggingface`; }
+  function signature() { return currentProcessor === 'host' ? `${currentModelKey}:${currentThreads}` : `${currentModelKey}:huggingface:${currentThreads}`; }
   function record() { return scene().mvpDetections[signature()]; }
   function filteredBoxes() { return (record()?.boxes || []).filter(box => box.conf >= currentConf && enabledClasses.has(box.class_name)); }
 
   function populateCoreSelect() {
-    const limit = currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
+    const limit = currentProcessor === 'huggingface' ? huggingFaceCpuThreads
+      : currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
     byId('mvpCoreSelect').innerHTML = Array.from({length: limit}, (_, index) => `<option value="${index + 1}">CPU ×${index + 1}</option>`).join('');
     byId('mvpCoreSelect').value = String(currentThreads);
   }
@@ -169,6 +171,8 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
       serverOnline = true;
       serverCpuThreads = Number.isInteger(status.cpu_threads) && status.cpu_threads > 0 ? status.cpu_threads : null;
       serverInt8CpuThreads = Number.isInteger(status.int8_cpu_threads) && status.int8_cpu_threads > 0 ? status.int8_cpu_threads : serverCpuThreads;
+      huggingFaceCpuThreads = Number.isInteger(status.huggingface_cpu_threads) && status.huggingface_cpu_threads > 0
+        ? status.huggingface_cpu_threads : 3;
       if (serverCpuThreads) {
         currentThreads = Math.min(3, currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads);
         populateCoreSelect();
@@ -223,7 +227,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'OpenVINO FP32' : model.badge} · ${sizeMb.toFixed(2)} MiB`;
     byId('mvpModelPath').textContent = currentModelKey.includes('fp32') ? `models/${currentModelKey.replace('baseline_', '')}_openvino_model` : model.path;
     byId('mvpPanelModel').textContent = modelName;
-    byId('mvpRuntime').textContent = result?.runtime || `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : 'Hugging Face'}`;
+    byId('mvpRuntime').textContent = result?.runtime || `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : `Hugging Face · CPU ×${currentThreads}`}`;
     byId('mvpBoxCount').textContent = result ? boxes.length : '—';
     byId('mvpLatency').textContent = result ? `${result.inference_time_ms.toFixed(1)} ms · ${result.runtime}` : serverOnline ? 'Chưa suy luận' : 'AI Server offline';
     const fps = result?.inference_time_ms > 0 ? 1000 / result.inference_time_ms : null;
@@ -233,9 +237,9 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const busy = pending.has(`${current.id}:${signature()}`);
     byId('mvpLoading').classList.toggle('active', busy);
     byId('mvpRunDetection').disabled = busy || !serverOnline;
-    byId('mvpCoreSelect').disabled = busy || currentProcessor === 'huggingface';
+    byId('mvpCoreSelect').disabled = busy;
     byId('mvpProcessorSelect').disabled = busy;
-    byId('mvpLoadingText').textContent = `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : 'Hugging Face'}`;
+    byId('mvpLoadingText').textContent = `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : `Hugging Face · CPU ×${currentThreads}`}`;
     renderExport(boxes, current, width, height, !!result);
   }
 
@@ -249,7 +253,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     if (!serverOnline) { toast('AI Server đang offline.'); return Promise.resolve(); }
     const modelKey = currentModelKey;
     const processor = currentProcessor;
-    const requestSignature = processor === 'host' ? `${modelKey}:${currentThreads}` : `${modelKey}:huggingface`;
+    const requestSignature = processor === 'host' ? `${modelKey}:${currentThreads}` : `${modelKey}:huggingface:${currentThreads}`;
     const requestKey = `${target.id}:${requestSignature}`;
     if (!force && target.mvpDetections[requestSignature]) { render(); return Promise.resolve(); }
     if (pending.has(requestKey)) return inferenceQueue;
@@ -338,12 +342,16 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpModelSelect').value = currentModelKey;
     byId('mvpModelSelect').addEventListener('change', event => {
       currentModelKey = event.target.value;
-      const limit = currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
+      const limit = currentProcessor === 'huggingface' ? huggingFaceCpuThreads
+        : currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
       if (limit) { currentThreads = Math.min(currentThreads, limit); populateCoreSelect(); }
       render(); inferScene(scene());
     });
     byId('mvpProcessorSelect').addEventListener('change', event => {
       currentProcessor = event.target.value;
+      const limit = currentProcessor === 'huggingface' ? huggingFaceCpuThreads
+        : currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
+      if (limit) { currentThreads = Math.min(currentThreads, limit); populateCoreSelect(); }
       render(); inferScene(scene());
     });
     byId('mvpClassFilters').innerHTML = Object.keys(CLASS_COLORS).map(name => `<label class="class-check"><input type="checkbox" value="${name}" checked><span class="class-color-dot" style="background:${CLASS_COLORS[name]}"></span><span>${name}</span></label>`).join('');
