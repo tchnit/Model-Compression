@@ -519,10 +519,10 @@ function renderBoundingBoxes() {
     : `B giữ ${agreement.matches}/${filteredA.length} hộp A · B thêm ${filteredB.length - agreement.matches} hộp chưa khớp · IoU TB: ${agreement.meanIou === null ? '—' : (agreement.meanIou * 100).toFixed(1) + '%'}`;
 
   $('boxCountA').textContent = recordA ? filteredA.length : '—';
-  $('timeA').textContent = recordA ? `${timeA}ms${recordA.runtime ? ` · ${recordA.runtime}` : ''}` : currentModelA ? 'Chưa suy luận' : 'Chọn mô hình A';
+  $('timeA').textContent = recordA ? `${timeA}ms${recordA.runtime ? `\n${recordA.runtime.replace(' · CPU ×', '\nCPU ×')}` : ''}` : currentModelA ? 'Chưa suy luận' : 'Chọn mô hình A';
 
   $('boxCountB').textContent = recordB ? filteredB.length : '—';
-  $('timeB').textContent = recordB ? `${timeB}ms${recordB.runtime ? ` · ${recordB.runtime}` : ''}` : currentModelB ? 'Chưa suy luận' : 'Chọn mô hình B';
+  $('timeB').textContent = recordB ? `${timeB}ms${recordB.runtime ? `\n${recordB.runtime.replace(' · CPU ×', '\nCPU ×')}` : ''}` : currentModelB ? 'Chưa suy luận' : 'Chọn mô hình B';
 
   // Render SVG elements
   $('overlayA').innerHTML = generateSvgElements(filteredA, w, h);

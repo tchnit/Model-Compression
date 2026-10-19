@@ -110,7 +110,7 @@ async function studio(useDefaults = false) {
           status: 'success', width: 100, height: 80,
           detections: Object.fromEntries(request.payload.models.map(key => [key, {
             inference_time_ms: key === 'yolo26s_fp32' ? 40 : 20,
-            runtime: `CPU ×${request.payload.threads}`, detections_count: 0, boxes: []
+            runtime: `${request.payload.processor === 'huggingface' ? 'Intel(R) Xeon(R) Platinum 8559C · ' : ''}CPU ×${request.payload.threads}`, detections_count: 0, boxes: []
           }]))
         }
       });
@@ -158,6 +158,8 @@ async function studio(useDefaults = false) {
     assert.equal(s.requests[1].payload.threads, 4);
     s.finish(1);
     await run;
+    assert.equal(s.element('timeA').textContent, '40ms\nIntel(R) Xeon(R) Platinum 8559C\nCPU ×4');
+    assert.equal(s.element('timeB').textContent, '20ms\nIntel(R) Xeon(R) Platinum 8559C\nCPU ×4');
 
     s.context.applyPreset('ptq');
     await tick();

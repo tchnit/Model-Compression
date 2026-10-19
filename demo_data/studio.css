@@ -561,6 +561,7 @@ input[type="range"] {
 .panel-stat-pill strong {
   color: #38bdf8;
 }
+#timeA, #timeB { white-space: pre-line; }
 
 /* Slider View (Before/After) */
 .slider-view-wrapper {
