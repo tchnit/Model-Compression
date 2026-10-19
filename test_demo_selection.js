@@ -7,8 +7,8 @@ const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
 const css = fs.readFileSync(`${__dirname}/demo_data/studio.css`, 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
-const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26s_baseline_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8', 'yolo26s_export_int8_640'];
-const expectedModelNames = ['YOLO26s INT8 OpenVINO', 'YOLO26s FP16 PyTorch', 'YOLO26m FP16 PyTorch', 'YOLO26s FP32 OpenVINO', 'YOLO26m FP32 OpenVINO', 'YOLO26m INT8 OpenVINO', 'YOLO26s INT8 OpenVINO · Export'];
+const expectedModels = ['yolo26s_fp32', 'yolo26s_baseline_fp32', 'yolo26s_ptq_int8', 'yolo26s_export_int8_640', 'yolo26m_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8'];
+const expectedModelNames = ['YOLO26s FP16 PyTorch', 'YOLO26s FP32 OpenVINO', 'YOLO26s INT8 OpenVINO', 'YOLO26s INT8 OpenVINO · Export', 'YOLO26m FP16 PyTorch', 'YOLO26m FP32 OpenVINO', 'YOLO26m INT8 OpenVINO'];
 for (const side of ['A', 'B']) {
   const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
