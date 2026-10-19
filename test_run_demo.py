@@ -4,6 +4,7 @@ import http.client
 import json
 import os
 import re
+import ssl
 from io import BytesIO
 from pathlib import Path
 import socketserver
@@ -256,6 +257,23 @@ class DemoServerTests(unittest.TestCase):
         }), {'Content-Type': 'application/json'})
         self.assertEqual(status, 400)
         self.assertIn('chưa có', json.loads(body)['message'])
+
+    def test_huggingface_client_uses_a_verified_ca_bundle(self):
+        with patch.object(run_demo, '_HUGGINGFACE_CLIENT', None), \
+                patch('gradio_client.Client') as client:
+            self.assertIs(run_demo.get_huggingface_client(), client.return_value)
+        tls = client.call_args.kwargs['ssl_verify']
+        self.assertEqual(client.call_args.args, (run_demo.HUGGINGFACE_SPACE_URL,))
+        self.assertIsInstance(tls, ssl.SSLContext)
+        self.assertTrue(tls.check_hostname)
+        self.assertEqual(tls.verify_mode, ssl.CERT_REQUIRED)
+        self.assertGreater(tls.cert_store_stats()['x509_ca'], 0)
+
+    def test_huggingface_client_explains_untrusted_corporate_ca(self):
+        with patch.object(run_demo, '_HUGGINGFACE_CLIENT', None), \
+                patch('gradio_client.Client', side_effect=Exception('CERTIFICATE_VERIFY_FAILED')):
+            with self.assertRaisesRegex(RuntimeError, 'HUGGINGFACE_CA_BUNDLE'):
+                run_demo.get_huggingface_client()
 
     def test_huggingface_response_is_normalized_and_temp_image_is_removed(self):
         import numpy as np

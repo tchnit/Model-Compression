@@ -41,6 +41,7 @@ HUGGINGFACE_MODEL_KEYS = {
     'yolo26m_fp32': 'yolo26m_baseline_fp32',
 }
 HUGGINGFACE_SPACE = 'kiioss/m38-edge-labeling'
+HUGGINGFACE_SPACE_URL = 'https://kiioss-m38-edge-labeling.hf.space'
 HUGGINGFACE_CPU = 'Intel(R) Xeon(R) Platinum 8559C'
 _HUGGINGFACE_CLIENT = None
 
@@ -48,8 +49,30 @@ _HUGGINGFACE_CLIENT = None
 def get_huggingface_client():
     global _HUGGINGFACE_CLIENT
     if _HUGGINGFACE_CLIENT is None:
+        import certifi
+        import ssl
         from gradio_client import Client
-        _HUGGINGFACE_CLIENT = Client(HUGGINGFACE_SPACE, verbose=False, httpx_kwargs={'timeout': 60.0})
+        tls = ssl.create_default_context()
+        tls.load_verify_locations(cafile=certifi.where())
+        custom_ca = os.environ.get('HUGGINGFACE_CA_BUNDLE')
+        if custom_ca:
+            custom_ca = os.path.abspath(os.path.expanduser(custom_ca))
+            if not os.path.isfile(custom_ca):
+                raise RuntimeError(f'HUGGINGFACE_CA_BUNDLE không tồn tại: {custom_ca}')
+            tls.load_verify_locations(cafile=custom_ca)
+            tls.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+        try:
+            _HUGGINGFACE_CLIENT = Client(
+                HUGGINGFACE_SPACE_URL, verbose=False, ssl_verify=tls,
+                httpx_kwargs={'timeout': 60.0},
+            )
+        except Exception as error:
+            if 'CERTIFICATE_VERIFY_FAILED' in str(error):
+                raise RuntimeError(
+                    'Máy chủ chưa tin cậy chứng chỉ HTTPS. Cài CA nội bộ hoặc đặt '
+                    'HUGGINGFACE_CA_BUNDLE tới tệp CA rồi khởi động lại server.'
+                ) from error
+            raise
     return _HUGGINGFACE_CLIENT
 
 
