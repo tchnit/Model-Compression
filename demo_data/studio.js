@@ -57,7 +57,7 @@ function updateInferenceStatus() {
   const pending = [...new Set([currentModelA, currentModelB])].filter(key =>
     key && liveSceneRequests.has(`${currentSceneId}:${key}`));
   $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
-  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} tuần tự trên CPU (${serverCpuThreads ? `tối đa ${serverCpuThreads} luồng/model` : 'dùng toàn bộ CPU khả dụng'})...`;
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} tuần tự trên CPU (tối đa ${serverCpuThreads || 2} luồng/model)...`;
 }
 
 function inferScene(scene, modelKeys) {

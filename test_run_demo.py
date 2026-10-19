@@ -113,7 +113,7 @@ class DemoServerTests(unittest.TestCase):
 
     def test_live_comparison_pins_every_model_to_the_same_cpu_runtime(self):
         available = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
-        self.assertEqual(run_demo.CPU_THREADS, available)
+        self.assertEqual(run_demo.CPU_THREADS, min(2, available))
         self.assertTrue(run_demo.MODEL_CONFIGS)
         self.assertEqual(len(run_demo.MODEL_CONFIGS), 10)
         self.assertEqual({cfg["device"] for cfg in run_demo.MODEL_CONFIGS.values()}, {"cpu"})
