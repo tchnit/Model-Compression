@@ -314,6 +314,20 @@ main.app-main {
   flex-direction: column;
   gap: 8px;
 }
+#studio {
+  grid-template-columns: 520px minmax(0, 1fr);
+}
+.comparison-models {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.comparison-models .select-wrapper {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
 .select-wrapper {
   display: flex;
   flex-direction: column;
@@ -999,12 +1013,17 @@ table.bench-table tr:hover {
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  #studio { grid-template-columns: 1fr; }
+  #studio .studio-sidebar { border-right: none; border-bottom: 1px solid var(--line); padding-bottom: 20px; padding-right: 0; }
+}
 @media (max-width: 1024px) {
   .studio-container { grid-template-columns: 1fr; }
   .studio-sidebar { border-right: none; border-bottom: 1px solid var(--line); padding-bottom: 20px; padding-right: 0; }
   .gallery-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
+  .comparison-models { grid-template-columns: 1fr; }
   .gallery-grid { grid-template-columns: 1fr; }
   .split-view-container { grid-template-columns: 1fr; }
   .export-card { grid-template-columns: 1fr; }

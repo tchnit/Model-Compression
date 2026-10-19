@@ -4,6 +4,7 @@ const vm = require('node:vm');
 
 const scripts = ['overlays.js', 'studio.js'].map(name => fs.readFileSync(`${__dirname}/demo_data/${name}`, 'utf8'));
 const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
+const css = fs.readFileSync(`${__dirname}/demo_data/studio.css`, 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26s_baseline_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8', 'yolo26s_export_int8_640'];
@@ -27,6 +28,9 @@ assert.match(html, /SỐ CORE CPU · MÔ HÌNH A/);
 assert.match(html, /SỐ CORE CPU · MÔ HÌNH B/);
 assert.doesNotMatch(html, /studioCpuInfo|· Hugging Face/);
 assert.match(html, /Số luồng CPU client \(WASM\)/);
+assert.match(html, /class="model-select-group comparison-models"/);
+assert.match(css, /\.comparison-models\s*{[^}]*grid-template-columns:\s*repeat\(2,/s);
+assert.match(css, /@media \(max-width: 640px\)[\s\S]*?\.comparison-models\s*{\s*grid-template-columns:\s*1fr;/);
 
 async function studio() {
   const elements = new Map();
