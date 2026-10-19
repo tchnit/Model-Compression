@@ -37,7 +37,9 @@ let ready;
 const model = {name: 'YOLO26s PTQ INT8 640 (OpenVINO)', badge: 'INT8', size_mb: 9.99, map50: 51.44, path: 'model.xml'};
 const context = vm.createContext({
   window: {DEMO_DATA: {scenes: [{id: 'scene_01', title: 'Scene', file: 'scene.jpg', data_uri: 'data:image/jpeg;base64,AA', width: 1280, height: 720}], models: {yolo26s_ptq_int8: model}}, addEventListener() {}},
-  document: {body: element('body'), getElementById: element, createElement: tag => element(`created-${tag}-${elements.size}`), querySelectorAll: () => [], addEventListener(type, callback) { if (type === 'DOMContentLoaded') ready = callback; }},
+  document: {body: element('body'), getElementById: element, createElement: tag => {
+    const created = element(`created-${tag}-${elements.size}`); created.tagName = tag.toUpperCase(); return created;
+  }, querySelectorAll: () => [], addEventListener(type, callback) { if (type === 'DOMContentLoaded') ready = callback; }},
   location: {hash: '#mvp'}, history: {replaceState() {}}, requestAnimationFrame: callback => callback(),
   CLASS_COLORS: {car: '#fff'}, generateSvgElements: () => '', navigator: {clipboard: {writeText: async () => {}}},
   Blob, URL: {createObjectURL: () => 'blob:test', revokeObjectURL() {}}, setTimeout() {}, console,
@@ -52,6 +54,9 @@ vm.runInContext(source, context);
 (async () => {
   await ready();
   assert.equal(elements.get('mvpModelSelect').value, 'yolo26s_ptq_int8');
+  const sceneInfo = elements.get('mvpSceneList').children[0].children[1];
+  assert.equal(sceneInfo.tagName, 'DIV');
+  assert.deepEqual(sceneInfo.children.map(child => child.tagName), ['DIV', 'DIV']);
   assert.match(elements.get('mvpCoreSelect').innerHTML, /value="8">CPU ×8/);
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].models, ['yolo26s_ptq_int8']);
