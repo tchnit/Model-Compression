@@ -26,12 +26,12 @@ if (demoData) for (const [key, name] of Object.entries(MODEL_NAMES)) {
   if (demoData.models[key]) demoData.models[key].name = name;
 }
 let currentSceneId = 'scene_01';
-let currentModelA = '';
-let currentModelB = '';
-let currentThreadsA = 3;
-let currentThreadsB = 3;
-let currentProcessorA = 'host';
-let currentProcessorB = 'host';
+let currentModelA = 'yolo26s_fp32';
+let currentModelB = 'yolo26s_ptq_int8';
+let currentThreadsA = 4;
+let currentThreadsB = 4;
+let currentProcessorA = 'huggingface';
+let currentProcessorB = 'huggingface';
 let currentConf = 0.25;
 let currentViewMode = 'split'; // split, slider, toggle
 let selectedToggleModel = 'A';
@@ -41,7 +41,7 @@ let isDraggingSlider = false;
 let isServerOnline = false;
 let serverCpuThreads = null;
 let serverInt8CpuThreads = null;
-let huggingFaceCpuThreads = 3;
+let huggingFaceCpuThreads = 8;
 const liveSceneRequests = new Map();
 let inferenceQueue = Promise.resolve();
 
@@ -255,6 +255,12 @@ async function initApp() {
   `).join('');
 
   // Setup Event Listeners
+  $('modelSelectA').value = currentModelA;
+  $('modelSelectB').value = currentModelB;
+  $('processorSelectA').value = currentProcessorA;
+  $('processorSelectB').value = currentProcessorB;
+  populateCoreSelect('coreSelectA', currentModelA, currentThreadsA, currentProcessorA);
+  populateCoreSelect('coreSelectB', currentModelB, currentThreadsB, currentProcessorB);
   $('modelSelectA').addEventListener('change', e => {
     void selectModel('A', e.target.value);
   });
@@ -336,9 +342,13 @@ function applyPreset(preset) {
     currentModelB = 'yolo26s_ptq_int8';
   }
   currentProcessorA = currentProcessorB = 'host';
+  currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(currentModelA));
+  currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(currentModelB));
   $('processorSelectA').value = $('processorSelectB').value = 'host';
   $('modelSelectA').value = currentModelA;
   $('modelSelectB').value = currentModelB;
+  populateCoreSelect('coreSelectA', currentModelA, currentThreadsA);
+  populateCoreSelect('coreSelectB', currentModelB, currentThreadsB);
   updateSceneView();
   void inferScene(demoData.scenes.find(s => s.id === currentSceneId), ['A', 'B']);
   showToast(`Đã áp dụng cấu hình so sánh: ${preset.toUpperCase()}`);

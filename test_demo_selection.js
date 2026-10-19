@@ -33,7 +33,7 @@ assert.match(html, /class="model-select-group comparison-models"/);
 assert.match(css, /\.comparison-models\s*{[^}]*grid-template-columns:\s*repeat\(2,/s);
 assert.match(css, /@media \(max-width: 640px\)[\s\S]*?\.comparison-models\s*{\s*grid-template-columns:\s*1fr;/);
 
-async function studio() {
+async function studio(useDefaults = false) {
   const elements = new Map();
   const requests = [];
   const element = id => {
@@ -93,6 +93,7 @@ async function studio() {
   for (const script of scripts) {
     vm.runInContext(script, context);
   }
+  if (!useDefaults) vm.runInContext("currentModelA='';currentModelB='';currentThreadsA=3;currentThreadsB=3;currentProcessorA='host';currentProcessorB='host'", context);
   await context.initApp();
   return {
     context, requests, data, element,
@@ -115,21 +116,60 @@ async function studio() {
 }
 
 (async () => {
-  // Opening the page and uploading an image do not start an unselected model.
+  // Opening the page shows the requested comparison without starting inference.
   {
-    const s = await studio();
+    const s = await studio(true);
     assert.equal(s.read('serverCpuThreads'), 8);
     assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU host ×8)');
     assert.equal(s.element('processorHostA').textContent, 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz');
     assert.equal(s.element('processorHostB').textContent, 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz');
     assert.match(s.element('coreSelectA').innerHTML, /value="8">CPU ×8/);
     assert.match(s.element('coreSelectB').innerHTML, /value="8">CPU ×8/);
-    assert.equal(s.read('currentThreadsA'), 3);
-    assert.equal(s.read('currentThreadsB'), 3);
-    assert.equal(s.read('currentModelA'), '');
-    assert.equal(s.read('currentModelB'), '');
+    assert.equal(s.read('currentThreadsA'), 4);
+    assert.equal(s.read('currentThreadsB'), 4);
+    assert.equal(s.read('currentModelA'), 'yolo26s_fp32');
+    assert.equal(s.read('currentModelB'), 'yolo26s_ptq_int8');
+    assert.equal(s.read('currentProcessorA'), 'huggingface');
+    assert.equal(s.read('currentProcessorB'), 'huggingface');
+    assert.equal(s.element('modelSelectA').value, 'yolo26s_fp32');
+    assert.equal(s.element('modelSelectB').value, 'yolo26s_ptq_int8');
+    assert.equal(s.element('processorSelectA').value, 'huggingface');
+    assert.equal(s.element('processorSelectB').value, 'huggingface');
+    assert.equal(s.element('coreSelectA').value, '4');
+    assert.equal(s.element('coreSelectB').value, '4');
     assert.equal(s.requests.length, 0);
     assert.equal(s.element('downloadJsonBtn').disabled, true);
+    const run = s.context.runDetection();
+    await tick();
+    assert.equal(s.requests.length, 1);
+    assert.deepEqual(s.requests[0].payload.models, ['yolo26s_fp32']);
+    assert.equal(s.requests[0].payload.processor, 'huggingface');
+    assert.equal(s.requests[0].payload.threads, 4);
+    s.finish(0);
+    await tick();
+    assert.equal(s.requests.length, 2);
+    assert.deepEqual(s.requests[1].payload.models, ['yolo26s_ptq_int8']);
+    assert.equal(s.requests[1].payload.processor, 'huggingface');
+    assert.equal(s.requests[1].payload.threads, 4);
+    s.finish(1);
+    await run;
+
+    s.context.applyPreset('ptq');
+    await tick();
+    assert.equal(s.requests[2].payload.processor, 'host');
+    assert.equal(s.requests[2].payload.threads, 4);
+    s.finish(2);
+    await tick();
+    assert.equal(s.requests[3].payload.processor, 'host');
+    assert.equal(s.requests[3].payload.threads, 3);
+    assert.equal(s.element('coreSelectB').value, '3');
+    s.finish(3);
+    await tick();
+  }
+
+  // Uploading an image with cleared selections does not start inference.
+  {
+    const s = await studio();
     s.context.updateSceneView();
     assert.equal(s.requests.length, 0);
     await s.context.handleCustomImageUpload({ target: { files: [{

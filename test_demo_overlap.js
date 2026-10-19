@@ -43,6 +43,7 @@ vm.runInContext(`
     }
   };
   currentModelA = 'a'; currentModelB = 'b'; currentSceneId = 'one';
+  currentProcessorA = currentProcessorB = 'host';
   renderBoundingBoxes();
 `, context);
 const display = () => elements.get('overlapDisplay').textContent;
