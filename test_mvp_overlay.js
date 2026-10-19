@@ -2,90 +2,63 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const {mvpFrameAtTime} = require('./demo_data/mvp.js');
+const {mvpBuildBDD100KJson} = require('./demo_data/mvp.js');
 
-const frames = [0, 1, 2].map(index => ({index, time_seconds: index / 10}));
-assert.equal(mvpFrameAtTime(frames, 0, 10), frames[0]);
-assert.equal(mvpFrameAtTime(frames, .19, 10), frames[1]);
-assert.equal(mvpFrameAtTime(frames, .29, 10), frames[2]);
-assert.equal(mvpFrameAtTime(frames, .31, 10), null, 'Never reuse the last box on unprocessed frames');
-assert.equal(mvpFrameAtTime(frames, .3, 10), null, 'Floating point frame boundaries do not leak boxes');
-assert.equal(mvpFrameAtTime(frames, -.01, 10), null);
-assert.equal(mvpFrameAtTime([], 0, 10), null);
-assert.equal(mvpFrameAtTime(frames, NaN, 10), null);
-assert.equal(mvpFrameAtTime(frames, 0, 0), null);
-const variable = [0, .12, .35].map((source_time_seconds, index) => ({index, source_time_seconds, time_seconds: index / 10}));
-assert.equal(mvpFrameAtTime(variable, .3, 10), variable[1], 'Use source timestamps for variable frame rate video');
-assert.equal(mvpFrameAtTime(variable, .36, 10), variable[2]);
+const source = fs.readFileSync(`${__dirname}/demo_data/mvp.js`, 'utf8');
+assert.match(source, /const MODEL_KEY = 'yolo26s_ptq_int8'/);
+assert.match(source, /models: \[MODEL_KEY\]/);
+assert.doesNotMatch(source, /mvpFrameAtTime|mvpFiles|mvpGroundTruth|mvpCamera/);
 
-// Exercise the renderer shared by Studio, Hardware and MVP without a browser dependency.
-const {generateSvgElements: render} = require('./demo_data/overlays.js');
-const boxes = [{class_name: 'car', conf: .85, box_px: [10, 20, 110, 90]}];
-const defaults = render(boxes, 640, 360);
-assert.match(defaults, /class="bbox-rect"/);
-assert.match(defaults, />car 85%<\/text>/);
-const scoresOnly = render(boxes, 640, 360, 1, {boxes: false, labels: false, scores: true, interactive: true});
-assert.doesNotMatch(scoresOnly, /class="bbox-rect"/);
-assert.match(scoresOnly, />85%<\/text>/);
-assert.match(scoresOnly, /role="button"/);
-assert.match(scoresOnly, /data-box-index="0"/);
-const boxesOnly = render(boxes, 640, 360, 1, {labels: false, scores: false});
-assert.match(boxesOnly, /class="bbox-rect"/);
-assert.doesNotMatch(boxesOnly, /<text/);
+const converted = mvpBuildBDD100KJson([
+  {class_name: 'person', conf: .9, box_norm: [.1, .2, .3, .6]},
+  {class_name: 'bike', conf: .8, box_px: [10, 20, 30, 40]}
+], {file: 'sample.jpg', attributes: {weather: 'rainy'}}, 100, 100);
+assert.equal(converted.name, 'sample.jpg');
+assert.equal(converted.attributes.weather, 'rainy');
+assert.deepEqual(converted.labels.map(item => item.category), ['pedestrian', 'bicycle']);
+assert.deepEqual(converted.labels[0].box2d, {x1: 10, y1: 20, x2: 30, y2: 60});
 
-// Run the real event handlers with a video frame callback ahead of the playback clock.
-const mvpSource = fs.readFileSync(`${__dirname}/demo_data/mvp.js`, 'utf8');
-const mediaSource = mvpSource.slice(mvpSource.indexOf('  function media('), mvpSource.indexOf('  function preview('));
-const selectionSource = mvpSource.slice(mvpSource.indexOf('  function selectBox('), mvpSource.indexOf('  function table('));
-for (const frameCallbacks of [true, false]) {
-  let callback, tableIndex, focused = false;
-  const video = {tagName: 'VIDEO', currentTime: 0, duration: .45, paused: true, seeking: false,
-    pause() { this.paused = true; }};
-  if (frameCallbacks) video.requestVideoFrameCallback = handler => { callback = handler; return 1; };
-  const nodes = new Map();
-  const item = {video: true, source: 'fixture.webm', frames: variable, report: {source_fps: 10}, job: {status: 'cancelled'}};
-  const playback = vm.createContext({
-    player: null, videoCallback: null, currentFrame: null, tableFrame: null, selectedBox: -1, selected: 0, items: [item], mvpFrameAtTime,
-    document: {createElement: () => video},
-    $: id => {
-      if (!nodes.has(id)) nodes.set(id, {append() {}});
-      return nodes.get(id);
-    },
-    clearPlayer() { playback.player = playback.currentFrame = null; playback.selectedBox = -1; },
-    renderOverlay() { focused = false; },
-    table(boxes, index) { focused = false; tableIndex = index; playback.tableFrame = playback.currentFrame; },
-    highlightSelection() {}
-  });
-  vm.runInContext(mediaSource + selectionSource, playback);
-  playback.media(item);
-  video.onloadedmetadata();
-  video.paused = false; video.currentTime = .3;
-  if (frameCallbacks) callback(0, {mediaTime: .35}); else video.ontimeupdate();
-  video.ontimeupdate();
-  const selectedFrame = playback.currentFrame;
-  assert.equal(selectedFrame, variable[frameCallbacks ? 2 : 1], 'Playback clock events do not replace the displayed frame');
-  assert.equal(tableIndex, selectedFrame.index, 'The table follows the displayed overlay frame');
-  focused = true;
-  playback.selectBox(0);
-  assert.equal(video.currentTime, selectedFrame.source_time_seconds, 'Selection seeks to the source timestamp');
-  video.onpause(); video.ontimeupdate(); video.onseeked();
-  if (frameCallbacks) callback(0, {mediaTime: 0});
-  assert.equal(playback.currentFrame, selectedFrame, 'A late callback must not replace the selected frame');
-  assert.equal(playback.selectedBox, 0, 'Pause and seek events keep the selected box');
-  assert.equal(focused, true, 'Unchanged frames keep the focused SVG or table row');
-  playback.selectBox(0);
-  assert.equal(playback.selectedBox, -1, 'Selecting the same box again deselects it');
-  playback.selectBox(0, 0);
-  video.onseeked();
-  assert.equal(playback.currentFrame, variable[0]);
-  assert.equal(tableIndex, 0, 'Selecting another frame updates the table');
-  assert.equal(playback.selectedBox, 0);
-  video.seeking = true; video.currentTime = .5;
-  video.onpause(); video.ontimeupdate();
-  if (frameCallbacks) callback(0, {mediaTime: .35});
-  assert.equal(playback.currentFrame, variable[0], 'Pending seeks ignore old playback events');
-  video.seeking = false; video.onseeked();
-  assert.equal(playback.currentFrame, null, 'Seeking past processed frames clears the overlay');
-  assert.equal(playback.selectedBox, -1);
+const elements = new Map();
+const handlers = new Map();
+function element(id = '') {
+  if (!elements.has(id)) {
+    const classes = new Set();
+    elements.set(id, {id, style: {}, value: '', checked: true, disabled: false, innerHTML: '', textContent: '', naturalWidth: 1280, naturalHeight: 720, src: '',
+      classList: {add: value => classes.add(value), remove: value => classes.delete(value), toggle(value, enabled) { enabled ? classes.add(value) : classes.delete(value); }, contains: value => classes.has(value)},
+      addEventListener(type, callback) { handlers.set(`${id}:${type}`, callback); }, setAttribute() {}, removeAttribute() {},
+      append(...children) { this.children = children; }, replaceChildren(...children) { this.children = children; }, scrollIntoView() {}}
+    );
+  }
+  return elements.get(id);
 }
-console.log('MVP overlay: frame timing, selection through pause/seek, focus and visibility controls PASS');
+
+const requests = [];
+let ready;
+const model = {name: 'YOLO26s PTQ INT8 640 (OpenVINO)', badge: 'INT8', size_mb: 9.99, map50: 51.44, path: 'model.xml'};
+const context = vm.createContext({
+  window: {DEMO_DATA: {scenes: [{id: 'scene_01', title: 'Scene', file: 'scene.jpg', data_uri: 'data:image/jpeg;base64,AA', width: 1280, height: 720}], models: {yolo26s_ptq_int8: model}}, addEventListener() {}},
+  document: {body: element('body'), getElementById: element, createElement: tag => element(`created-${tag}-${elements.size}`), querySelectorAll: () => [], addEventListener(type, callback) { if (type === 'DOMContentLoaded') ready = callback; }},
+  location: {hash: '#mvp'}, history: {replaceState() {}}, requestAnimationFrame: callback => callback(),
+  CLASS_COLORS: {car: '#fff'}, generateSvgElements: () => '', navigator: {clipboard: {writeText: async () => {}}},
+  Blob, URL: {createObjectURL: () => 'blob:test', revokeObjectURL() {}}, setTimeout() {}, console,
+  fetch: async (url, options) => {
+    if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_threads: 8})};
+    requests.push(JSON.parse(options.body));
+    return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {yolo26s_ptq_int8: {inference_time_ms: 50, runtime: 'CPU ×3', boxes: []}}})};
+  }
+});
+vm.runInContext(source, context);
+
+(async () => {
+  await ready();
+  assert.equal(elements.get('mvpModelSelect').value, 'yolo26s_ptq_int8');
+  assert.match(elements.get('mvpCoreSelect').innerHTML, /value="8">CPU ×8/);
+  assert.equal(requests.length, 1);
+  assert.deepEqual(requests[0].models, ['yolo26s_ptq_int8']);
+  assert.equal(requests[0].threads, 3);
+  assert.equal(elements.get('mvpFps').textContent, '20.0 FPS');
+  assert.equal(elements.get('mvpMap50').textContent, '51.44%');
+  await handlers.get('mvpRunDetection:click')();
+  assert.equal(requests.length, 2, 'Nhận diện reruns the selected model');
+  console.log('MVP single-model Studio flow, CPU selection, live FPS and BDD100K export PASS');
+})().catch(error => { console.error(error); process.exitCode = 1; });
