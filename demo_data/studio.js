@@ -119,7 +119,7 @@ function updateInferenceStatus() {
     item.modelKey && items.findIndex(other => other.signature === item.signature) === index
       && liveSceneRequests.has(`${currentSceneId}:${item.signature}`));
   $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
-  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(item => `${demoData.models[item.modelKey].name} (${item.processor === 'host' ? `CPU ×${item.threads}` : `Hugging Face · CPU ×${item.threads}`})`).join(', ')} tuần tự...`;
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(item => `${demoData.models[item.modelKey].name} (CPU ×${item.threads})`).join(', ')} tuần tự...`;
 }
 
 function inferScene(scene, sides) {

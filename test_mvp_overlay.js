@@ -98,6 +98,8 @@ vm.runInContext(source, context);
   assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');
   assert.equal(requests.at(-1).processor, 'huggingface');
   assert.equal(requests.at(-1).threads, 3);
+  assert.match(elements.get('mvpLoadingText').textContent, /CPU ×3/);
+  assert.doesNotMatch(elements.get('mvpLoadingText').textContent, /Hugging Face/);
   assert.match(elements.get('mvpCoreSelect').innerHTML, /value="8">CPU ×8/);
   assert.equal(elements.get('mvpCoreSelect').disabled, false);
   handlers.get('mvpCoreSelect:change')({target: {value: '1'}});

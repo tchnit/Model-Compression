@@ -148,6 +148,8 @@ async function studio(useDefaults = false) {
     assert.deepEqual(s.requests[0].payload.models, ['yolo26s_fp32']);
     assert.equal(s.requests[0].payload.processor, 'huggingface');
     assert.equal(s.requests[0].payload.threads, 4);
+    assert.match(s.element('aiLoadingSubtext').textContent, /CPU ×4/);
+    assert.doesNotMatch(s.element('aiLoadingSubtext').textContent, /Hugging Face/);
     s.finish(0);
     await tick();
     assert.equal(s.requests.length, 2);

@@ -227,7 +227,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'OpenVINO FP32' : model.badge} · ${sizeMb.toFixed(2)} MiB`;
     byId('mvpModelPath').textContent = currentModelKey.includes('fp32') ? `models/${currentModelKey.replace('baseline_', '')}_openvino_model` : model.path;
     byId('mvpPanelModel').textContent = modelName;
-    byId('mvpRuntime').textContent = result?.runtime || `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : `Hugging Face · CPU ×${currentThreads}`}`;
+    byId('mvpRuntime').textContent = result?.runtime || `${modelName} · CPU ×${currentThreads}`;
     byId('mvpBoxCount').textContent = result ? boxes.length : '—';
     byId('mvpLatency').textContent = result ? `${result.inference_time_ms.toFixed(1)} ms · ${result.runtime}` : serverOnline ? 'Chưa suy luận' : 'AI Server offline';
     const fps = result?.inference_time_ms > 0 ? 1000 / result.inference_time_ms : null;
@@ -239,7 +239,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpRunDetection').disabled = busy || !serverOnline;
     byId('mvpCoreSelect').disabled = busy;
     byId('mvpProcessorSelect').disabled = busy;
-    byId('mvpLoadingText').textContent = `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : `Hugging Face · CPU ×${currentThreads}`}`;
+    byId('mvpLoadingText').textContent = `${modelName} · CPU ×${currentThreads}`;
     renderExport(boxes, current, width, height, !!result);
   }
 
