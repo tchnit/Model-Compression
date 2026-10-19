@@ -10,8 +10,7 @@ const MODEL_NAMES = {
   yolo26m_fp32: 'YOLO26m FP16 PyTorch',
   yolo26s_baseline_fp32: 'YOLO26s FP32 OpenVINO',
   yolo26m_baseline_fp32: 'YOLO26m FP32 OpenVINO',
-  yolo26m_ptq_int8: 'YOLO26m INT8 OpenVINO',
-  yolo26s_export_int8_640: 'YOLO26s INT8 OpenVINO · Export'
+  yolo26m_ptq_int8: 'YOLO26m INT8 OpenVINO'
 };
 const MODEL_ALIASES = {
   yolo26s_baseline_fp32: {source: 'yolo26s_fp32', size_mb: 36.56},
