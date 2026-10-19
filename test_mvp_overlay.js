@@ -11,6 +11,7 @@ assert.match(source, /YOLO26m Baseline \(FP32\)/);
 assert.match(source, /SỐ CORE CPU/);
 assert.match(source, /Intel\(R\) Xeon\(R\) Platinum 8559C/);
 assert.doesNotMatch(source, /mvpCpuInfo|· Hugging Face/);
+assert.doesNotMatch(source, /yolo26s_export_int8_640|INT8 export 640/);
 assert.doesNotMatch(source, /mvpFrameAtTime|mvpFiles|mvpGroundTruth|mvpCamera/);
 
 const converted = mvpBuildBDD100KJson([
@@ -42,8 +43,7 @@ const model = {name: 'YOLO26s PTQ INT8 640 (OpenVINO)', badge: 'INT8', size_mb: 
 const models = {
   yolo26s_ptq_int8: model,
   yolo26s_fp32: {...model, name: 'YOLO26s Baseline (FP16)', path: 'yolo26s.pt'},
-  yolo26m_fp32: {...model, name: 'YOLO26m Baseline (FP16)', path: 'yolo26m.pt'},
-  yolo26s_export_int8_640: {...model, name: 'YOLO26s INT8 export 640 (OpenVINO)', path: 'export.xml'}
+  yolo26m_fp32: {...model, name: 'YOLO26m Baseline (FP16)', path: 'yolo26m.pt'}
 };
 const context = vm.createContext({
   window: {DEMO_DATA: {scenes: [{id: 'scene_01', title: 'Scene', file: 'scene.jpg', data_uri: 'data:image/jpeg;base64,AA', width: 1280, height: 720}], models}, addEventListener() {}},

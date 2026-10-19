@@ -28,8 +28,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   const MODEL_NAMES = {
     yolo26s_ptq_int8: 'YOLO26s PTQ INT8 640 (OpenVINO)',
     yolo26s_baseline_fp32: 'YOLO26s Baseline (FP32)',
-    yolo26m_baseline_fp32: 'YOLO26m Baseline (FP32)',
-    yolo26s_export_int8_640: 'YOLO26s INT8 export 640 (OpenVINO)'
+    yolo26m_baseline_fp32: 'YOLO26m Baseline (FP32)'
   };
   const MODEL_SOURCES = {yolo26s_baseline_fp32: 'yolo26s_fp32', yolo26m_baseline_fp32: 'yolo26m_fp32'};
   const MODEL_SIZES = {yolo26s_baseline_fp32: 36.56, yolo26m_baseline_fp32: 78.13};
@@ -56,7 +55,6 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
               <option value="yolo26s_ptq_int8" selected>YOLO26s PTQ INT8 640 (OpenVINO)</option>
               <option value="yolo26s_baseline_fp32">YOLO26s Baseline (FP32)</option>
               <option value="yolo26m_baseline_fp32">YOLO26m Baseline (FP32)</option>
-              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
             </select>
             <span class="select-label"><span>CPU SUY LUẬN</span></span>
             <select class="model-select" id="mvpProcessorSelect">
