@@ -276,6 +276,15 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertIn('[1, 8]', json.loads(body)['message'])
 
+        with patch.object(run_demo, 'predict_on_huggingface', side_effect=RuntimeError('upstream unavailable')):
+            status, body = self.request('POST', '/api/predict', json.dumps({
+                'image': encoded,
+                'models': ['yolo26s_ptq_int8'],
+                'processor': 'huggingface',
+            }), {'Content-Type': 'application/json'})
+        self.assertEqual(status, 503)
+        self.assertIn('upstream unavailable', json.loads(body)['message'])
+
     def test_huggingface_client_uses_a_verified_ca_bundle(self):
         with patch.object(run_demo, '_HUGGINGFACE_CLIENT', None), \
                 patch('gradio_client.Client') as client:

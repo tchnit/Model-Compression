@@ -269,7 +269,7 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                         )
                     except Exception as error:
                         print(f'[!] Hugging Face inference failed: {error}', file=sys.stderr)
-                        self.send_json(502, {'status': 'error', 'message': f'Không gọi được CPU Hugging Face: {error}'})
+                        self.send_json(503, {'status': 'error', 'message': f'Không gọi được CPU Hugging Face: {error}'})
                         return
                     finally:
                         HUGGINGFACE_INFERENCE_SLOT.release()
