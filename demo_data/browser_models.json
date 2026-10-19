@@ -2,7 +2,13 @@
   "schema_version": 1,
   "models": {
     "yolo26m": "YOLO26m · BDD100K",
-    "yolo26s": "YOLO26s · BDD100K"
+    "yolo26s": "YOLO26s · BDD100K",
+    "int8_qat_yolo26m": "YOLO26m QAT INT8 · onnx_models",
+    "int8_qat_yolo26s": "YOLO26s QAT INT8 · onnx_models",
+    "int8_qat_yolo26s_slim": "YOLO26s QAT INT8 Slim · onnx_models",
+    "int8_yolo26s_slim": "YOLO26s INT8 Slim · onnx_models",
+    "int8_yolom": "YOLO26m INT8 · onnx_models",
+    "int8_yolos": "YOLO26s INT8 · onnx_models"
   },
   "artifacts": {
     "yolo26m_FP32": {
@@ -58,6 +64,54 @@
       "calibration_sha256": "0f18ed36d36533527c23b1d94ac29f74d8bc3f8ac5567c40c0790c63ff1c1700",
       "calibration_images": 128,
       "quantized_convs": 102
+    },
+    "int8_qat_yolo26m_INT8": {
+      "artifact": "onnx_models/int8_qat_yolo26m.onnx",
+      "url": "onnx_models/int8_qat_yolo26m.onnx",
+      "sha256": "1de5f3195eaa9564436d82d060fa7409b98edbd3ae38134ea24a4026f18ccbfd",
+      "input_dtype": "float32",
+      "output_format": "end2end",
+      "precision_policy": "INT8 QDQ graph; unsupported runtime kernels may remain floating point"
+    },
+    "int8_qat_yolo26s_INT8": {
+      "artifact": "onnx_models/int8_qat_yolo26s.onnx",
+      "url": "onnx_models/int8_qat_yolo26s.onnx",
+      "sha256": "bbc180072818ceaf122bb6942d046dfda95c46918e5bc12c4a7b115a3cfc7bb9",
+      "input_dtype": "float32",
+      "output_format": "end2end",
+      "precision_policy": "INT8 QDQ graph; unsupported runtime kernels may remain floating point"
+    },
+    "int8_qat_yolo26s_slim_INT8": {
+      "artifact": "onnx_models/int8_qat_yolo26s_slim.onnx",
+      "url": "onnx_models/int8_qat_yolo26s_slim.onnx",
+      "sha256": "e1ec0555bad2c1b07a0bd6a47fcb76939e68255c6b353b94713485db84b12754",
+      "input_dtype": "float32",
+      "output_format": "end2end",
+      "precision_policy": "INT8 QDQ graph; unsupported runtime kernels may remain floating point"
+    },
+    "int8_yolo26s_slim_INT8": {
+      "artifact": "onnx_models/int8_yolo26s_slim.onnx",
+      "url": "onnx_models/int8_yolo26s_slim.onnx",
+      "sha256": "e39d5023f481414c593c38b9b1e7fdfbce5f104aeebbb0c7e5bc642039a338cd",
+      "input_dtype": "float32",
+      "output_format": "raw_yolo",
+      "precision_policy": "INT8 QDQ graph; unsupported runtime kernels may remain floating point"
+    },
+    "int8_yolom_INT8": {
+      "artifact": "onnx_models/int8_yolom.onnx",
+      "url": "onnx_models/int8_yolom.onnx",
+      "sha256": "ec8017e8b1b704ef49b7b5bb0fb666e04fa0ba4d6f04d3f4f6e0bcd5020bf5be",
+      "input_dtype": "float32",
+      "output_format": "raw_yolo",
+      "precision_policy": "INT8 QDQ graph; unsupported runtime kernels may remain floating point"
+    },
+    "int8_yolos_INT8": {
+      "artifact": "onnx_models/int8_yolos.onnx",
+      "url": "onnx_models/int8_yolos.onnx",
+      "sha256": "9678b9c9580a63d655df429c4da3e688374304ce8a16a814440630e34a86285f",
+      "input_dtype": "float32",
+      "output_format": "raw_yolo",
+      "precision_policy": "INT8 QDQ graph; unsupported runtime kernels may remain floating point"
     }
   }
 }

@@ -24,7 +24,7 @@ from bdd100k_eval import hardware_benchmark as hardware_bench
 from bdd100k_eval.mvp_demo import MVPService, MODEL_KEY as MVP_MODEL_KEY
 from bdd100k_eval.models import get_model, configure_cpu_threads, LOADED_MODELS, WARMED_MODELS, MODEL_RUNTIMES
 from bdd100k_eval.config import (HOST, PORT, DIRECTORY, CPU_THREADS, MAX_REQUEST_BYTES,
-                                  MAX_IMAGE_PIXELS, PUBLIC_FILES, MODEL_CONFIGS)
+                                  MAX_IMAGE_PIXELS, PUBLIC_FILES, MODEL_CONFIGS, BROWSER_ONNX_MODELS)
 
 INFERENCE_SLOT = threading.BoundedSemaphore(1)
 
@@ -61,6 +61,7 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Only browser ONNX exports are downloadable. Weights and engines stay private.
         onnx_files = {f'/runtime_exports/{model}_{precision}.onnx'
                       for model in ['yolo26m', 'yolo26s'] for precision in ['fp32', 'fp16', 'int8']}
+        onnx_files.update(f'/onnx_models/{model["file"]}' for model in BROWSER_ONNX_MODELS.values())
         return path in PUBLIC_FILES or path.startswith("/demo_data/") or path in onnx_files
 
     def do_GET(self):

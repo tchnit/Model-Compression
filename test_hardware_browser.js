@@ -25,14 +25,19 @@ assert.equal(draw([],720,1280), '');
 const manifest = require('./demo_data/browser_models.json');
 const browser = browserCapabilities(manifest);
 assert.deepEqual([...new Set(browser.configs.map(c => c.engine))],['wasm','webgpu']);
-assert.equal(Object.keys(browser.models).length,2);
-for (const model of Object.keys(browser.models)) {
+assert.equal(Object.keys(browser.models).length,8);
+for (const model of ['yolo26m','yolo26s']) {
   assert.ok(browser.configs.find(c => c.model === model && c.engine === 'wasm' && c.precision === 'FP32').available);
   assert.ok(browser.configs.find(c => c.model === model && c.engine === 'wasm' && c.precision === 'FP16').available);
   assert.ok(browser.configs.find(c => c.model === model && c.engine === 'webgpu' && c.precision === 'FP16').available);
   assert.ok(browser.configs.filter(c => c.model === model && c.precision === 'INT8').every(c => c.available));
   assert.equal(manifest.artifacts[`${model}_INT8`].input_dtype,'float32');
   assert.equal(manifest.artifacts[`${model}_INT8`].calibration_images,128);
+}
+for (const model of Object.keys(browser.models).filter(model => !['yolo26m','yolo26s'].includes(model))) {
+  assert.ok(browser.configs.filter(c => c.model === model && c.precision === 'INT8').every(c => c.available));
+  assert.ok(browser.configs.filter(c => c.model === model && c.precision !== 'INT8').every(c => !c.available));
+  assert.match(manifest.artifacts[`${model}_INT8`].url, /^onnx_models\/.+\.onnx$/);
 }
 assert.equal(browserCapabilities({...manifest,artifacts:{}}).configs.some(c => c.available),false);
 assert.throws(() => browserCapabilities({schema_version:9}));
@@ -60,6 +65,16 @@ const boxes = decode(raw,[1,300,6],geometry(1280,720),.25,false);
 assert.equal(boxes.length,1); assert.deepEqual(boxes[0].box_px,[100,100,200,200]);
 assert.equal(boxes[0].class_name,'car');
 assert.equal(decode(Uint16Array.from(raw,floatToHalf),[1,300,6],geometry(1280,720),.25,true).length,1);
+const rawHead = new Float32Array(14 * 8400);
+function prediction(index, score, classId) {
+  [100,100,40,20].forEach((value, field) => { rawHead[field * 8400 + index] = value; });
+  rawHead[(4 + classId) * 8400 + index] = score;
+}
+prediction(0,.9,2); prediction(1,.8,2); prediction(2,.7,4);
+const decodedHead = decode(rawHead,[1,14,8400],geometry(640,640),.25,false);
+assert.equal(decodedHead.length,2, 'Class-aware NMS removes the weaker duplicate only');
+assert.deepEqual(decodedHead[0].box_px,[80,90,120,110]);
+assert.deepEqual(decodedHead.map(box => box.class_name),['car','bus']);
 assert.throws(() => decode(raw,[1,84,8400],geometry(1280,720),.25,false));
 const stats = statistics([1,2,3,4,5]); assert.equal(stats.p50_ms,3); assert.equal(stats.p95_ms,4.8); assert.equal(stats.fps,1000/3);
 console.log('Hardware browser preprocessing, precision, decoding and statistics passed.');

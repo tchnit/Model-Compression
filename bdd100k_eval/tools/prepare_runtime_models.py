@@ -8,7 +8,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from bdd100k_eval.config import ROOT
+from bdd100k_eval.config import ROOT, BROWSER_ONNX_MODELS
 from bdd100k_eval.artifacts import sha256 as digest
 OUT = ROOT / 'runtime_exports'
 
@@ -26,10 +26,21 @@ def write_browser_manifest(manifest):
                     'input_dtype': 'float16' if precision == 'FP16' else 'float32',
                     'precision_policy': entry.get('precision_policy', f'{precision} graph; compute precision depends on runtime kernels'),
                     **{k:entry[k] for k in ['calibration_sha256','calibration_images','quantized_convs'] if k in entry}}
+    models = {'yolo26m': 'YOLO26m · BDD100K', 'yolo26s': 'YOLO26s · BDD100K'}
+    for name, config in BROWSER_ONNX_MODELS.items():
+        source = ROOT / 'onnx_models' / config['file']
+        if not source.is_file():
+            continue
+        models[name] = f"{config['label']} · onnx_models"
+        artifacts[f'{name}_INT8'] = {
+            'artifact': str(source.relative_to(ROOT)), 'url': str(source.relative_to(ROOT)),
+            'sha256': digest(source), 'input_dtype': 'float32',
+            'output_format': config['output_format'],
+            'precision_policy': 'INT8 QDQ graph; unsupported runtime kernels may remain floating point',
+        }
     path = ROOT / 'demo_data' / 'browser_models.json'
     temp = path.with_suffix('.tmp')
-    temp.write_text(json.dumps(dict(schema_version=1, models={
-        'yolo26m': 'YOLO26m · BDD100K', 'yolo26s': 'YOLO26s · BDD100K'},
+    temp.write_text(json.dumps(dict(schema_version=1, models=models,
         artifacts=artifacts), ensure_ascii=False, indent=2) + '\n')
     temp.replace(path)
 

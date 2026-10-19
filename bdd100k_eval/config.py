@@ -32,6 +32,15 @@ PUBLIC_FILES = {
     "/benchmark_comparison.csv",
 }
 
+BROWSER_ONNX_MODELS = {
+    'int8_qat_yolo26m': {'file': 'int8_qat_yolo26m.onnx', 'label': 'YOLO26m QAT INT8', 'output_format': 'end2end'},
+    'int8_qat_yolo26s': {'file': 'int8_qat_yolo26s.onnx', 'label': 'YOLO26s QAT INT8', 'output_format': 'end2end'},
+    'int8_qat_yolo26s_slim': {'file': 'int8_qat_yolo26s_slim.onnx', 'label': 'YOLO26s QAT INT8 Slim', 'output_format': 'end2end'},
+    'int8_yolo26s_slim': {'file': 'int8_yolo26s_slim.onnx', 'label': 'YOLO26s INT8 Slim', 'output_format': 'raw_yolo'},
+    'int8_yolom': {'file': 'int8_yolom.onnx', 'label': 'YOLO26m INT8', 'output_format': 'raw_yolo'},
+    'int8_yolos': {'file': 'int8_yolos.onnx', 'label': 'YOLO26s INT8', 'output_format': 'raw_yolo'},
+}
+
 MODEL_CONFIGS = {
     'yolo26m_fp32': {
         'path': os.path.join(DIRECTORY, 'models', 'yolo26m-bdd100k.pt'),

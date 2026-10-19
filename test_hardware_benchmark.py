@@ -52,6 +52,8 @@ class HardwareBenchmarkTests(unittest.TestCase):
             root = Path(folder)
             (root / 'demo_data').mkdir()
             (root / 'runtime_exports').mkdir()
+            (root / 'onnx_models').mkdir()
+            (root / 'onnx_models/int8_yolos.onnx').write_bytes(b'additional browser model')
             path = 'runtime_exports/yolo26s_fp32.onnx'
             (root / path).write_bytes(b'fixture')
             entries = {'yolo26s_FP32_onnx': dict(path=path,sha256='artifact-hash',source_sha256='source-hash'),
@@ -61,10 +63,11 @@ class HardwareBenchmarkTests(unittest.TestCase):
             with patch.object(export,'ROOT',root):
                 export.write_browser_manifest(entries)
             result = json.loads((root / 'demo_data/browser_models.json').read_text())
-            self.assertEqual(set(result['artifacts']),{'yolo26s_FP32','yolo26s_INT8'})
+            self.assertEqual(set(result['artifacts']),{'yolo26s_FP32','yolo26s_INT8','int8_yolos_INT8'})
             self.assertEqual(result['artifacts']['yolo26s_FP32']['url'],path)
             self.assertEqual(result['artifacts']['yolo26s_INT8']['input_dtype'],'float32')
             self.assertEqual(result['artifacts']['yolo26s_INT8']['calibration_images'],128)
+            self.assertEqual(result['artifacts']['int8_yolos_INT8']['output_format'],'raw_yolo')
             self.assertNotIn('gpu',json.dumps(result))
 
     def test_letterbox_and_output_coordinates(self):

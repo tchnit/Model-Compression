@@ -78,6 +78,8 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(self.request("GET", "/bdd100k_eval/config.py")[0], 404)
         self.assertEqual(self.request("GET", "/demo_data/../PROGRESS_REPORT.md")[0], 404)
         self.assertEqual(self.request("HEAD", "/models/yolo26m-bdd100k.pt")[0], 404)
+        self.assertEqual(self.request('HEAD','/onnx_models/int8_yolos.onnx')[0],200)
+        self.assertEqual(self.request('HEAD','/onnx_models/unknown.onnx')[0],404)
         with tempfile.TemporaryDirectory() as folder:
             exports = Path(folder) / 'runtime_exports'; exports.mkdir()
             for model in ['yolo26s','yolo26m']:

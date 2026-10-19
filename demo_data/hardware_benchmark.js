@@ -29,17 +29,49 @@
     const nw = roundEven(w * ratio), nh = roundEven(h * ratio);
     return {ratio, nw, nh, left:Math.max(0,Math.round((640 - nw) / 2 - .1)), top:Math.max(0,Math.round((640 - nh) / 2 - .1)), w, h};
   }
+  function overlap(a, b) {
+    const intersection = Math.max(0, Math.min(a.box_px[2], b.box_px[2]) - Math.max(a.box_px[0], b.box_px[0]))
+      * Math.max(0, Math.min(a.box_px[3], b.box_px[3]) - Math.max(a.box_px[1], b.box_px[1]));
+    const area = box => Math.max(0, box.box_px[2] - box.box_px[0]) * Math.max(0, box.box_px[3] - box.box_px[1]);
+    const union = area(a) + area(b) - intersection;
+    return union > 0 ? intersection / union : 0;
+  }
   function decode(data, dims, t, conf, fp16) {
-    if (dims.join(',') !== '1,300,6') throw new Error('Model không trả về YOLO26 [1,300,6].');
-    const boxes = [], val = i => fp16 ? halfToFloat(data[i]) : data[i];
-    for (let i = 0; i < 1800; i += 6) {
-      const score = val(i + 4), cls = val(i + 5);
+    const val = i => fp16 ? halfToFloat(data[i]) : data[i];
+    if (dims.join(',') === '1,300,6') {
+      const boxes = [];
+      for (let i = 0; i < 1800; i += 6) {
+        const score = val(i + 4), cls = val(i + 5);
+        if (!Number.isFinite(score) || score < conf || score <= 0) continue;
+        if (!Number.isInteger(cls) || cls < 0 || cls >= 10) throw new Error('Class ID không thuộc BDD100K.');
+        const box = [0,1,2,3].map(j => Math.max(0, Math.min(j % 2 ? t.h : t.w,
+          (val(i + j) - (j % 2 ? t.top : t.left)) / t.ratio)));
+        if (box.some(x => !Number.isFinite(x))) continue;
+        boxes.push({class_id:cls, class_name:CLASS_NAMES[cls], conf:score, box_px:box});
+      }
+      return boxes;
+    }
+    if (dims.join(',') !== '1,14,8400') throw new Error('Model không trả về YOLO26 [1,300,6] hoặc [1,14,8400].');
+    const candidates = [];
+    for (let i = 0; i < 8400; i++) {
+      let cls = 0, score = val(4 * 8400 + i);
+      for (let classId = 1; classId < 10; classId++) {
+        const classScore = val((4 + classId) * 8400 + i);
+        if (classScore > score) { score = classScore; cls = classId; }
+      }
       if (!Number.isFinite(score) || score < conf || score <= 0) continue;
-      if (!Number.isInteger(cls) || cls < 0 || cls >= 10) throw new Error('Class ID không thuộc BDD100K.');
-      const box = [0,1,2,3].map(j => Math.max(0, Math.min(j % 2 ? t.h : t.w,
-        (val(i + j) - (j % 2 ? t.top : t.left)) / t.ratio)));
-      if (box.some(x => !Number.isFinite(x))) continue;
-      boxes.push({class_id:cls, class_name:CLASS_NAMES[cls], conf:score, box_px:box});
+      const cx = val(i), cy = val(8400 + i), width = val(2 * 8400 + i), height = val(3 * 8400 + i);
+      const letterbox = [cx - width / 2, cy - height / 2, cx + width / 2, cy + height / 2];
+      const box = letterbox.map((value, index) => Math.max(0, Math.min(index % 2 ? t.h : t.w,
+        (value - (index % 2 ? t.top : t.left)) / t.ratio)));
+      if (box.some(value => !Number.isFinite(value)) || box[2] <= box[0] || box[3] <= box[1]) continue;
+      candidates.push({class_id:cls, class_name:CLASS_NAMES[cls], conf:score, box_px:box});
+    }
+    candidates.sort((a, b) => b.conf - a.conf);
+    const boxes = [];
+    for (const candidate of candidates) {
+      if (!boxes.some(box => box.class_id === candidate.class_id && overlap(box, candidate) > 0.7)) boxes.push(candidate);
+      if (boxes.length === 300) break;
     }
     return boxes;
   }
@@ -144,7 +176,7 @@
         warmup:protocol.warmup,repeats:protocol.repeats,conf:protocol.conf,
         ...statistics(samples_ms), samples_ms, load_ms, boxes, detections_count:boxes.length,
         image_sha256:await hash(rawImage), runtime:{artifact:c.artifact,sha256:artifactHash,source_sha256:c.source_sha256,version:ort.env.versions,
-          graph_precision:c.precision,input_dtype:fp16 ? 'float16' : 'float32',output_dtype:outputType,
+          graph_precision:c.precision,input_dtype:fp16 ? 'float16' : 'float32',output_dtype:outputType,output_format:c.output_format || 'end2end',
           precision_policy:c.precision_policy,calibration_sha256:c.calibration_sha256,
           calibration_images:c.calibration_images,quantized_convs:c.quantized_convs,
           device_name:c.engine === 'webgpu' ? (adapter?.info?.description || adapter?.info?.device || 'WebGPU adapter') : navigator.platform,
@@ -153,7 +185,8 @@
         protocol:{input_shape:[1,3,640,640],batch:1,cpu_threads:ort.env.wasm.numThreads,cpu_threads_requested:protocol.cpu_threads,
           cross_origin_isolated:globalThis.crossOriginIsolated === true,
           scope:'preprocess + input transfer + inference + output transfer + postprocess',
-          preprocessing:`${inWorker ? 'OffscreenCanvas' : 'Canvas'} drawImage / RGB / NCHW / divide255`,nms:false,
+          preprocessing:`${inWorker ? 'OffscreenCanvas' : 'Canvas'} drawImage / RGB / NCHW / divide255`,
+          nms:c.output_format === 'raw_yolo' ? {class_aware:true,iou:0.7,max_detections:300} : false,
           provider_note:'WebGPU EP may use CPU kernels for unsupported nodes; not a kernel-only GPU timing.',
           accuracy:'single-image microbenchmark, not mAP'}};
     } finally { try { await session.release(); } finally { gpuDevice?.destroy(); image.close?.(); } }
@@ -356,6 +389,11 @@
       }
     });
     el('Model').addEventListener('change', () => {
+      if (isBrowserEngine(el('Engine').value) && !selected()?.available
+          && caps?.configs.some(config => config.model === el('Model').value && config.engine === el('Engine').value
+            && config.device === el('Device').value && config.precision === 'INT8' && config.available)) {
+        el('Precision').value = 'INT8';
+      }
       if (el('Model').value.endsWith('_qat')) { el('Engine').value='openvino'; el('Precision').value='INT8'; updateDevices(); } else update();
     });
     el('Engine').addEventListener('change',refresh);
