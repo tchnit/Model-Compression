@@ -283,7 +283,7 @@
       renderPreview();
       try {
         const response = await fetch(browser ? 'demo_data/browser_models.json' : 'api/benchmark/capabilities');
-        const data = await response.json();
+        const data = await readApiJson(response);
         if (!response.ok) throw new Error(data.message || 'Không đọc được danh sách model.');
         let nextAdapter = null;
         if (browser) try { nextAdapter = await navigator.gpu?.requestAdapter({powerPreference:'high-performance'}); } catch { /* Availability is reported below. */ }
@@ -358,7 +358,7 @@
           status => { el('Status').textContent = status; },location.href);
         else {
           const response = await fetch('api/benchmark/run', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...choice(),...protocol,image})});
-          result = await response.json(); if (!response.ok) throw new Error(result.message || 'Benchmark thất bại.');
+          result = await readApiJson(response); if (!response.ok) throw new Error(result.message || 'Benchmark thất bại.');
         }
         result.image_label = imageLabel;
         preview = {image,result}; renderPreview();

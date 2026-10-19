@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const hardwareSource = fs.readFileSync(`${__dirname}/demo_data/hardware_benchmark.js`, 'utf8');
 assert.match(hardwareSource, /fetch\('api\/benchmark\/run'/);
 assert.doesNotMatch(hardwareSource, /fetch\('\/api\/benchmark\//);
+assert.match(hardwareSource, /readApiJson\(response\)/);
 const {floatToHalf, halfToFloat, geometry, decode, statistics, isFallback, browserCapabilities, webgpuReason, previewMatches, wasmThreadLimit, hash} = require('./demo_data/hardware_benchmark.js');
 Promise.all([
   hash(new TextEncoder().encode('abc'), null),
