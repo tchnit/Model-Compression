@@ -4,15 +4,27 @@ const BENCHMARK_DATA = window.DEMO_DATA?.benchmarks || [];
 
 // App State
 let demoData = window.DEMO_DATA || null;
+const MODEL_NAMES = {
+  yolo26s_ptq_int8: 'YOLO26s INT8 OpenVINO',
+  yolo26s_fp32: 'YOLO26s FP16 PyTorch',
+  yolo26m_fp32: 'YOLO26m FP16 PyTorch',
+  yolo26s_baseline_fp32: 'YOLO26s FP32 OpenVINO',
+  yolo26m_baseline_fp32: 'YOLO26m FP32 OpenVINO',
+  yolo26m_ptq_int8: 'YOLO26m INT8 OpenVINO',
+  yolo26s_export_int8_640: 'YOLO26s INT8 OpenVINO · Export'
+};
 const MODEL_ALIASES = {
-  yolo26s_baseline_fp32: {source: 'yolo26s_fp32', name: 'YOLO26s Baseline (FP32)', size_mb: 36.56},
-  yolo26m_baseline_fp32: {source: 'yolo26m_fp32', name: 'YOLO26m Baseline (FP32)', size_mb: 78.13}
+  yolo26s_baseline_fp32: {source: 'yolo26s_fp32', size_mb: 36.56},
+  yolo26m_baseline_fp32: {source: 'yolo26m_fp32', size_mb: 78.13}
 };
 if (demoData) for (const [alias, config] of Object.entries(MODEL_ALIASES)) {
   const source = demoData.models[config.source];
-  if (source) demoData.models[alias] = {...source, name: config.name, badge: 'OpenVINO FP32', size_mb: config.size_mb,
+  if (source) demoData.models[alias] = {...source, badge: 'OpenVINO FP32', size_mb: config.size_mb,
     path: `models/${alias.replace('baseline_', '')}_openvino_model`};
   demoData.detections[alias] = {...(demoData.detections[config.source] || {})};
+}
+if (demoData) for (const [key, name] of Object.entries(MODEL_NAMES)) {
+  if (demoData.models[key]) demoData.models[key].name = name;
 }
 let currentSceneId = 'scene_01';
 let currentModelA = '';

@@ -7,9 +7,11 @@ const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26s_baseline_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8', 'yolo26s_export_int8_640'];
+const expectedModelNames = ['YOLO26s INT8 OpenVINO', 'YOLO26s FP16 PyTorch', 'YOLO26m FP16 PyTorch', 'YOLO26s FP32 OpenVINO', 'YOLO26m FP32 OpenVINO', 'YOLO26m INT8 OpenVINO', 'YOLO26s INT8 OpenVINO · Export'];
 for (const side of ['A', 'B']) {
   const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
+  assert.deepEqual([...select.matchAll(/<option value="[^"]+">([^<]+)<\/option>/g)].map(match => match[1]), expectedModelNames);
   const cores = html.match(new RegExp(`<select class="model-select" id="coreSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...cores.matchAll(/<option value="([^"]+)"/g)].map(match => Number(match[1])), [1, 2, 3]);
   const processors = html.match(new RegExp(`<select class="model-select" id="processorSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
@@ -200,7 +202,7 @@ async function studio() {
     const selected = s.context.selectModel('A', 'yolo26s_baseline_fp32');
     await tick();
     assert.deepEqual(s.requests[0].payload.models, ['yolo26s_baseline_fp32']);
-    assert.equal(s.element('panelTitleA').textContent, 'YOLO26s Baseline (FP32)');
+    assert.equal(s.element('panelTitleA').textContent, 'YOLO26s FP32 OpenVINO');
     assert.equal(s.element('modelPathA').textContent, 'models/yolo26s_fp32_openvino_model');
     assert.equal(s.element('labelAInfo').textContent, 'OpenVINO FP32 · 36.56 MiB');
     s.finish(0);
@@ -323,12 +325,12 @@ async function studio() {
     await tick();
     assert.equal(s.read('currentModelA'), 'yolo26s_fp32');
     assert.equal(s.read('currentModelB'), 'yolo26s_ptq_int8');
-    assert.equal(s.element('speedupSourceLabel').textContent, 'yolo26s_ptq_int8 tăng tốc so với yolo26s_fp32');
+    assert.equal(s.element('speedupSourceLabel').textContent, 'YOLO26s INT8 OpenVINO tăng tốc so với YOLO26s FP16 PyTorch');
     assert.equal(s.element('speedupDisplay').textContent, '2.00x');
-    assert.equal(s.element('telemetryModelA').textContent, 'yolo26s_fp32');
+    assert.equal(s.element('telemetryModelA').textContent, 'YOLO26s FP16 PyTorch');
     assert.equal(s.element('telemetryLatencyA').textContent, '40.0 ms');
     assert.equal(s.element('telemetryFpsA').textContent, '25.0 FPS');
-    assert.equal(s.element('telemetryModelB').textContent, 'yolo26s_ptq_int8');
+    assert.equal(s.element('telemetryModelB').textContent, 'YOLO26s INT8 OpenVINO');
     assert.equal(s.element('telemetryLatencyB').textContent, '20.0 ms');
     assert.equal(s.element('telemetryFpsB').textContent, '50.0 FPS');
     assert.equal(s.element('telemetryMap50A').textContent, '51.76%');

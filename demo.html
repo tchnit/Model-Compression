@@ -86,9 +86,9 @@
         <div class="control-title">2. Mô Hình Đối Chứng</div>
         
         <div class="preset-chips">
-          <button class="preset-chip" onclick="applyPreset('ptq')">FP16 vs PTQ INT8</button>
-          <button class="preset-chip" onclick="applyPreset('ptq-s')">YOLO26s Baseline vs PTQ INT8</button>
-          <button class="preset-chip" onclick="applyPreset('edge')">YOLO26m vs 26s</button>
+          <button class="preset-chip" onclick="applyPreset('ptq')">FP16 PyTorch vs INT8 OpenVINO</button>
+          <button class="preset-chip" onclick="applyPreset('ptq-s')">YOLO26s FP16 vs INT8</button>
+          <button class="preset-chip" onclick="applyPreset('edge')">YOLO26m INT8 vs YOLO26s INT8</button>
         </div>
         <div class="model-select-group">
           <div class="select-wrapper">
@@ -98,13 +98,13 @@
             </span>
             <select class="model-select" id="modelSelectA">
               <option value="" selected>Chọn mô hình A để chạy</option>
-              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
-              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
-              <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
-              <option value="yolo26s_baseline_fp32">YOLO26s Baseline (FP32)</option>
-              <option value="yolo26m_baseline_fp32">YOLO26m Baseline (FP32)</option>
-              <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
-              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
+              <option value="yolo26s_ptq_int8">YOLO26s INT8 OpenVINO</option>
+              <option value="yolo26s_fp32">YOLO26s FP16 PyTorch</option>
+              <option value="yolo26m_fp32">YOLO26m FP16 PyTorch</option>
+              <option value="yolo26s_baseline_fp32">YOLO26s FP32 OpenVINO</option>
+              <option value="yolo26m_baseline_fp32">YOLO26m FP32 OpenVINO</option>
+              <option value="yolo26m_ptq_int8">YOLO26m INT8 OpenVINO</option>
+              <option value="yolo26s_export_int8_640">YOLO26s INT8 OpenVINO · Export</option>
             </select>
             <span class="select-label"><span>CPU SUY LUẬN · MÔ HÌNH A</span></span>
             <select class="model-select" id="processorSelectA">
@@ -127,13 +127,13 @@
             </span>
             <select class="model-select" id="modelSelectB">
               <option value="" selected>Chọn mô hình B để chạy</option>
-              <option value="yolo26s_ptq_int8">YOLO26s PTQ INT8 640 (OpenVINO)</option>
-              <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
-              <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
-              <option value="yolo26s_baseline_fp32">YOLO26s Baseline (FP32)</option>
-              <option value="yolo26m_baseline_fp32">YOLO26m Baseline (FP32)</option>
-              <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
-              <option value="yolo26s_export_int8_640">YOLO26s INT8 export 640 (OpenVINO)</option>
+              <option value="yolo26s_ptq_int8">YOLO26s INT8 OpenVINO</option>
+              <option value="yolo26s_fp32">YOLO26s FP16 PyTorch</option>
+              <option value="yolo26m_fp32">YOLO26m FP16 PyTorch</option>
+              <option value="yolo26s_baseline_fp32">YOLO26s FP32 OpenVINO</option>
+              <option value="yolo26m_baseline_fp32">YOLO26m FP32 OpenVINO</option>
+              <option value="yolo26m_ptq_int8">YOLO26m INT8 OpenVINO</option>
+              <option value="yolo26s_export_int8_640">YOLO26s INT8 OpenVINO · Export</option>
             </select>
             <span class="select-label"><span>CPU SUY LUẬN · MÔ HÌNH B</span></span>
             <select class="model-select" id="processorSelectB">
@@ -215,7 +215,7 @@
           <div class="canvas-panel" id="panelA">
             <div class="panel-model-badge" id="badgeA">
               <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#38bdf8"></span>
-              <span id="panelTitleA">YOLO26m FP16 (Baseline)</span>
+              <span id="panelTitleA">YOLO26m FP16 PyTorch</span>
             </div>
             <div class="image-stage-wrap" id="stageWrapA">
               <img class="source-image" id="imgA" alt="Scene A">
@@ -230,7 +230,7 @@
           <div class="canvas-panel" id="panelB">
             <div class="panel-model-badge" id="badgeB">
               <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399"></span>
-              <span id="panelTitleB">YOLO26m PTQ INT8 (OpenVINO)</span>
+              <span id="panelTitleB">YOLO26m INT8 OpenVINO</span>
             </div>
             <div class="image-stage-wrap" id="stageWrapB">
               <img class="source-image" id="imgB" alt="Scene B">
