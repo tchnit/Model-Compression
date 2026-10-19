@@ -80,7 +80,7 @@ async function checkServerStatus() {
   try {
     const res = await fetch('api/status');
     if (res.ok) {
-      const data = await res.json();
+      const data = await readApiJson(res);
       if (data.status === 'online') {
         isServerOnline = true;
         serverCpuThreads = Number.isInteger(data.cpu_threads) && data.cpu_threads > 0 ? data.cpu_threads : null;
@@ -142,7 +142,7 @@ function inferScene(scene, sides) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey], threads, processor })
         });
-        const result = await res.json();
+        const result = await readApiJson(res);
         if (!res.ok || result.status !== 'success') throw new Error(result.message || `HTTP ${res.status}`);
         const detection = result.detections[modelKey];
         if (!detection) throw new Error('Server không trả về kết quả model đã chọn');

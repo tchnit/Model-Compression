@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const {mvpBuildBDD100KJson} = require('./demo_data/mvp.js');
+const {readApiJson} = require('./demo_data/overlays.js');
 
 const source = fs.readFileSync(`${__dirname}/demo_data/mvp.js`, 'utf8');
 assert.match(source, /const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8'/);
@@ -51,7 +52,7 @@ const context = vm.createContext({
     const created = element(`created-${tag}-${elements.size}`); created.tagName = tag.toUpperCase(); return created;
   }, querySelectorAll: () => [], addEventListener(type, callback) { if (type === 'DOMContentLoaded') ready = callback; }},
   location: {hash: '#mvp'}, history: {replaceState() {}}, requestAnimationFrame: callback => callback(),
-  CLASS_COLORS: {car: '#fff'}, generateSvgElements: () => '', navigator: {clipboard: {writeText: async () => {}}},
+  CLASS_COLORS: {car: '#fff'}, generateSvgElements: () => '', readApiJson, navigator: {clipboard: {writeText: async () => {}}},
   Blob, URL: {createObjectURL: () => 'blob:test', revokeObjectURL() {}}, setTimeout() {}, console,
   fetch: async (url, options) => {
     if (url === 'api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3, huggingface_cpu_threads: 8})};
@@ -63,6 +64,10 @@ const context = vm.createContext({
 vm.runInContext(source, context);
 
 (async () => {
+  await assert.rejects(
+    readApiJson({status: 502, url: 'https://proxy.invalid/api/predict', headers: {get: () => 'text/html'}, json: async () => { throw new SyntaxError('Unexpected token <'); }}),
+    /HTTP 502 \(text\/html\).*thay vì JSON.*proxy\.invalid/
+  );
   await ready();
   assert.equal(elements.get('mvpModelSelect').value, 'yolo26s_ptq_int8');
   const sceneInfo = elements.get('mvpSceneList').children[0].children[1];

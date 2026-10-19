@@ -11,6 +11,16 @@ const CLASS_COLORS = {
   'traffic sign': '#ef4444'   // Red
 };
 
+async function readApiJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    const type = response?.headers?.get?.('content-type') || 'text/html';
+    const url = response?.url || 'API backend';
+    throw new Error(`Backend trả về HTTP ${response?.status || '?'} (${type}) thay vì JSON tại ${url}. Kiểm tra URL/proxy của backend.`);
+  }
+}
+
 function generateSvgElements(boxes, w, h, labelScale = 1, display = {}) {
   return boxes.map((b, index) => {
     let x, y, boxW, boxH;
@@ -45,4 +55,4 @@ function generateSvgElements(boxes, w, h, labelScale = 1, display = {}) {
   }).join('');
 }
 
-if (typeof module !== 'undefined') module.exports = {generateSvgElements};
+if (typeof module !== 'undefined') module.exports = {generateSvgElements, readApiJson};

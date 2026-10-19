@@ -166,7 +166,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   async function checkServer() {
     try {
       const response = await fetch('api/status');
-      const status = await response.json();
+      const status = await readApiJson(response);
       if (!response.ok || status.status !== 'online') throw new Error('offline');
       serverOnline = true;
       serverCpuThreads = Number.isInteger(status.cpu_threads) && status.cpu_threads > 0 ? status.cpu_threads : null;
@@ -265,7 +265,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({image: target.data_uri, conf: 0.10, models: [modelKey], threads, processor})
         });
-        const payload = await response.json();
+        const payload = await readApiJson(response);
         if (!response.ok || payload.status !== 'success') throw new Error(payload.message || `HTTP ${response.status}`);
         const detection = payload.detections[modelKey];
         if (!detection) throw new Error('Server không trả về kết quả model đã chọn');
