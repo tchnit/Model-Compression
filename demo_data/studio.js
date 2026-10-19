@@ -4,6 +4,15 @@ const BENCHMARK_DATA = window.DEMO_DATA?.benchmarks || [];
 
 // App State
 let demoData = window.DEMO_DATA || null;
+const MODEL_ALIASES = {
+  yolo26s_baseline_fp32: {backend: 'yolo26s_fp32', name: 'YOLO26s Baseline (FP32)'},
+  yolo26m_baseline_fp32: {backend: 'yolo26m_fp32', name: 'YOLO26m Baseline (FP32)'}
+};
+if (demoData) for (const [alias, config] of Object.entries(MODEL_ALIASES)) {
+  const source = demoData.models[config.backend];
+  if (source) demoData.models[alias] = {...source, name: config.name, badge: 'CPU FP32'};
+  demoData.detections[alias] = {...(demoData.detections[config.backend] || {})};
+}
 let currentSceneId = 'scene_01';
 let currentModelA = '';
 let currentModelB = '';
@@ -107,14 +116,15 @@ function inferScene(scene, sides) {
       try {
         const stillSelected = ['A', 'B'].some(side => inferenceSelection(side).signature === signature);
         if (currentSceneId !== scene.id || !stillSelected) return;
+        const backendKey = MODEL_ALIASES[modelKey]?.backend || modelKey;
         const res = await fetch('/api/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey], threads })
+          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [backendKey], threads })
         });
         const result = await res.json();
         if (!res.ok || result.status !== 'success') throw new Error(result.message || `HTTP ${res.status}`);
-        const detection = result.detections[modelKey];
+        const detection = result.detections[backendKey];
         if (!detection) throw new Error('Server không trả về kết quả model đã chọn');
         if (!demoData.detections[modelKey]) demoData.detections[modelKey] = {};
         const record = {

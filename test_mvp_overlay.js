@@ -5,8 +5,9 @@ const vm = require('node:vm');
 const {mvpBuildBDD100KJson} = require('./demo_data/mvp.js');
 
 const source = fs.readFileSync(`${__dirname}/demo_data/mvp.js`, 'utf8');
-assert.match(source, /const MODEL_KEY = 'yolo26s_ptq_int8'/);
-assert.match(source, /models: \[MODEL_KEY\]/);
+assert.match(source, /const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8'/);
+assert.match(source, /YOLO26s Baseline \(FP32\)/);
+assert.match(source, /YOLO26m Baseline \(FP32\)/);
 assert.match(source, /SỐ CORE CPU HOST SERVER/);
 assert.doesNotMatch(source, /mvpFrameAtTime|mvpFiles|mvpGroundTruth|mvpCamera/);
 
@@ -36,8 +37,13 @@ function element(id = '') {
 const requests = [];
 let ready;
 const model = {name: 'YOLO26s PTQ INT8 640 (OpenVINO)', badge: 'INT8', size_mb: 9.99, map50: 51.44, path: 'model.xml'};
+const models = {
+  yolo26s_ptq_int8: model,
+  yolo26s_fp32: {...model, name: 'YOLO26s Baseline (FP16)', path: 'yolo26s.pt'},
+  yolo26m_fp32: {...model, name: 'YOLO26m Baseline (FP16)', path: 'yolo26m.pt'}
+};
 const context = vm.createContext({
-  window: {DEMO_DATA: {scenes: [{id: 'scene_01', title: 'Scene', file: 'scene.jpg', data_uri: 'data:image/jpeg;base64,AA', width: 1280, height: 720}], models: {yolo26s_ptq_int8: model}}, addEventListener() {}},
+  window: {DEMO_DATA: {scenes: [{id: 'scene_01', title: 'Scene', file: 'scene.jpg', data_uri: 'data:image/jpeg;base64,AA', width: 1280, height: 720}], models}, addEventListener() {}},
   document: {body: element('body'), getElementById: element, createElement: tag => {
     const created = element(`created-${tag}-${elements.size}`); created.tagName = tag.toUpperCase(); return created;
   }, querySelectorAll: () => [], addEventListener(type, callback) { if (type === 'DOMContentLoaded') ready = callback; }},
@@ -47,7 +53,8 @@ const context = vm.createContext({
   fetch: async (url, options) => {
     if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3})};
     requests.push(JSON.parse(options.body));
-    return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {yolo26s_ptq_int8: {inference_time_ms: 50, runtime: 'CPU ×3', boxes: []}}})};
+    const key = requests.at(-1).models[0];
+    return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {[key]: {inference_time_ms: 50, runtime: 'CPU ×3', boxes: []}}})};
   }
 });
 vm.runInContext(source, context);
@@ -60,7 +67,7 @@ vm.runInContext(source, context);
   assert.deepEqual(sceneInfo.children.map(child => child.tagName), ['DIV', 'DIV']);
   assert.match(elements.get('mvpCoreSelect').innerHTML, /value="3">CPU ×3/);
   assert.doesNotMatch(elements.get('mvpCoreSelect').innerHTML, /value="4"/);
-  assert.equal(elements.get('mvpCpuInfo').textContent, 'CPU host server: Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz · INT8 tối đa 3 core');
+  assert.equal(elements.get('mvpCpuInfo').textContent, 'CPU host server: Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz · tối đa 8 core · INT8 tối đa 3 core');
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].models, ['yolo26s_ptq_int8']);
   assert.equal(requests[0].threads, 3);
@@ -68,5 +75,9 @@ vm.runInContext(source, context);
   assert.equal(elements.get('mvpMap50').textContent, '51.44%');
   await handlers.get('mvpRunDetection:click')();
   assert.equal(requests.length, 2, 'Nhận diện reruns the selected model');
+  handlers.get('mvpModelSelect:change')({target: {value: 'yolo26s_fp32'}});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(requests.at(-1).models[0], 'yolo26s_fp32');
+  assert.equal(elements.get('mvpPanelModel').textContent, 'YOLO26s Baseline (FP32)');
   console.log('MVP single-model Studio flow, CPU selection, live FPS and BDD100K export PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -24,7 +24,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   'use strict';
   if (typeof document === 'undefined') return;
 
-  const MODEL_KEY = 'yolo26s_ptq_int8';
+  const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8';
+  const MODEL_NAMES = {
+    yolo26s_ptq_int8: 'YOLO26s PTQ INT8 640 (OpenVINO)',
+    yolo26s_fp32: 'YOLO26s Baseline (FP32)',
+    yolo26m_fp32: 'YOLO26m Baseline (FP32)'
+  };
   const root = document.getElementById('mvp');
   root.innerHTML = `
     <div class="studio-container mvp-single">
@@ -46,6 +51,8 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
             <span class="select-label"><span>MÔ HÌNH</span><span id="mvpModelInfo">INT8 · OpenVINO</span></span>
             <select class="model-select" id="mvpModelSelect" aria-label="Mô hình nhận diện">
               <option value="yolo26s_ptq_int8" selected>YOLO26s PTQ INT8 640 (OpenVINO)</option>
+              <option value="yolo26s_fp32">YOLO26s Baseline (FP32)</option>
+              <option value="yolo26m_fp32">YOLO26m Baseline (FP32)</option>
             </select>
             <span class="select-label"><span>SỐ CORE CPU HOST SERVER</span></span>
             <select class="model-select" id="mvpCoreSelect">
@@ -78,7 +85,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
           </div>
           <div class="split-view-container">
             <div class="canvas-panel">
-              <div class="panel-model-badge"><span class="mvp-model-dot"></span><span>YOLO26s PTQ INT8 640 (OpenVINO)</span></div>
+              <div class="panel-model-badge"><span class="mvp-model-dot"></span><span id="mvpPanelModel"></span></div>
               <div class="image-stage-wrap"><img class="source-image" id="mvpImage" alt="Ảnh nhận diện"><svg class="detection-overlay" id="mvpOverlay"></svg></div>
               <div class="panel-stat-pill">Phát hiện: <strong id="mvpBoxCount">—</strong> hộp · <span id="mvpLatency">Chưa suy luận</span></div>
             </div>
@@ -104,13 +111,15 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
 
   const byId = id => document.getElementById(id);
   const data = window.DEMO_DATA;
-  if (!data?.scenes?.length || !data.models?.[MODEL_KEY]) return;
+  if (!data?.scenes?.length || Object.keys(MODEL_NAMES).some(key => !data.models?.[key])) return;
   const scenes = data.scenes.map(scene => ({...scene, mvpDetections: {}}));
   let currentSceneId = scenes[0].id;
+  let currentModelKey = DEFAULT_MODEL_KEY;
   let currentThreads = 3;
   let currentConf = 0.25;
   let serverOnline = false;
   let serverCpuThreads = null;
+  let serverInt8CpuThreads = null;
   let inferenceQueue = Promise.resolve();
   const pending = new Set();
   const enabledClasses = new Set(Object.keys(CLASS_COLORS));
@@ -135,12 +144,13 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   }
 
   function scene() { return scenes.find(item => item.id === currentSceneId) || scenes[0]; }
-  function signature() { return `${MODEL_KEY}:${currentThreads}`; }
+  function signature() { return `${currentModelKey}:${currentThreads}`; }
   function record() { return scene().mvpDetections[signature()]; }
   function filteredBoxes() { return (record()?.boxes || []).filter(box => box.conf >= currentConf && enabledClasses.has(box.class_name)); }
 
   function populateCoreSelect() {
-    byId('mvpCoreSelect').innerHTML = Array.from({length: serverCpuThreads}, (_, index) => `<option value="${index + 1}">CPU ×${index + 1}</option>`).join('');
+    const limit = currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
+    byId('mvpCoreSelect').innerHTML = Array.from({length: limit}, (_, index) => `<option value="${index + 1}">CPU ×${index + 1}</option>`).join('');
     byId('mvpCoreSelect').value = String(currentThreads);
   }
 
@@ -150,13 +160,13 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
       const status = await response.json();
       if (!response.ok || status.status !== 'online') throw new Error('offline');
       serverOnline = true;
-      const int8Threads = Number.isInteger(status.int8_cpu_threads) && status.int8_cpu_threads > 0 ? status.int8_cpu_threads : status.cpu_threads;
-      serverCpuThreads = Number.isInteger(int8Threads) && int8Threads > 0 ? int8Threads : null;
+      serverCpuThreads = Number.isInteger(status.cpu_threads) && status.cpu_threads > 0 ? status.cpu_threads : null;
+      serverInt8CpuThreads = Number.isInteger(status.int8_cpu_threads) && status.int8_cpu_threads > 0 ? status.int8_cpu_threads : serverCpuThreads;
       if (serverCpuThreads) {
-        currentThreads = Math.min(3, serverCpuThreads);
+        currentThreads = Math.min(3, currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads);
         populateCoreSelect();
       }
-      byId('mvpCpuInfo').textContent = `CPU host server: ${status.cpu_name || 'không rõ'} · INT8 tối đa ${serverCpuThreads || '?'} core`;
+      byId('mvpCpuInfo').textContent = `CPU host server: ${status.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core${serverInt8CpuThreads < serverCpuThreads ? ` · INT8 tối đa ${serverInt8CpuThreads} core` : ''}`;
       render();
       return inferScene(scene());
     } catch (_) {
@@ -187,7 +197,8 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const current = scene();
     const result = record();
     const boxes = filteredBoxes();
-    const model = data.models[MODEL_KEY];
+    const model = data.models[currentModelKey];
+    const modelName = MODEL_NAMES[currentModelKey];
     const image = byId('mvpImage');
     const source = current.data_uri || current.image_url;
     if (image.src !== source) image.src = source;
@@ -201,9 +212,10 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpOverlay').innerHTML = generateSvgElements(boxes, width, height);
     byId('mvpSceneTitle').textContent = current.title;
     byId('mvpSceneDesc').textContent = current.desc || '';
-    byId('mvpModelInfo').textContent = `${model.badge} · ${model.size_mb.toFixed(2)} MiB`;
+    byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'CPU FP32' : model.badge} · ${model.size_mb.toFixed(2)} MiB`;
     byId('mvpModelPath').textContent = model.path;
-    byId('mvpRuntime').textContent = result?.runtime || `${model.name} · CPU ×${currentThreads}`;
+    byId('mvpPanelModel').textContent = modelName;
+    byId('mvpRuntime').textContent = result?.runtime || `${modelName} · CPU ×${currentThreads}`;
     byId('mvpBoxCount').textContent = result ? boxes.length : '—';
     byId('mvpLatency').textContent = result ? `${result.inference_time_ms.toFixed(1)} ms · ${result.runtime}` : serverOnline ? 'Chưa suy luận' : 'AI Server offline';
     const fps = result?.inference_time_ms > 0 ? 1000 / result.inference_time_ms : null;
@@ -214,7 +226,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpLoading').classList.toggle('active', busy);
     byId('mvpRunDetection').disabled = busy || !serverOnline;
     byId('mvpCoreSelect').disabled = busy;
-    byId('mvpLoadingText').textContent = `${model.name} · CPU ×${currentThreads}`;
+    byId('mvpLoadingText').textContent = `${modelName} · CPU ×${currentThreads}`;
     renderExport(boxes, current, width, height, !!result);
   }
 
@@ -226,7 +238,8 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
 
   function inferScene(target, force = false) {
     if (!serverOnline) { toast('AI Server đang offline.'); return Promise.resolve(); }
-    const requestSignature = `${MODEL_KEY}:${currentThreads}`;
+    const modelKey = currentModelKey;
+    const requestSignature = `${modelKey}:${currentThreads}`;
     const requestKey = `${target.id}:${requestSignature}`;
     if (!force && target.mvpDetections[requestSignature]) { render(); return Promise.resolve(); }
     if (pending.has(requestKey)) return inferenceQueue;
@@ -236,11 +249,11 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
       try {
         const response = await fetch('/api/predict', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({image: target.data_uri, conf: 0.10, models: [MODEL_KEY], threads})
+          body: JSON.stringify({image: target.data_uri, conf: 0.10, models: [modelKey], threads})
         });
         const payload = await response.json();
         if (!response.ok || payload.status !== 'success') throw new Error(payload.message || `HTTP ${response.status}`);
-        const detection = payload.detections[MODEL_KEY];
+        const detection = payload.detections[modelKey];
         if (!detection) throw new Error('Server không trả về kết quả model đã chọn');
         target.mvpDetections[requestSignature] = {...detection, width: payload.width, height: payload.height};
       } catch (error) {
@@ -281,7 +294,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const height = image.naturalHeight || current.height || 720;
     if (format === 'json') {
       const content = JSON.stringify(mvpBuildBDD100KJson(boxes, current, width, height), null, 2);
-      download(content, 'application/json', `prelabel_${current.file.replace(/\.[^.]+$/, '')}_${MODEL_KEY}.json`);
+      download(content, 'application/json', `prelabel_${current.file.replace(/\.[^.]+$/, '')}_${currentModelKey}.json`);
     } else {
       const lines = boxes.map(box => {
         const coords = box.box_norm || [box.box_px[0] / width, box.box_px[1] / height, box.box_px[2] / width, box.box_px[3] / height];
@@ -312,7 +325,13 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   }
 
   async function init() {
-    byId('mvpModelSelect').value = MODEL_KEY;
+    byId('mvpModelSelect').value = currentModelKey;
+    byId('mvpModelSelect').addEventListener('change', event => {
+      currentModelKey = event.target.value;
+      const limit = currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads;
+      if (limit) { currentThreads = Math.min(currentThreads, limit); populateCoreSelect(); }
+      render(); inferScene(scene());
+    });
     byId('mvpClassFilters').innerHTML = Object.keys(CLASS_COLORS).map(name => `<label class="class-check"><input type="checkbox" value="${name}" checked><span class="class-color-dot" style="background:${CLASS_COLORS[name]}"></span><span>${name}</span></label>`).join('');
     byId('mvpClassFilters').addEventListener('change', event => {
       if (!event.target.value) return;

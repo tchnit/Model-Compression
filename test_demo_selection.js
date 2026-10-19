@@ -6,7 +6,7 @@ const scripts = ['overlays.js', 'studio.js'].map(name => fs.readFileSync(`${__di
 const html = fs.readFileSync(`${__dirname}/demo.html`, 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
-const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26m_ptq_int8'];
+const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yolo26s_baseline_fp32', 'yolo26m_baseline_fp32', 'yolo26m_ptq_int8'];
 for (const side of ['A', 'B']) {
   const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
@@ -166,6 +166,18 @@ async function studio() {
     assert.equal(s.read('currentThreadsA'), 3);
     s.finish(0);
     await selected;
+  }
+
+  // FP32 display aliases use the existing FP32 backend models.
+  {
+    const s = await studio();
+    const selected = s.context.selectModel('A', 'yolo26s_baseline_fp32');
+    await tick();
+    assert.deepEqual(s.requests[0].payload.models, ['yolo26s_fp32']);
+    assert.equal(s.element('panelTitleA').textContent, 'YOLO26s Baseline (FP32)');
+    s.finish(0);
+    await selected;
+    assert.ok(s.data.scenes[0].live_detections['yolo26s_baseline_fp32:3']);
   }
 
   // Concurrent selections are serialized and the same scene/model is reused.
