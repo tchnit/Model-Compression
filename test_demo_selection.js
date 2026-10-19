@@ -10,6 +10,8 @@ const expectedModels = ['yolo26s_ptq_int8', 'yolo26s_fp32', 'yolo26m_fp32', 'yol
 for (const side of ['A', 'B']) {
   const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
+  const cores = html.match(new RegExp(`<select class="model-select" id="coreSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
+  assert.deepEqual([...cores.matchAll(/<option value="([^"]+)"/g)].map(match => Number(match[1])), [1, 2]);
 }
 assert.doesNotMatch(html, /applyPreset\('qat'\)/);
 assert.doesNotMatch(html, /Tỷ Lệ Nén Trọng Số|Tăng Tốc Suy Luận \(CPU\)|Bảo Toàn mAP50–95|Precision Trên Tập Validation/);
@@ -67,7 +69,7 @@ async function studio() {
       set src(value) { queueMicrotask(() => this.onload()); }
     },
     fetch(url, options) {
-      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_threads: 8 }) });
+      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_threads: 2 }) });
       assert.equal(url, '/api/predict');
       return new Promise((resolve, reject) => {
         requests.push({ payload: JSON.parse(options.body), resolve, reject });
@@ -90,7 +92,7 @@ async function studio() {
           status: 'success', width: 100, height: 80,
           detections: Object.fromEntries(request.payload.models.map(key => [key, {
             inference_time_ms: key === 'yolo26s_fp32' ? 40 : 20,
-            runtime: 'CPU ×8', detections_count: 0, boxes: []
+            runtime: `CPU ×${request.payload.threads}`, detections_count: 0, boxes: []
           }]))
         }
       });
@@ -102,8 +104,10 @@ async function studio() {
   // Opening the page and uploading an image do not start an unselected model.
   {
     const s = await studio();
-    assert.equal(s.read('serverCpuThreads'), 8);
-    assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU ×8)');
+    assert.equal(s.read('serverCpuThreads'), 2);
+    assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU ×2)');
+    assert.equal(s.read('currentThreadsA'), 2);
+    assert.equal(s.read('currentThreadsB'), 2);
     assert.equal(s.read('currentModelA'), '');
     assert.equal(s.read('currentModelB'), '');
     assert.equal(s.requests.length, 0);
@@ -123,11 +127,19 @@ async function studio() {
     const selected = s.context.selectModel('A', 'a');
     await tick();
     assert.deepEqual(s.requests[0].payload.models, ['a']);
+    assert.equal(s.requests[0].payload.threads, 2);
     assert.equal(s.requests[0].payload.image, scene.data_uri);
     s.finish(0);
     await selected;
-    assert.ok(scene.live_models.has('a'));
+    assert.ok(scene.live_detections['a:2']);
     assert.equal(s.data.detections.a[scene.id].detections_count, 0);
+    const retuned = s.context.selectThreads('A', '1');
+    await tick();
+    assert.equal(s.requests[1].payload.threads, 1);
+    s.finish(1);
+    await retuned;
+    assert.ok(scene.live_detections['a:1']);
+    assert.equal(s.read('currentThreadsA'), 1);
   }
 
   // Concurrent selections are serialized and the same scene/model is reused.
@@ -169,7 +181,7 @@ async function studio() {
     assert.deepEqual(s.requests[1].payload.models, ['c']);
     s.finish(1);
     await Promise.all([a, b, c]);
-    assert.ok(!s.data.scenes[0].live_models.has('b'));
+    assert.ok(!s.data.scenes[0].live_detections?.['b:2']);
   }
 
   // A response for an old scene is cached there; queued old-scene work is skipped.
@@ -205,13 +217,13 @@ async function studio() {
     await tick();
     s.finish(0, 'Busy');
     await failed;
-    assert.ok(!s.data.scenes[0].live_models?.has('a'));
+    assert.ok(!s.data.scenes[0].live_detections?.['a:2']);
     const retry = s.context.selectModel('A', 'a');
     await tick();
     assert.equal(s.requests.length, 2);
     s.finish(1);
     await retry;
-    assert.ok(s.data.scenes[0].live_models.has('a'));
+    assert.ok(s.data.scenes[0].live_detections['a:2']);
   }
 
   // A preset is an explicit choice of two models, and uses the same queue.

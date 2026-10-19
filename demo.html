@@ -104,6 +104,11 @@
               <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
               <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
             </select>
+            <span class="select-label"><span>CPU MÔ HÌNH A</span></span>
+            <select class="model-select" id="coreSelectA">
+              <option value="1">CPU ×1</option>
+              <option value="2" selected>CPU ×2</option>
+            </select>
             <small class="model-path" id="modelPathA"></small>
           </div>
 
@@ -118,6 +123,11 @@
               <option value="yolo26s_fp32">YOLO26s Baseline (FP16)</option>
               <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
               <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
+            </select>
+            <span class="select-label"><span>CPU MÔ HÌNH B</span></span>
+            <select class="model-select" id="coreSelectB">
+              <option value="1">CPU ×1</option>
+              <option value="2" selected>CPU ×2</option>
             </select>
             <small class="model-path" id="modelPathB"></small>
           </div>

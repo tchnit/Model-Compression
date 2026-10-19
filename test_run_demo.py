@@ -10,7 +10,7 @@ import socketserver
 import threading
 import unittest
 import tempfile
-from unittest.mock import ANY, patch
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -171,23 +171,33 @@ class DemoServerTests(unittest.TestCase):
                 return [Result()]
 
         config = {'path': 'models/yolo26m-bdd100k.pt', 'task': None, 'device': 'cpu', 'precision': 'FP32'}
-        runtime = {'device': 'CPU', 'torch_threads': run_demo.CPU_THREADS, 'precision': 'FP32',
-                   'parameter_dtype': 'torch.float32', 'input_dtype': 'torch.float32'}
+        def runtime_for(_model, _path, threads, _precision, *, strict_threads):
+            self.assertFalse(strict_threads)
+            return {'device': 'CPU', 'torch_threads': threads, 'precision': 'FP32',
+                    'parameter_dtype': 'torch.float32', 'input_dtype': 'torch.float32'}
+
         with patch.dict(run_demo.MODEL_CONFIGS, {'yolo26m_fp32': config}, clear=True), \
                 patch.dict(run_demo.LOADED_MODELS, {}, clear=True), \
                 patch.object(run_demo, 'get_model', return_value=Model()), \
-                patch.object(run_demo, 'configure_cpu_backend', return_value=runtime) as configure, \
+                patch.object(run_demo, 'configure_cpu_backend', side_effect=runtime_for) as configure, \
                 patch.object(run_demo, 'cpu_device', return_value='cpu'):
             run_demo.WARMED_MODELS.clear()
             run_demo.MODEL_RUNTIMES.clear()
             status, body = self.request('POST', '/api/predict',
-                                        json.dumps({'image': encoded, 'models': ['yolo26m_fp32']}),
+                                        json.dumps({'image': encoded, 'models': ['yolo26m_fp32'], 'threads': 1}),
                                         {'Content-Type': 'application/json'})
+            status_2, body_2 = self.request('POST', '/api/predict',
+                                            json.dumps({'image': encoded, 'models': ['yolo26m_fp32'], 'threads': 2}),
+                                            {'Content-Type': 'application/json'})
         self.assertEqual(status, 200)
-        configure.assert_called_once_with(ANY, config['path'], run_demo.CPU_THREADS, 'FP32', strict_threads=False)
+        self.assertEqual(status_2, 200)
+        self.assertEqual([item.args[2] for item in configure.call_args_list], [1, 2])
         result = json.loads(body)['detections']['yolo26m_fp32']
+        result_2 = json.loads(body_2)['detections']['yolo26m_fp32']
         self.assertEqual(result['runtime_settings']['precision'], 'FP32')
         self.assertEqual(result['runtime_settings']['parameter_dtype'], 'torch.float32')
+        self.assertEqual(result['runtime_settings']['torch_threads'], 1)
+        self.assertEqual(result_2['runtime_settings']['torch_threads'], 2)
 
     def test_predict_rejects_oversized_and_unknown_model_requests(self):
         status, _ = self.request(
@@ -271,7 +281,8 @@ class DemoServerTests(unittest.TestCase):
         image = BytesIO()
         Image.new('RGB', (1, 1)).save(image, 'JPEG')
         encoded = base64.b64encode(image.getvalue()).decode()
-        for fields in [{'models': [{}]}, {'models': [None]}, {'conf': None}, {'conf': []}]:
+        for fields in [{'models': [{}]}, {'models': [None]}, {'conf': None}, {'conf': []},
+                       {'threads': 0}, {'threads': 3}, {'threads': '2'}, {'threads': True}]:
             with self.subTest(fields=fields):
                 payload = json.dumps({'image': encoded, **fields})
                 status, _ = self.request('POST', '/api/predict', payload, {'Content-Type': 'application/json'})

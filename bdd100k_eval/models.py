@@ -12,10 +12,10 @@ WARMED_MODELS = set()
 MODEL_RUNTIMES = {}
 
 
-def configure_cpu_threads():
+def configure_cpu_threads(threads=CPU_THREADS):
     """Restore the PyTorch CPU budget after Ultralytics initializes a predictor."""
     import torch
-    torch.set_num_threads(CPU_THREADS)
+    torch.set_num_threads(threads)
 
 
 def get_model(model_key):

@@ -7,6 +7,8 @@ let demoData = window.DEMO_DATA || null;
 let currentSceneId = 'scene_01';
 let currentModelA = '';
 let currentModelB = '';
+let currentThreadsA = 2;
+let currentThreadsB = 2;
 let currentConf = 0.25;
 let currentViewMode = 'split'; // split, slider, toggle
 let selectedToggleModel = 'A';
@@ -20,6 +22,12 @@ let inferenceQueue = Promise.resolve();
 
 // DOM helper
 const $ = id => document.getElementById(id);
+
+function inferenceSelection(side) {
+  const modelKey = side === 'A' ? currentModelA : currentModelB;
+  const threads = side === 'A' ? currentThreadsA : currentThreadsB;
+  return { modelKey, threads, signature: `${modelKey}:${threads}` };
+}
 
 function showToast(msg) {
   const t = $('toastBox');
@@ -37,6 +45,12 @@ async function checkServerStatus() {
       if (data.status === 'online') {
         isServerOnline = true;
         serverCpuThreads = Number.isInteger(data.cpu_threads) && data.cpu_threads > 0 ? data.cpu_threads : null;
+        if (serverCpuThreads) {
+          currentThreadsA = Math.min(currentThreadsA, serverCpuThreads);
+          currentThreadsB = Math.min(currentThreadsB, serverCpuThreads);
+          $('coreSelectA').value = String(currentThreadsA);
+          $('coreSelectB').value = String(currentThreadsB);
+        }
         $('serverStatusDot').classList.add('online');
         $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU ×${serverCpuThreads})` : 'AI Server Online (Live)';
         $('serverStatusChip').style.background = '#ecfdf5';
@@ -54,42 +68,48 @@ async function checkServerStatus() {
 }
 
 function updateInferenceStatus() {
-  const pending = [...new Set([currentModelA, currentModelB])].filter(key =>
-    key && liveSceneRequests.has(`${currentSceneId}:${key}`));
+  const pending = ['A', 'B'].map(inferenceSelection).filter((item, index, items) =>
+    item.modelKey && items.findIndex(other => other.signature === item.signature) === index
+      && liveSceneRequests.has(`${currentSceneId}:${item.signature}`));
   $('aiLoadingOverlay').classList.toggle('active', pending.length > 0);
-  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(key => demoData.models[key].name).join(', ')} tuần tự trên CPU (tối đa ${serverCpuThreads || 2} luồng/model)...`;
+  $('aiLoadingSubtext').textContent = `Đang chuẩn bị/suy luận ${pending.map(item => `${demoData.models[item.modelKey].name} (CPU ×${item.threads})`).join(', ')} tuần tự...`;
 }
 
-function inferScene(scene, modelKeys) {
+function inferScene(scene, sides) {
   if (!isServerOnline) return Promise.resolve();
-  const models = [...new Set(modelKeys)].filter(key => demoData.models[key] && !scene.live_models?.has(key));
-  return Promise.all(models.map(modelKey => {
-    const requestKey = `${scene.id}:${modelKey}`;
+  const selections = sides.map(inferenceSelection).filter((item, index, items) =>
+    demoData.models[item.modelKey]
+      && items.findIndex(other => other.signature === item.signature) === index
+      && !scene.live_detections?.[item.signature]);
+  return Promise.all(selections.map(({ modelKey, threads, signature }) => {
+    const requestKey = `${scene.id}:${signature}`;
     if (liveSceneRequests.has(requestKey)) return liveSceneRequests.get(requestKey);
 
     // The server accepts one inference at a time; discard obsolete queued selections.
     const request = inferenceQueue.then(async () => {
       try {
-        if (currentSceneId !== scene.id || ![currentModelA, currentModelB].includes(modelKey)) return;
+        const stillSelected = ['A', 'B'].some(side => inferenceSelection(side).signature === signature);
+        if (currentSceneId !== scene.id || !stillSelected) return;
         const res = await fetch('/api/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey] })
+          body: JSON.stringify({ image: scene.data_uri, conf: 0.10, models: [modelKey], threads })
         });
         const result = await res.json();
         if (!res.ok || result.status !== 'success') throw new Error(result.message || `HTTP ${res.status}`);
         const detection = result.detections[modelKey];
         if (!detection) throw new Error('Server không trả về kết quả model đã chọn');
         if (!demoData.detections[modelKey]) demoData.detections[modelKey] = {};
-        demoData.detections[modelKey][scene.id] = {
+        const record = {
           scene_id: scene.id,
           image_file: scene.file,
           width: result.width,
           height: result.height,
           ...detection
         };
-        if (!scene.live_models) scene.live_models = new Set();
-        scene.live_models.add(modelKey);
+        demoData.detections[modelKey][scene.id] = record;
+        if (!scene.live_detections) scene.live_detections = {};
+        scene.live_detections[signature] = record;
       } catch (err) {
         console.warn('Live inference failed:', err);
         if (currentSceneId === scene.id && [currentModelA, currentModelB].includes(modelKey)) {
@@ -113,7 +133,16 @@ function selectModel(side, modelKey) {
   else currentModelB = modelKey;
   updateSceneView();
   const scene = demoData.scenes.find(s => s.id === currentSceneId);
-  return inferScene(scene, [modelKey]);
+  return inferScene(scene, [side]);
+}
+
+function selectThreads(side, value) {
+  const threads = Number(value);
+  if (!Number.isInteger(threads) || threads < 1 || threads > (serverCpuThreads || 2)) return Promise.resolve();
+  if (side === 'A') currentThreadsA = threads;
+  else currentThreadsB = threads;
+  updateSceneView();
+  return inferScene(demoData.scenes.find(s => s.id === currentSceneId), [side]);
 }
 
 // Initialize Application
@@ -142,6 +171,12 @@ async function initApp() {
   });
   $('modelSelectB').addEventListener('change', e => {
     void selectModel('B', e.target.value);
+  });
+  $('coreSelectA').addEventListener('change', e => {
+    void selectThreads('A', e.target.value);
+  });
+  $('coreSelectB').addEventListener('change', e => {
+    void selectThreads('B', e.target.value);
   });
   $('confSlider').addEventListener('input', e => {
     currentConf = parseFloat(e.target.value);
@@ -191,7 +226,7 @@ function selectScene(sceneId) {
   currentSceneId = sceneId;
   renderSceneList();
   updateSceneView();
-  return inferScene(demoData.scenes.find(s => s.id === sceneId), [currentModelA, currentModelB]);
+  return inferScene(demoData.scenes.find(s => s.id === sceneId), ['A', 'B']);
 }
 
 function applyPreset(preset) {
@@ -208,7 +243,7 @@ function applyPreset(preset) {
   $('modelSelectA').value = currentModelA;
   $('modelSelectB').value = currentModelB;
   updateSceneView();
-  void inferScene(demoData.scenes.find(s => s.id === currentSceneId), [currentModelA, currentModelB]);
+  void inferScene(demoData.scenes.find(s => s.id === currentSceneId), ['A', 'B']);
   showToast(`Đã áp dụng cấu hình so sánh: ${preset.toUpperCase()}`);
 }
 
@@ -336,15 +371,19 @@ function renderBoundingBoxes() {
     if (el) el.setAttribute('viewBox', `0 0 ${w} ${h}`);
   });
 
-  const detA = demoData.detections[currentModelA]?.[scene.id]?.boxes || [];
-  const detB = demoData.detections[currentModelB]?.[scene.id]?.boxes || [];
-
-  const recordA = demoData.detections[currentModelA]?.[scene.id];
-  const recordB = demoData.detections[currentModelB]?.[scene.id];
+  const liveRecordA = scene.live_detections?.[inferenceSelection('A').signature];
+  const liveRecordB = scene.live_detections?.[inferenceSelection('B').signature];
+  const liveSignatures = Object.keys(scene.live_detections || {});
+  const recordA = liveRecordA || (!liveSignatures.some(key => key.startsWith(`${currentModelA}:`))
+    ? demoData.detections[currentModelA]?.[scene.id] : null);
+  const recordB = liveRecordB || (!liveSignatures.some(key => key.startsWith(`${currentModelB}:`))
+    ? demoData.detections[currentModelB]?.[scene.id] : null);
+  const detA = recordA?.boxes || [];
+  const detB = recordB?.boxes || [];
   const timeA = recordA?.inference_time_ms;
   const timeB = recordB?.inference_time_ms;
-  const liveTimeA = scene.live_models?.has(currentModelA) ? timeA : null;
-  const liveTimeB = scene.live_models?.has(currentModelB) ? timeB : null;
+  const liveTimeA = liveRecordA?.inference_time_ms;
+  const liveTimeB = liveRecordB?.inference_time_ms;
   const fpsA = Number.isFinite(liveTimeA) && liveTimeA > 0 ? 1000 / liveTimeA : null;
   const fpsB = Number.isFinite(liveTimeB) && liveTimeB > 0 ? 1000 / liveTimeB : null;
   $('speedupDisplay').textContent = fpsA != null && fpsB != null ? `${(liveTimeA / liveTimeB).toFixed(2)}x` : 'Chưa đo';

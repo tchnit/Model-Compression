@@ -131,6 +131,9 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                     raise ValueError('conf phải thuộc [0, 1]') from error
                 if not 0 <= conf_thresh <= 1:
                     raise ValueError('conf phải thuộc [0, 1]')
+                threads = payload.get('threads', CPU_THREADS)
+                if type(threads) is not int or not 1 <= threads <= CPU_THREADS:
+                    raise ValueError(f'threads phải là số nguyên thuộc [1, {CPU_THREADS}]')
                 if not INFERENCE_SLOT.acquire(blocking=False):
                     self.send_json(503, {'status': 'error', 'message': 'Server đang xử lý ảnh khác'})
                     return
@@ -140,18 +143,22 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                     for m_key in target_models:
                         model = get_model(m_key)
 
-                        configure_cpu_threads()
+                        configure_cpu_threads(threads)
                         imgsz = MODEL_CONFIGS[m_key].get('imgsz', 640)
+                        previous = MODEL_RUNTIMES.get(m_key, {})
+                        previous_threads = previous.get('requested_threads', previous.get('torch_threads'))
+                        needs_warmup = m_key not in WARMED_MODELS or previous_threads != threads
                         if m_key not in WARMED_MODELS:
                             model(np.zeros((imgsz, imgsz, 3), dtype=np.uint8), imgsz=imgsz, conf=0.10,
                                   verbose=False, rect=False, device=cpu_device(MODEL_CONFIGS[m_key]['path']))
-                            MODEL_RUNTIMES[m_key] = configure_cpu_backend(model, MODEL_CONFIGS[m_key]['path'], CPU_THREADS,
-                                                                        MODEL_CONFIGS[m_key].get('precision', 'FP16'),
-                                                                        strict_threads=False)
+                        MODEL_RUNTIMES[m_key] = configure_cpu_backend(model, MODEL_CONFIGS[m_key]['path'], threads,
+                                                                    MODEL_CONFIGS[m_key].get('precision', 'FP16'),
+                                                                    strict_threads=False)
+                        if needs_warmup:
                             model(np.zeros((imgsz, imgsz, 3), dtype=np.uint8), imgsz=imgsz, conf=0.10,
                                   verbose=False, rect=False, device=cpu_device(MODEL_CONFIGS[m_key]['path']))
                             WARMED_MODELS.add(m_key)
-                            configure_cpu_threads()
+                            configure_cpu_threads(threads)
                         t0 = time.perf_counter()
                         results = model(
                             img,
