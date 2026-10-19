@@ -58,6 +58,7 @@ async function checkServerStatus() {
           populateCoreSelect('coreSelectA', currentThreadsA);
           populateCoreSelect('coreSelectB', currentThreadsB);
         }
+        $('studioCpuInfo').textContent = `CPU host server: ${data.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core`;
         $('serverStatusDot').classList.add('online');
         $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU host ×${serverCpuThreads})` : 'AI Server Online (Live)';
         $('serverStatusChip').style.background = '#ecfdf5';
@@ -70,6 +71,7 @@ async function checkServerStatus() {
   }
   isServerOnline = false;
   serverCpuThreads = null;
+  $('studioCpuInfo').textContent = 'CPU host server: không kết nối';
   $('serverStatusDot').classList.remove('online');
   $('serverStatusText').textContent = 'Offline (Chạy python3 run_demo.py)';
 }

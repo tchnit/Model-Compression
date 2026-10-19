@@ -73,7 +73,7 @@ async function studio() {
       set src(value) { queueMicrotask(() => this.onload()); }
     },
     fetch(url, options) {
-      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_threads: 8 }) });
+      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_name: 'Test Host CPU', cpu_threads: 8 }) });
       assert.equal(url, '/api/predict');
       return new Promise((resolve, reject) => {
         requests.push({ payload: JSON.parse(options.body), resolve, reject });
@@ -110,6 +110,7 @@ async function studio() {
     const s = await studio();
     assert.equal(s.read('serverCpuThreads'), 8);
     assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU host ×8)');
+    assert.equal(s.element('studioCpuInfo').textContent, 'CPU host server: Test Host CPU · tối đa 8 core');
     assert.match(s.element('coreSelectA').innerHTML, /value="8">CPU ×8/);
     assert.match(s.element('coreSelectB').innerHTML, /value="8">CPU ×8/);
     assert.equal(s.read('currentThreadsA'), 3);

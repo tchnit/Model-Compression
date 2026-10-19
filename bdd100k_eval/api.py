@@ -88,6 +88,7 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                 'models_missing': {key: os.path.relpath(cfg['path'], DIRECTORY)
                                    for key, cfg in MODEL_CONFIGS.items() if not os.path.exists(cfg['path'])},
                 'models_loaded': list(LOADED_MODELS.keys()),
+                'cpu_name': hardware_bench.cpu_name(),
                 'cpu_threads': CPU_THREADS,
             })
             return

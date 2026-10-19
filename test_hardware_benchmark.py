@@ -5,6 +5,15 @@ import hardware_benchmark as h
 
 
 class HardwareBenchmarkTests(unittest.TestCase):
+    def test_cpu_name_reads_linux_model_and_has_a_platform_fallback(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as folder:
+            cpuinfo = Path(folder) / 'cpuinfo'
+            cpuinfo.write_text('processor : 0\nmodel name : Test Host CPU\n')
+            self.assertEqual(h.cpu_name(cpuinfo), 'Test Host CPU')
+            self.assertTrue(h.cpu_name(Path(folder) / 'missing'))
+
     def test_pytorch_cpu_fp16_is_available_without_changing_fp32_mode(self):
         facts = dict(cuda=False, versions={'tensorrt': None}, providers=[],
                      openvino_devices={'CPU': {'capabilities': ['FP32', 'INT8']}})

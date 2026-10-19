@@ -51,6 +51,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
             <select class="model-select" id="mvpCoreSelect">
               <option value="1">CPU ×1</option><option value="2">CPU ×2</option><option value="3" selected>CPU ×3</option>
             </select>
+            <small class="model-path" id="mvpCpuInfo">CPU host server: đang kiểm tra…</small>
             <small class="model-path" id="mvpModelPath"></small>
           </div></div>
           <button class="btn btn-primary run-detection-btn" id="mvpRunDetection" type="button">Nhận diện</button>
@@ -154,10 +155,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
         currentThreads = Math.min(3, serverCpuThreads);
         populateCoreSelect();
       }
+      byId('mvpCpuInfo').textContent = `CPU host server: ${status.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core`;
       render();
       return inferScene(scene());
     } catch (_) {
       serverOnline = false;
+      byId('mvpCpuInfo').textContent = 'CPU host server: không kết nối';
       render();
       return undefined;
     }

@@ -45,7 +45,7 @@ const context = vm.createContext({
   CLASS_COLORS: {car: '#fff'}, generateSvgElements: () => '', navigator: {clipboard: {writeText: async () => {}}},
   Blob, URL: {createObjectURL: () => 'blob:test', revokeObjectURL() {}}, setTimeout() {}, console,
   fetch: async (url, options) => {
-    if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_threads: 8})};
+    if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Test Host CPU', cpu_threads: 8})};
     requests.push(JSON.parse(options.body));
     return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {yolo26s_ptq_int8: {inference_time_ms: 50, runtime: 'CPU ×3', boxes: []}}})};
   }
@@ -59,6 +59,7 @@ vm.runInContext(source, context);
   assert.equal(sceneInfo.tagName, 'DIV');
   assert.deepEqual(sceneInfo.children.map(child => child.tagName), ['DIV', 'DIV']);
   assert.match(elements.get('mvpCoreSelect').innerHTML, /value="8">CPU ×8/);
+  assert.equal(elements.get('mvpCpuInfo').textContent, 'CPU host server: Test Host CPU · tối đa 8 core');
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].models, ['yolo26s_ptq_int8']);
   assert.equal(requests[0].threads, 3);

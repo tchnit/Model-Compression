@@ -20,6 +20,16 @@ MODELS = {'yolo26m': 'YOLO26m · Baseline / PTQ', 'yolo26s': 'YOLO26s · Baselin
           'yolo26m_qat': 'YOLO26m · QAT INT8', 'yolo26s_qat': 'YOLO26s · QAT INT8'}
 
 
+def cpu_name(cpuinfo=Path('/proc/cpuinfo')):
+    try:
+        for line in cpuinfo.read_text(errors='ignore').splitlines():
+            if line.lower().startswith(('model name', 'hardware')) and ':' in line:
+                return line.split(':', 1)[1].strip()
+    except OSError:
+        pass
+    return platform.processor() or platform.machine() or 'CPU'
+
+
 @lru_cache(maxsize=1)
 def hardware():
     import torch
@@ -47,7 +57,7 @@ def hardware():
         versions['tensorrt'] = trt.__version__
     except (ImportError, OSError):
         versions['tensorrt'] = None
-    return dict(cpu=platform.processor() or platform.machine(), logical_cpus=__import__('os').cpu_count(),
+    return dict(cpu=cpu_name(), logical_cpus=__import__('os').cpu_count(),
                 cuda=cuda, gpu=torch.cuda.get_device_name(0) if cuda else None,
                 compute_capability=list(torch.cuda.get_device_capability(0)) if cuda else None,
                 cuda_version=torch.version.cuda, openvino_devices=devices, providers=providers,

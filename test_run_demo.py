@@ -242,6 +242,7 @@ class DemoServerTests(unittest.TestCase):
                 _, body = self.request('GET', '/api/status')
                 inventory = json.loads(body)
                 self.assertEqual(inventory['cpu_threads'], run_demo.CPU_THREADS)
+                self.assertTrue(inventory['cpu_name'])
                 self.assertEqual(inventory['models_available'], [])
                 self.assertEqual(set(inventory['models_missing']), set(configs))
                 for key, cfg in configs.items():

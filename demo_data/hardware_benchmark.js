@@ -292,7 +292,8 @@
         el('Model').value = old;
         if (browser) {
           const gpuReason = webgpuReason({engine:'webgpu',precision:'FP32'},adapter,window.isSecureContext,!!navigator.gpu);
-          el('Hardware').textContent = `Máy mở trang: CPU ${navigator.hardwareConcurrency || '?'} luồng logic · WASM hỗ trợ chọn tối đa ${maxThreads} luồng. ${gpuReason || `WebGPU sẵn sàng: ${adapter.info?.description || adapter.info?.device || adapter.info?.vendor || 'GPU trình duyệt'}${adapter.features.has('shader-f16') ? ' · hỗ trợ FP16' : ' · FP32'}.`}`;
+          const platform = navigator.userAgentData?.platform || navigator.platform || 'không rõ nền tảng';
+          el('Hardware').textContent = `CPU client (${platform}): ${navigator.hardwareConcurrency || '?'} luồng logic · WASM hỗ trợ chọn tối đa ${maxThreads} luồng. ${gpuReason || `WebGPU sẵn sàng: ${adapter.info?.description || adapter.info?.device || adapter.info?.vendor || 'GPU trình duyệt'}${adapter.features.has('shader-f16') ? ' · hỗ trợ FP16' : ' · FP32'}.`}`;
         } else {
           const h = caps.hardware;
           el('Hardware').textContent = `Máy backend Python: ${h.openvino_devices.CPU?.name || h.cpu} · ${h.logical_cpus} CPU logic · CUDA: ${h.gpu || 'không khả dụng'}.`;
