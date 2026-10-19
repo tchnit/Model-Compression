@@ -60,14 +60,13 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
             </select>
             <span class="select-label"><span>CPU SUY LUẬN</span></span>
             <select class="model-select" id="mvpProcessorSelect">
-              <option value="host" selected>CPU host server</option>
-              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C · Hugging Face</option>
+              <option value="host" id="mvpProcessorHost" selected>Đang kiểm tra CPU…</option>
+              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C</option>
             </select>
-            <span class="select-label"><span>SỐ CORE CPU HOST SERVER</span></span>
+            <span class="select-label"><span>SỐ CORE CPU</span></span>
             <select class="model-select" id="mvpCoreSelect">
               <option value="1">CPU ×1</option><option value="2">CPU ×2</option><option value="3" selected>CPU ×3</option>
             </select>
-            <small class="model-path" id="mvpCpuInfo">CPU host server: đang kiểm tra…</small>
             <small class="model-path" id="mvpModelPath"></small>
           </div></div>
           <button class="btn btn-primary run-detection-btn" id="mvpRunDetection" type="button">Nhận diện</button>
@@ -130,7 +129,6 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
   let serverOnline = false;
   let serverCpuThreads = null;
   let serverInt8CpuThreads = null;
-  let hostCpuDescription = 'CPU host server: đang kiểm tra…';
   let inferenceQueue = Promise.resolve();
   const pending = new Set();
   const enabledClasses = new Set(Object.keys(CLASS_COLORS));
@@ -177,12 +175,12 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
         currentThreads = Math.min(3, currentModelKey.includes('int8') ? serverInt8CpuThreads : serverCpuThreads);
         populateCoreSelect();
       }
-      hostCpuDescription = `CPU host server: ${status.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core${serverInt8CpuThreads < serverCpuThreads ? ` · INT8 tối đa ${serverInt8CpuThreads} core` : ''}`;
+      byId('mvpProcessorHost').textContent = status.cpu_name || 'CPU không rõ tên';
       render();
       return inferScene(scene());
     } catch (_) {
       serverOnline = false;
-      hostCpuDescription = 'CPU host server: không kết nối';
+      byId('mvpProcessorHost').textContent = 'CPU không kết nối';
       render();
       return undefined;
     }
@@ -226,8 +224,6 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const sizeMb = MODEL_SIZES[currentModelKey] || model.size_mb;
     byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'OpenVINO FP32' : model.badge} · ${sizeMb.toFixed(2)} MiB`;
     byId('mvpModelPath').textContent = currentModelKey.includes('fp32') ? `models/${currentModelKey.replace('baseline_', '')}_openvino_model` : model.path;
-    byId('mvpCpuInfo').textContent = currentProcessor === 'host'
-      ? hostCpuDescription : 'CPU từ xa: Intel(R) Xeon(R) Platinum 8559C · Hugging Face';
     byId('mvpPanelModel').textContent = modelName;
     byId('mvpRuntime').textContent = result?.runtime || `${modelName} · ${currentProcessor === 'host' ? `CPU ×${currentThreads}` : 'Hugging Face'}`;
     byId('mvpBoxCount').textContent = result ? boxes.length : '—';

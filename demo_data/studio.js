@@ -78,8 +78,8 @@ async function checkServerStatus() {
           populateCoreSelect('coreSelectA', currentModelA, currentThreadsA);
           populateCoreSelect('coreSelectB', currentModelB, currentThreadsB);
         }
-        const int8Limit = serverInt8CpuThreads < serverCpuThreads ? ` · INT8 tối đa ${serverInt8CpuThreads} core` : '';
-        $('studioCpuInfo').textContent = `CPU host server: ${data.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core${int8Limit}`;
+        $('processorHostA').textContent = data.cpu_name || 'CPU không rõ tên';
+        $('processorHostB').textContent = data.cpu_name || 'CPU không rõ tên';
         $('serverStatusDot').classList.add('online');
         $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU host ×${serverCpuThreads})` : 'AI Server Online (Live)';
         $('serverStatusChip').style.background = '#ecfdf5';
@@ -93,7 +93,8 @@ async function checkServerStatus() {
   isServerOnline = false;
   serverCpuThreads = null;
   serverInt8CpuThreads = null;
-  $('studioCpuInfo').textContent = 'CPU host server: không kết nối';
+  $('processorHostA').textContent = 'CPU không kết nối';
+  $('processorHostB').textContent = 'CPU không kết nối';
   $('serverStatusDot').classList.remove('online');
   $('serverStatusText').textContent = 'Offline (Chạy python3 run_demo.py)';
 }
@@ -468,8 +469,12 @@ function renderBoundingBoxes() {
   $('speedupDisplay').textContent = fpsA != null && fpsB != null ? `${(liveTimeA / liveTimeB).toFixed(2)}x` : 'Chưa đo';
   $('telemetryTimeA').textContent = fpsA != null ? `${liveTimeA.toFixed(1)} ms` : 'Chưa đo live';
   $('telemetryTimeB').textContent = fpsB != null ? `${liveTimeB.toFixed(1)} ms (${fpsB.toFixed(1)} FPS)` : 'Chưa đo live';
-  $('telemetryMetricsA').textContent = fpsA != null ? `Mô hình A · ${demoData.models[currentModelA].name} · ${liveTimeA.toFixed(1)} ms · ${fpsA.toFixed(1)} FPS` : 'Mô hình A · Chưa đo live';
-  $('telemetryMetricsB').textContent = fpsB != null ? `Mô hình B · ${demoData.models[currentModelB].name} · ${liveTimeB.toFixed(1)} ms · ${fpsB.toFixed(1)} FPS` : 'Mô hình B · Chưa đo live';
+  $('telemetryModelA').textContent = demoData.models[currentModelA]?.name || 'Chưa chọn';
+  $('telemetryLatencyA').textContent = fpsA != null ? `${liveTimeA.toFixed(1)} ms` : '—';
+  $('telemetryFpsA').textContent = fpsA != null ? `${fpsA.toFixed(1)} FPS` : '—';
+  $('telemetryModelB').textContent = demoData.models[currentModelB]?.name || 'Chưa chọn';
+  $('telemetryLatencyB').textContent = fpsB != null ? `${liveTimeB.toFixed(1)} ms` : '—';
+  $('telemetryFpsB').textContent = fpsB != null ? `${fpsB.toFixed(1)} FPS` : '—';
 
   const filteredA = detA.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));
   const filteredB = detB.filter(b => b.conf >= currentConf && enabledClasses.has(b.class_name));

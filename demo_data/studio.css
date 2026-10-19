@@ -741,6 +741,12 @@ input[type="range"] {
   font-weight: 800;
   color: var(--ink);
 }
+.telemetry-model-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+}
 .telemetry-secondary {
   font-size: 12px;
   color: var(--ink-secondary);

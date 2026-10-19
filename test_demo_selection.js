@@ -21,8 +21,9 @@ assert.match(html, /telemetry-label">Tốc độ của mô hình A<\/span>/);
 assert.match(html, /telemetry-label">Tốc độ của mô hình B<\/span>/);
 assert.match(html, /telemetry-label">mAP@50 · Mô hình B − Mô hình A<\/span>/);
 assert.match(html, /id="runDetectionBtn"[^>]*>Nhận diện<\/button>/);
-assert.match(html, /CPU HOST SERVER · MÔ HÌNH A/);
-assert.match(html, /CPU HOST SERVER · MÔ HÌNH B/);
+assert.match(html, /SỐ CORE CPU · MÔ HÌNH A/);
+assert.match(html, /SỐ CORE CPU · MÔ HÌNH B/);
+assert.doesNotMatch(html, /studioCpuInfo|· Hugging Face/);
 assert.match(html, /Số luồng CPU client \(WASM\)/);
 
 async function studio() {
@@ -112,7 +113,8 @@ async function studio() {
     const s = await studio();
     assert.equal(s.read('serverCpuThreads'), 8);
     assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU host ×8)');
-    assert.equal(s.element('studioCpuInfo').textContent, 'CPU host server: Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz · tối đa 8 core · INT8 tối đa 3 core');
+    assert.equal(s.element('processorHostA').textContent, 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz');
+    assert.equal(s.element('processorHostB').textContent, 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz');
     assert.match(s.element('coreSelectA').innerHTML, /value="8">CPU ×8/);
     assert.match(s.element('coreSelectB').innerHTML, /value="8">CPU ×8/);
     assert.equal(s.read('currentThreadsA'), 3);
@@ -323,8 +325,12 @@ async function studio() {
     assert.equal(s.read('currentModelB'), 'yolo26s_ptq_int8');
     assert.equal(s.element('speedupSourceLabel').textContent, 'yolo26s_ptq_int8 tăng tốc so với yolo26s_fp32');
     assert.equal(s.element('speedupDisplay').textContent, '2.00x');
-    assert.match(s.element('telemetryMetricsA').textContent, /40\.0 ms · 25\.0 FPS/);
-    assert.match(s.element('telemetryMetricsB').textContent, /20\.0 ms · 50\.0 FPS/);
+    assert.equal(s.element('telemetryModelA').textContent, 'yolo26s_fp32');
+    assert.equal(s.element('telemetryLatencyA').textContent, '40.0 ms');
+    assert.equal(s.element('telemetryFpsA').textContent, '25.0 FPS');
+    assert.equal(s.element('telemetryModelB').textContent, 'yolo26s_ptq_int8');
+    assert.equal(s.element('telemetryLatencyB').textContent, '20.0 ms');
+    assert.equal(s.element('telemetryFpsB').textContent, '50.0 FPS');
     assert.equal(s.element('telemetryMap50A').textContent, '51.76%');
     assert.equal(s.element('telemetryMap50B').textContent, '51.44%');
     assert.equal(s.element('map50Delta').textContent, '-0.32 pp');

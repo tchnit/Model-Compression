@@ -90,8 +90,6 @@
           <button class="preset-chip" onclick="applyPreset('ptq-s')">YOLO26s Baseline vs PTQ INT8</button>
           <button class="preset-chip" onclick="applyPreset('edge')">YOLO26m vs 26s</button>
         </div>
-        <small class="model-path" id="studioCpuInfo">CPU host server: đang kiểm tra…</small>
-
         <div class="model-select-group">
           <div class="select-wrapper">
             <span class="select-label">
@@ -110,10 +108,10 @@
             </select>
             <span class="select-label"><span>CPU SUY LUẬN · MÔ HÌNH A</span></span>
             <select class="model-select" id="processorSelectA">
-              <option value="host" selected>CPU host server</option>
-              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C · Hugging Face</option>
+              <option value="host" id="processorHostA" selected>Đang kiểm tra CPU…</option>
+              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C</option>
             </select>
-            <span class="select-label"><span>CPU HOST SERVER · MÔ HÌNH A</span></span>
+            <span class="select-label"><span>SỐ CORE CPU · MÔ HÌNH A</span></span>
             <select class="model-select" id="coreSelectA">
               <option value="1">CPU ×1</option>
               <option value="2">CPU ×2</option>
@@ -139,10 +137,10 @@
             </select>
             <span class="select-label"><span>CPU SUY LUẬN · MÔ HÌNH B</span></span>
             <select class="model-select" id="processorSelectB">
-              <option value="host" selected>CPU host server</option>
-              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C · Hugging Face</option>
+              <option value="host" id="processorHostB" selected>Đang kiểm tra CPU…</option>
+              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C</option>
             </select>
-            <span class="select-label"><span>CPU HOST SERVER · MÔ HÌNH B</span></span>
+            <span class="select-label"><span>SỐ CORE CPU · MÔ HÌNH B</span></span>
             <select class="model-select" id="coreSelectB">
               <option value="1">CPU ×1</option>
               <option value="2">CPU ×2</option>
@@ -287,12 +285,16 @@
 
         <div class="telemetry-card">
           <span class="telemetry-label">Tốc độ của mô hình A</span>
-          <div class="telemetry-secondary" id="telemetryMetricsA">Mô hình A · Chưa chọn</div>
+          <div class="telemetry-model-name" id="telemetryModelA">Chưa chọn</div>
+          <div class="telemetry-primary" id="telemetryLatencyA">—</div>
+          <div class="telemetry-secondary" id="telemetryFpsA">—</div>
         </div>
 
         <div class="telemetry-card">
           <span class="telemetry-label">Tốc độ của mô hình B</span>
-          <div class="telemetry-secondary" id="telemetryMetricsB">Mô hình B · Chưa chọn</div>
+          <div class="telemetry-model-name" id="telemetryModelB">Chưa chọn</div>
+          <div class="telemetry-primary" id="telemetryLatencyB">—</div>
+          <div class="telemetry-secondary" id="telemetryFpsB">—</div>
         </div>
 
         <div class="telemetry-card">

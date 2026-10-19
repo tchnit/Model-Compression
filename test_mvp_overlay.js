@@ -8,8 +8,9 @@ const source = fs.readFileSync(`${__dirname}/demo_data/mvp.js`, 'utf8');
 assert.match(source, /const DEFAULT_MODEL_KEY = 'yolo26s_ptq_int8'/);
 assert.match(source, /YOLO26s Baseline \(FP32\)/);
 assert.match(source, /YOLO26m Baseline \(FP32\)/);
-assert.match(source, /SỐ CORE CPU HOST SERVER/);
-assert.match(source, /Intel\(R\) Xeon\(R\) Platinum 8559C · Hugging Face/);
+assert.match(source, /SỐ CORE CPU/);
+assert.match(source, /Intel\(R\) Xeon\(R\) Platinum 8559C/);
+assert.doesNotMatch(source, /mvpCpuInfo|· Hugging Face/);
 assert.doesNotMatch(source, /mvpFrameAtTime|mvpFiles|mvpGroundTruth|mvpCamera/);
 
 const converted = mvpBuildBDD100KJson([
@@ -69,7 +70,7 @@ vm.runInContext(source, context);
   assert.deepEqual(sceneInfo.children.map(child => child.tagName), ['DIV', 'DIV']);
   assert.match(elements.get('mvpCoreSelect').innerHTML, /value="3">CPU ×3/);
   assert.doesNotMatch(elements.get('mvpCoreSelect').innerHTML, /value="4"/);
-  assert.equal(elements.get('mvpCpuInfo').textContent, 'CPU host server: Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz · tối đa 8 core · INT8 tối đa 3 core');
+  assert.equal(elements.get('mvpProcessorHost').textContent, 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz');
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].models, ['yolo26s_ptq_int8']);
   assert.equal(requests[0].threads, 3);
@@ -88,6 +89,6 @@ vm.runInContext(source, context);
   assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');
   assert.equal(requests.at(-1).processor, 'huggingface');
   assert.equal(elements.get('mvpCoreSelect').disabled, true);
-  assert.match(elements.get('mvpCpuInfo').textContent, /Platinum 8559C · Hugging Face/);
+  assert.equal(elements.get('mvpProcessorHost').textContent, 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz');
   console.log('MVP single-model Studio flow, CPU selection, live FPS and BDD100K export PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });
