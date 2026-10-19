@@ -92,7 +92,7 @@ vm.runInContext(source, context);
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');
   assert.equal(elements.get('mvpPanelModel').textContent, 'YOLO26s Baseline (FP32)');
-  assert.equal(elements.get('mvpModelInfo').textContent, 'OpenVINO FP32 · 36.56 MiB');
+  assert.equal(elements.get('mvpModelInfo').textContent, '36.56 MiB');
   handlers.get('mvpProcessorSelect:change')({target: {value: 'huggingface'}});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(requests.at(-1).models[0], 'yolo26s_baseline_fp32');

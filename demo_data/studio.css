@@ -359,11 +359,6 @@ select.model-select:focus {
   width: 100%;
   margin-top: 8px;
 }
-.model-path {
-  color: var(--muted);
-  font: 10px/1.4 monospace;
-  overflow-wrap: anywhere;
-}
 
 /* Quick Compare Presets */
 .preset-chips {

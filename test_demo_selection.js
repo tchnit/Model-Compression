@@ -262,8 +262,7 @@ async function studio(useDefaults = false) {
     await tick();
     assert.deepEqual(s.requests[0].payload.models, ['yolo26s_baseline_fp32']);
     assert.equal(s.element('panelTitleA').textContent, 'YOLO26s FP32 OpenVINO');
-    assert.equal(s.element('modelPathA').textContent, 'models/yolo26s_fp32_openvino_model');
-    assert.equal(s.element('labelAInfo').textContent, 'OpenVINO FP32 · 36.56 MiB');
+    assert.equal(s.element('labelAInfo').textContent, '36.56 MiB');
     s.finish(0);
     await selected;
     assert.ok(s.data.scenes[0].live_detections['yolo26s_baseline_fp32:3']);

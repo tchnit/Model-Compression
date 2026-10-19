@@ -8,7 +8,6 @@ body:not(.mvp-active) #mvp { display:none; }
 #mvp .stage-toolbar h2 { font-size:16px; font-weight:750; }
 #mvp .stage-toolbar span { font-size:12px; color:var(--muted); }
 #mvp .upload-box svg { margin-bottom:4px; color:var(--accent); }
-#mvp .upload-box small { display:block; margin-top:3px; color:#1e40af; font-size:11px; font-weight:600; }
 #mvp .mvp-accent,#mvp #mvpConfValue,#mvp #mvpExportCount { color:var(--accent); font-family:monospace; }
 #mvp .mvp-model-dot { width:8px; height:8px; border-radius:50%; background:#34d399; }
 #mvp .mvp-telemetry { grid-template-columns:repeat(3,minmax(0,1fr)); }

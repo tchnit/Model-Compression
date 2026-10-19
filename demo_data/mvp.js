@@ -43,14 +43,13 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
             <input type="file" id="mvpImageUploader" accept="image/jpeg,image/png,image/webp" hidden>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             <div><span>Tải lên ảnh của bạn</span></div>
-            <small>Chạy trực tiếp qua YOLO26 AI Server</small>
           </label>
         </div>
 
         <div class="control-block">
           <div class="control-title">2. Mô Hình Nhận Diện</div>
           <div class="model-select-group"><div class="select-wrapper">
-            <span class="select-label"><span>MÔ HÌNH</span><span id="mvpModelInfo">INT8 · OpenVINO</span></span>
+            <span class="select-label"><span>MÔ HÌNH</span><span id="mvpModelInfo">9.99 MiB</span></span>
             <select class="model-select" id="mvpModelSelect" aria-label="Mô hình nhận diện">
               <option value="yolo26s_ptq_int8" selected>YOLO26s PTQ INT8 640 (OpenVINO)</option>
               <option value="yolo26s_baseline_fp32">YOLO26s Baseline (FP32)</option>
@@ -65,7 +64,6 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
             <select class="model-select" id="mvpCoreSelect">
               <option value="1">CPU ×1</option><option value="2">CPU ×2</option><option value="3" selected>CPU ×3</option>
             </select>
-            <small class="model-path" id="mvpModelPath"></small>
           </div></div>
           <button class="btn btn-primary run-detection-btn" id="mvpRunDetection" type="button">Nhận diện</button>
         </div>
@@ -106,7 +104,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
 
         <div class="export-card">
           <div><h3>Tác Vụ Tiền Gán Nhãn Tự Động (Auto Pre-Labeling)</h3>
-            <p>Xuất kết quả suy luận sang nhãn BDD100K hoặc YOLO. Cần người kiểm tra nhãn trước khi sử dụng.</p>
+            <p>Kiểm tra nhãn trước khi sử dụng.</p>
             <div class="mvp-export-actions"><button class="btn btn-outline-primary" id="mvpCopy" disabled>Sao chép JSON BDD100K</button>
               <button class="btn" id="mvpDownloadJson" disabled>Tải file .json</button><button class="btn" id="mvpDownloadYolo" disabled>Tải file YOLO .txt</button></div>
           </div>
@@ -224,8 +222,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     byId('mvpSceneTitle').textContent = current.title;
     byId('mvpSceneDesc').textContent = current.desc || '';
     const sizeMb = MODEL_SIZES[currentModelKey] || model.size_mb;
-    byId('mvpModelInfo').textContent = `${currentModelKey.includes('fp32') ? 'OpenVINO FP32' : model.badge} · ${sizeMb.toFixed(2)} MiB`;
-    byId('mvpModelPath').textContent = currentModelKey.includes('fp32') ? `models/${currentModelKey.replace('baseline_', '')}_openvino_model` : model.path;
+    byId('mvpModelInfo').textContent = `${sizeMb.toFixed(2)} MiB`;
     byId('mvpPanelModel').textContent = modelName;
     byId('mvpRuntime').textContent = result?.runtime || `${modelName} · CPU ×${currentThreads}`;
     byId('mvpBoxCount').textContent = result ? boxes.length : '—';

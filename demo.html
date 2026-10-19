@@ -77,7 +77,6 @@
           <input type="file" id="imageUploader" accept="image/*" style="display:none">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:4px;color:var(--accent)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
           <div><span>Tải lên ảnh của bạn</span></div>
-          <small style="font-size:11px;color:#1e40af;font-weight:600">🤖 Chạy trực tiếp qua YOLO26 AI Server</small>
         </label>
       </div>
 
@@ -94,7 +93,7 @@
           <div class="select-wrapper">
             <span class="select-label">
               <span>MÔ HÌNH A (TRÁI)</span>
-              <span id="labelAInfo" style="color:var(--muted)">CPU FP16 · trọng số FP16 · 19.40 MiB</span>
+              <span id="labelAInfo" style="color:var(--muted)">19.40 MiB</span>
             </span>
             <select class="model-select" id="modelSelectA">
               <option value="">Chọn mô hình A để chạy</option>
@@ -125,13 +124,12 @@
               <option value="7">CPU ×7</option>
               <option value="8">CPU ×8</option>
             </select>
-            <small class="model-path" id="modelPathA"></small>
           </div>
 
           <div class="select-wrapper">
             <span class="select-label">
               <span>MÔ HÌNH B (PHẢI)</span>
-              <span id="labelBInfo" style="color:var(--green-dark)">Winner · YOLO26s PTQ INT8 · 9.99 MiB</span>
+              <span id="labelBInfo" style="color:var(--green-dark)">9.99 MiB</span>
             </span>
             <select class="model-select" id="modelSelectB">
               <option value="">Chọn mô hình B để chạy</option>
@@ -162,7 +160,6 @@
               <option value="7">CPU ×7</option>
               <option value="8">CPU ×8</option>
             </select>
-            <small class="model-path" id="modelPathB"></small>
           </div>
         </div>
         <button class="btn btn-primary run-detection-btn" id="runDetectionBtn" type="button" onclick="runDetection()">Nhận diện</button>
@@ -349,7 +346,7 @@
         <div>
           <h3 style="font-size:14px;font-weight:750;margin-bottom:6px">Tác Vụ Tiền Gán Nhãn Tự Động (Auto Pre-Labeling)</h3>
           <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-            Xuất trực tiếp kết quả suy luận của mô hình nén ra định dạng nhãn chuẩn BDD100K hoặc YOLO để nạp vào CVAT, Label Studio. Cần người kiểm tra nhãn trước khi sử dụng.
+            Kiểm tra nhãn trước khi sử dụng.
           </p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-outline-primary" id="copyLabelsBtn" disabled onclick="copyBDD100KJson()">

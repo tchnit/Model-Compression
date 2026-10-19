@@ -434,10 +434,8 @@ function updateSceneView() {
   const infoA = demoData.models[currentModelA] || { name: 'Chọn mô hình A để chạy' };
   const infoB = demoData.models[currentModelB] || { name: 'Chọn mô hình B để chạy' };
 
-  $('labelAInfo').textContent = currentModelA ? `${infoA.badge} · ${infoA.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
-  $('labelBInfo').textContent = currentModelB ? `${infoB.badge} · ${infoB.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
-  $('modelPathA').textContent = infoA.path || '';
-  $('modelPathB').textContent = infoB.path || '';
+  $('labelAInfo').textContent = currentModelA ? `${infoA.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
+  $('labelBInfo').textContent = currentModelB ? `${infoB.size_mb.toFixed(2)} MiB` : 'Chưa chọn';
   $('coreSelectA').disabled = false;
   $('coreSelectB').disabled = false;
 
