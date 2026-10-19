@@ -113,7 +113,7 @@ class DemoServerTests(unittest.TestCase):
 
     def test_live_comparison_pins_every_model_to_the_same_cpu_runtime(self):
         available = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
-        self.assertEqual(run_demo.CPU_THREADS, min(2, available))
+        self.assertEqual(run_demo.CPU_THREADS, available)
         self.assertTrue(run_demo.MODEL_CONFIGS)
         self.assertEqual(len(run_demo.MODEL_CONFIGS), 10)
         self.assertEqual({cfg["device"] for cfg in run_demo.MODEL_CONFIGS.values()}, {"cpu"})
@@ -282,7 +282,8 @@ class DemoServerTests(unittest.TestCase):
         Image.new('RGB', (1, 1)).save(image, 'JPEG')
         encoded = base64.b64encode(image.getvalue()).decode()
         for fields in [{'models': [{}]}, {'models': [None]}, {'conf': None}, {'conf': []},
-                       {'threads': 0}, {'threads': 3}, {'threads': '2'}, {'threads': True}]:
+                       {'threads': 0}, {'threads': run_demo.CPU_THREADS + 1},
+                       {'threads': '2'}, {'threads': True}]:
             with self.subTest(fields=fields):
                 payload = json.dumps({'image': encoded, **fields})
                 status, _ = self.request('POST', '/api/predict', payload, {'Content-Type': 'application/json'})

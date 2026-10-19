@@ -19,7 +19,7 @@ def available_cpu_threads():
         return max(1, os.cpu_count() or 1)
 
 
-CPU_THREADS = min(2, available_cpu_threads())
+CPU_THREADS = available_cpu_threads()
 
 MAX_REQUEST_BYTES = 12 * 1024 * 1024
 

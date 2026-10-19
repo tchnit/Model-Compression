@@ -7,8 +7,8 @@ let demoData = window.DEMO_DATA || null;
 let currentSceneId = 'scene_01';
 let currentModelA = '';
 let currentModelB = '';
-let currentThreadsA = 2;
-let currentThreadsB = 2;
+let currentThreadsA = 3;
+let currentThreadsB = 3;
 let currentConf = 0.25;
 let currentViewMode = 'split'; // split, slider, toggle
 let selectedToggleModel = 'A';
@@ -27,6 +27,13 @@ function inferenceSelection(side) {
   const modelKey = side === 'A' ? currentModelA : currentModelB;
   const threads = side === 'A' ? currentThreadsA : currentThreadsB;
   return { modelKey, threads, signature: `${modelKey}:${threads}` };
+}
+
+function populateCoreSelect(id, selected) {
+  const select = $(id);
+  select.innerHTML = Array.from({ length: serverCpuThreads }, (_, index) =>
+    `<option value="${index + 1}">CPU ×${index + 1}</option>`).join('');
+  select.value = String(selected);
 }
 
 function showToast(msg) {
@@ -48,8 +55,8 @@ async function checkServerStatus() {
         if (serverCpuThreads) {
           currentThreadsA = Math.min(currentThreadsA, serverCpuThreads);
           currentThreadsB = Math.min(currentThreadsB, serverCpuThreads);
-          $('coreSelectA').value = String(currentThreadsA);
-          $('coreSelectB').value = String(currentThreadsB);
+          populateCoreSelect('coreSelectA', currentThreadsA);
+          populateCoreSelect('coreSelectB', currentThreadsB);
         }
         $('serverStatusDot').classList.add('online');
         $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU ×${serverCpuThreads})` : 'AI Server Online (Live)';
@@ -138,7 +145,7 @@ function selectModel(side, modelKey) {
 
 function selectThreads(side, value) {
   const threads = Number(value);
-  if (!Number.isInteger(threads) || threads < 1 || threads > (serverCpuThreads || 2)) return Promise.resolve();
+  if (!Number.isInteger(threads) || threads < 1 || threads > (serverCpuThreads || 3)) return Promise.resolve();
   if (side === 'A') currentThreadsA = threads;
   else currentThreadsB = threads;
   updateSceneView();
