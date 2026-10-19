@@ -93,9 +93,12 @@ coverage.xml
 !/models/
 !/models/**
 
-# Runtime exports (keep manifest metadata, ignore compiled binaries)
+# Runtime exports used by the browser demo
 /runtime_exports/*
 !/runtime_exports/manifest.json
+!/runtime_exports/*.onnx
+!/onnx_models/
+!/onnx_models/*.onnx
 
 # ------------------------------------------------------------------------------
 # 5. Evaluation, Benchmark & Experiment Outputs

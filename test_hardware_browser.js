@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
 const {floatToHalf, halfToFloat, geometry, decode, statistics, isFallback, browserCapabilities, webgpuReason, previewMatches, wasmThreadLimit} = require('./demo_data/hardware_benchmark.js');
 assert.equal(wasmThreadLimit(8,true,true),8);
 assert.equal(wasmThreadLimit(8,false,true),1);
@@ -23,6 +25,10 @@ assert.match(annotation,/font-size:22px/);
 assert.match(annotation,/car 80%/);
 assert.equal(draw([],720,1280), '');
 const manifest = require('./demo_data/browser_models.json');
+for (const artifact of Object.values(manifest.artifacts)) {
+  assert.ok(fs.existsSync(artifact.url), `Missing browser artifact: ${artifact.url}`);
+  assert.equal(crypto.createHash('sha256').update(fs.readFileSync(artifact.url)).digest('hex'), artifact.sha256);
+}
 const browser = browserCapabilities(manifest);
 assert.deepEqual([...new Set(browser.configs.map(c => c.engine))],['wasm','webgpu']);
 assert.equal(Object.keys(browser.models).length,8);
