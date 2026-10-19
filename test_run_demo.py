@@ -339,7 +339,7 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(client.cpu_threads, 2)
         self.assertEqual(client.api_name, '/xeon_bridge_model_threads')
         self.assertEqual(result['inference_time_ms'], 20.0)
-        self.assertIn('CPU ×2', result['runtime'])
+        self.assertEqual(result['runtime'], f'{run_demo.HUGGINGFACE_CPU} · CPU ×2')
         self.assertEqual(result['boxes'][0]['box_norm'], [0.05, 0.2, 0.15, 0.4])
         self.assertEqual(result['runtime_settings']['provider'], 'huggingface')
         self.assertEqual(result['runtime_settings']['runtime_threads'], 2)

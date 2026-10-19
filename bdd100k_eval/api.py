@@ -127,7 +127,7 @@ def predict_on_huggingface(image, width, height, conf, model_key, threads):
     runtime_threads = int(result.get('runtime_cpu_threads', threads))
     return {
         'inference_time_ms': round(server_wall_ms, 1),
-        'runtime': f'Hugging Face · {server_cpu} · CPU ×{runtime_threads} · API {request_time_ms:.1f} ms',
+        'runtime': f'{server_cpu} · CPU ×{runtime_threads}',
         'runtime_settings': {
             'provider': 'huggingface',
             'server_cpu': server_cpu,
