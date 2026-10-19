@@ -165,7 +165,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
 
   async function checkServer() {
     try {
-      const response = await fetch('/api/status');
+      const response = await fetch('api/status');
       const status = await response.json();
       if (!response.ok || status.status !== 'online') throw new Error('offline');
       serverOnline = true;
@@ -261,7 +261,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
     const threads = currentThreads;
     const request = inferenceQueue.then(async () => {
       try {
-        const response = await fetch('/api/predict', {
+        const response = await fetch('api/predict', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({image: target.data_uri, conf: 0.10, models: [modelKey], threads, processor})
         });

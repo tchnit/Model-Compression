@@ -83,8 +83,8 @@ async function studio() {
       set src(value) { queueMicrotask(() => this.onload()); }
     },
     fetch(url, options) {
-      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3, huggingface_cpu_threads: 8 }) });
-      assert.equal(url, '/api/predict');
+      if (url === 'api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3, huggingface_cpu_threads: 8 }) });
+      assert.equal(url, 'api/predict');
       return new Promise((resolve, reject) => {
         requests.push({ payload: JSON.parse(options.body), resolve, reject });
       });
