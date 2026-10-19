@@ -150,12 +150,13 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
       const status = await response.json();
       if (!response.ok || status.status !== 'online') throw new Error('offline');
       serverOnline = true;
-      serverCpuThreads = Number.isInteger(status.cpu_threads) && status.cpu_threads > 0 ? status.cpu_threads : null;
+      const int8Threads = Number.isInteger(status.int8_cpu_threads) && status.int8_cpu_threads > 0 ? status.int8_cpu_threads : status.cpu_threads;
+      serverCpuThreads = Number.isInteger(int8Threads) && int8Threads > 0 ? int8Threads : null;
       if (serverCpuThreads) {
         currentThreads = Math.min(3, serverCpuThreads);
         populateCoreSelect();
       }
-      byId('mvpCpuInfo').textContent = `CPU host server: ${status.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core`;
+      byId('mvpCpuInfo').textContent = `CPU host server: ${status.cpu_name || 'không rõ'} · INT8 tối đa ${serverCpuThreads || '?'} core`;
       render();
       return inferScene(scene());
     } catch (_) {

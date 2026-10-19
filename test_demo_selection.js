@@ -73,7 +73,7 @@ async function studio() {
       set src(value) { queueMicrotask(() => this.onload()); }
     },
     fetch(url, options) {
-      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_name: 'Test Host CPU', cpu_threads: 8 }) });
+      if (url === '/api/status') return Promise.resolve({ ok: true, json: async () => ({ status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3 }) });
       assert.equal(url, '/api/predict');
       return new Promise((resolve, reject) => {
         requests.push({ payload: JSON.parse(options.body), resolve, reject });
@@ -110,7 +110,7 @@ async function studio() {
     const s = await studio();
     assert.equal(s.read('serverCpuThreads'), 8);
     assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU host ×8)');
-    assert.equal(s.element('studioCpuInfo').textContent, 'CPU host server: Test Host CPU · tối đa 8 core');
+    assert.equal(s.element('studioCpuInfo').textContent, 'CPU host server: Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz · tối đa 8 core · INT8 tối đa 3 core');
     assert.match(s.element('coreSelectA').innerHTML, /value="8">CPU ×8/);
     assert.match(s.element('coreSelectB').innerHTML, /value="8">CPU ×8/);
     assert.equal(s.read('currentThreadsA'), 3);
@@ -154,6 +154,18 @@ async function studio() {
     s.finish(2);
     await rerun;
     assert.ok(scene.live_detections['a:1']);
+  }
+
+  // Xeon E5-2696 v4 exposes only 1–3 cores for INT8 models.
+  {
+    const s = await studio();
+    const selected = s.context.selectModel('A', 'yolo26s_ptq_int8');
+    await tick();
+    assert.match(s.element('coreSelectA').innerHTML, /value="3">CPU ×3/);
+    assert.doesNotMatch(s.element('coreSelectA').innerHTML, /value="4"/);
+    assert.equal(s.read('currentThreadsA'), 3);
+    s.finish(0);
+    await selected;
   }
 
   // Concurrent selections are serialized and the same scene/model is reused.

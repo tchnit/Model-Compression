@@ -45,7 +45,7 @@ const context = vm.createContext({
   CLASS_COLORS: {car: '#fff'}, generateSvgElements: () => '', navigator: {clipboard: {writeText: async () => {}}},
   Blob, URL: {createObjectURL: () => 'blob:test', revokeObjectURL() {}}, setTimeout() {}, console,
   fetch: async (url, options) => {
-    if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Test Host CPU', cpu_threads: 8})};
+    if (url === '/api/status') return {ok: true, json: async () => ({status: 'online', cpu_name: 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz', cpu_threads: 8, int8_cpu_threads: 3})};
     requests.push(JSON.parse(options.body));
     return {ok: true, json: async () => ({status: 'success', width: 1280, height: 720, detections: {yolo26s_ptq_int8: {inference_time_ms: 50, runtime: 'CPU ×3', boxes: []}}})};
   }
@@ -58,8 +58,9 @@ vm.runInContext(source, context);
   const sceneInfo = elements.get('mvpSceneList').children[0].children[1];
   assert.equal(sceneInfo.tagName, 'DIV');
   assert.deepEqual(sceneInfo.children.map(child => child.tagName), ['DIV', 'DIV']);
-  assert.match(elements.get('mvpCoreSelect').innerHTML, /value="8">CPU ×8/);
-  assert.equal(elements.get('mvpCpuInfo').textContent, 'CPU host server: Test Host CPU · tối đa 8 core');
+  assert.match(elements.get('mvpCoreSelect').innerHTML, /value="3">CPU ×3/);
+  assert.doesNotMatch(elements.get('mvpCoreSelect').innerHTML, /value="4"/);
+  assert.equal(elements.get('mvpCpuInfo').textContent, 'CPU host server: Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz · INT8 tối đa 3 core');
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].models, ['yolo26s_ptq_int8']);
   assert.equal(requests[0].threads, 3);

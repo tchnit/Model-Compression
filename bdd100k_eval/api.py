@@ -82,14 +82,16 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if urlsplit(self.path).path == '/api/status':
+            cpu_name = hardware_bench.cpu_name()
             self.send_json(200, {
                 'status': 'online',
                 'models_available': [key for key, cfg in MODEL_CONFIGS.items() if os.path.exists(cfg['path'])],
                 'models_missing': {key: os.path.relpath(cfg['path'], DIRECTORY)
                                    for key, cfg in MODEL_CONFIGS.items() if not os.path.exists(cfg['path'])},
                 'models_loaded': list(LOADED_MODELS.keys()),
-                'cpu_name': hardware_bench.cpu_name(),
+                'cpu_name': cpu_name,
                 'cpu_threads': CPU_THREADS,
+                'int8_cpu_threads': hardware_bench.int8_cpu_thread_limit(cpu_name, CPU_THREADS),
             })
             return
 
@@ -133,9 +135,12 @@ class StudioRequestHandler(http.server.SimpleHTTPRequestHandler):
                     raise ValueError('conf phải thuộc [0, 1]') from error
                 if not 0 <= conf_thresh <= 1:
                     raise ValueError('conf phải thuộc [0, 1]')
-                threads = payload.get('threads', CPU_THREADS)
-                if type(threads) is not int or not 1 <= threads <= CPU_THREADS:
-                    raise ValueError(f'threads phải là số nguyên thuộc [1, {CPU_THREADS}]')
+                cpu_name = hardware_bench.cpu_name()
+                max_threads = min(hardware_bench.int8_cpu_thread_limit(cpu_name, CPU_THREADS)
+                                  if 'int8' in key else CPU_THREADS for key in target_models)
+                threads = payload.get('threads', max_threads)
+                if type(threads) is not int or not 1 <= threads <= max_threads:
+                    raise ValueError(f'threads phải là số nguyên thuộc [1, {max_threads}] cho model đã chọn')
                 if not INFERENCE_SLOT.acquire(blocking=False):
                     self.send_json(503, {'status': 'error', 'message': 'Server đang xử lý ảnh khác'})
                     return

@@ -243,6 +243,7 @@ class DemoServerTests(unittest.TestCase):
                 inventory = json.loads(body)
                 self.assertEqual(inventory['cpu_threads'], run_demo.CPU_THREADS)
                 self.assertTrue(inventory['cpu_name'])
+                self.assertGreaterEqual(inventory['int8_cpu_threads'], 1)
                 self.assertEqual(inventory['models_available'], [])
                 self.assertEqual(set(inventory['models_missing']), set(configs))
                 for key, cfg in configs.items():
@@ -291,6 +292,17 @@ class DemoServerTests(unittest.TestCase):
                 payload = json.dumps({'image': encoded, **fields})
                 status, _ = self.request('POST', '/api/predict', payload, {'Content-Type': 'application/json'})
                 self.assertEqual(status, 400)
+
+    def test_xeon_rejects_more_than_three_threads_for_int8(self):
+        image = BytesIO()
+        Image.new('RGB', (1, 1)).save(image, 'JPEG')
+        encoded = base64.b64encode(image.getvalue()).decode()
+        with patch.object(run_demo.hardware_bench, 'cpu_name', return_value='Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz'):
+            status, body = self.request('POST', '/api/predict', json.dumps({
+                'image': encoded, 'models': ['yolo26s_ptq_int8'], 'threads': 4
+            }), {'Content-Type': 'application/json'})
+        self.assertEqual(status, 400)
+        self.assertIn('[1, 3]', json.loads(body)['message'])
 
 
 if __name__ == "__main__":

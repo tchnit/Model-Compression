@@ -17,6 +17,7 @@ let sliderPercent = 50;
 let isDraggingSlider = false;
 let isServerOnline = false;
 let serverCpuThreads = null;
+let serverInt8CpuThreads = null;
 const liveSceneRequests = new Map();
 let inferenceQueue = Promise.resolve();
 
@@ -29,9 +30,13 @@ function inferenceSelection(side) {
   return { modelKey, threads, signature: `${modelKey}:${threads}` };
 }
 
-function populateCoreSelect(id, selected) {
+function modelThreadLimit(modelKey) {
+  return modelKey.includes('int8') ? (serverInt8CpuThreads || serverCpuThreads || 3) : (serverCpuThreads || 3);
+}
+
+function populateCoreSelect(id, modelKey, selected) {
   const select = $(id);
-  select.innerHTML = Array.from({ length: serverCpuThreads }, (_, index) =>
+  select.innerHTML = Array.from({ length: modelThreadLimit(modelKey) }, (_, index) =>
     `<option value="${index + 1}">CPU ×${index + 1}</option>`).join('');
   select.value = String(selected);
 }
@@ -52,13 +57,15 @@ async function checkServerStatus() {
       if (data.status === 'online') {
         isServerOnline = true;
         serverCpuThreads = Number.isInteger(data.cpu_threads) && data.cpu_threads > 0 ? data.cpu_threads : null;
+        serverInt8CpuThreads = Number.isInteger(data.int8_cpu_threads) && data.int8_cpu_threads > 0 ? data.int8_cpu_threads : serverCpuThreads;
         if (serverCpuThreads) {
-          currentThreadsA = Math.min(currentThreadsA, serverCpuThreads);
-          currentThreadsB = Math.min(currentThreadsB, serverCpuThreads);
-          populateCoreSelect('coreSelectA', currentThreadsA);
-          populateCoreSelect('coreSelectB', currentThreadsB);
+          currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(currentModelA));
+          currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(currentModelB));
+          populateCoreSelect('coreSelectA', currentModelA, currentThreadsA);
+          populateCoreSelect('coreSelectB', currentModelB, currentThreadsB);
         }
-        $('studioCpuInfo').textContent = `CPU host server: ${data.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core`;
+        const int8Limit = serverInt8CpuThreads < serverCpuThreads ? ` · INT8 tối đa ${serverInt8CpuThreads} core` : '';
+        $('studioCpuInfo').textContent = `CPU host server: ${data.cpu_name || 'không rõ'} · tối đa ${serverCpuThreads || '?'} core${int8Limit}`;
         $('serverStatusDot').classList.add('online');
         $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU host ×${serverCpuThreads})` : 'AI Server Online (Live)';
         $('serverStatusChip').style.background = '#ecfdf5';
@@ -71,6 +78,7 @@ async function checkServerStatus() {
   }
   isServerOnline = false;
   serverCpuThreads = null;
+  serverInt8CpuThreads = null;
   $('studioCpuInfo').textContent = 'CPU host server: không kết nối';
   $('serverStatusDot').classList.remove('online');
   $('serverStatusText').textContent = 'Offline (Chạy python3 run_demo.py)';
@@ -138,8 +146,15 @@ function inferScene(scene, sides) {
 }
 
 function selectModel(side, modelKey) {
-  if (side === 'A') currentModelA = modelKey;
-  else currentModelB = modelKey;
+  if (side === 'A') {
+    currentModelA = modelKey;
+    currentThreadsA = Math.min(currentThreadsA, modelThreadLimit(modelKey));
+    populateCoreSelect('coreSelectA', modelKey, currentThreadsA);
+  } else {
+    currentModelB = modelKey;
+    currentThreadsB = Math.min(currentThreadsB, modelThreadLimit(modelKey));
+    populateCoreSelect('coreSelectB', modelKey, currentThreadsB);
+  }
   updateSceneView();
   const scene = demoData.scenes.find(s => s.id === currentSceneId);
   return inferScene(scene, [side]);
@@ -147,7 +162,8 @@ function selectModel(side, modelKey) {
 
 function selectThreads(side, value) {
   const threads = Number(value);
-  if (!Number.isInteger(threads) || threads < 1 || threads > (serverCpuThreads || 3)) return Promise.resolve();
+  const modelKey = side === 'A' ? currentModelA : currentModelB;
+  if (!Number.isInteger(threads) || threads < 1 || threads > modelThreadLimit(modelKey)) return Promise.resolve();
   if (side === 'A') currentThreadsA = threads;
   else currentThreadsB = threads;
   updateSceneView();

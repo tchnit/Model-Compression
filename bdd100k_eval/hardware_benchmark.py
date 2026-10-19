@@ -30,6 +30,10 @@ def cpu_name(cpuinfo=Path('/proc/cpuinfo')):
     return platform.processor() or platform.machine() or 'CPU'
 
 
+def int8_cpu_thread_limit(name, available):
+    return min(available, 3) if 'intel(r) xeon(r) cpu e5-2696 v4' in name.lower() else available
+
+
 @lru_cache(maxsize=1)
 def hardware():
     import torch

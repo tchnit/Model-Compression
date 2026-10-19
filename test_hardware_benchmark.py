@@ -14,6 +14,12 @@ class HardwareBenchmarkTests(unittest.TestCase):
             self.assertEqual(h.cpu_name(cpuinfo), 'Test Host CPU')
             self.assertTrue(h.cpu_name(Path(folder) / 'missing'))
 
+    def test_xeon_e5_2696_v4_limits_int8_to_three_threads(self):
+        name = 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz'
+        self.assertEqual(h.int8_cpu_thread_limit(name, 44), 3)
+        self.assertEqual(h.int8_cpu_thread_limit('Other CPU', 8), 8)
+        self.assertEqual(h.int8_cpu_thread_limit(name, 2), 2)
+
     def test_pytorch_cpu_fp16_is_available_without_changing_fp32_mode(self):
         facts = dict(cuda=False, versions={'tensorrt': None}, providers=[],
                      openvino_devices={'CPU': {'capabilities': ['FP32', 'INT8']}})
