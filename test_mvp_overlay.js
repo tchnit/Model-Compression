@@ -7,6 +7,7 @@ const {mvpBuildBDD100KJson} = require('./demo_data/mvp.js');
 const source = fs.readFileSync(`${__dirname}/demo_data/mvp.js`, 'utf8');
 assert.match(source, /const MODEL_KEY = 'yolo26s_ptq_int8'/);
 assert.match(source, /models: \[MODEL_KEY\]/);
+assert.match(source, /SỐ CORE CPU HOST SERVER/);
 assert.doesNotMatch(source, /mvpFrameAtTime|mvpFiles|mvpGroundTruth|mvpCamera/);
 
 const converted = mvpBuildBDD100KJson([

@@ -19,6 +19,9 @@ assert.match(html, /telemetry-label">Tốc độ của mô hình A<\/span>/);
 assert.match(html, /telemetry-label">Tốc độ của mô hình B<\/span>/);
 assert.match(html, /telemetry-label">mAP@50 · Mô hình B − Mô hình A<\/span>/);
 assert.match(html, /id="runDetectionBtn"[^>]*>Nhận diện<\/button>/);
+assert.match(html, /CPU HOST SERVER · MÔ HÌNH A/);
+assert.match(html, /CPU HOST SERVER · MÔ HÌNH B/);
+assert.match(html, /Số luồng CPU client \(WASM\)/);
 
 async function studio() {
   const elements = new Map();
@@ -106,7 +109,7 @@ async function studio() {
   {
     const s = await studio();
     assert.equal(s.read('serverCpuThreads'), 8);
-    assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU ×8)');
+    assert.equal(s.element('serverStatusText').textContent, 'AI Server Online (CPU host ×8)');
     assert.match(s.element('coreSelectA').innerHTML, /value="8">CPU ×8/);
     assert.match(s.element('coreSelectB').innerHTML, /value="8">CPU ×8/);
     assert.equal(s.read('currentThreadsA'), 3);

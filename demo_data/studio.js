@@ -59,7 +59,7 @@ async function checkServerStatus() {
           populateCoreSelect('coreSelectB', currentThreadsB);
         }
         $('serverStatusDot').classList.add('online');
-        $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU ×${serverCpuThreads})` : 'AI Server Online (Live)';
+        $('serverStatusText').textContent = serverCpuThreads ? `AI Server Online (CPU host ×${serverCpuThreads})` : 'AI Server Online (Live)';
         $('serverStatusChip').style.background = '#ecfdf5';
         $('serverStatusChip').style.borderColor = '#10b981';
         return;

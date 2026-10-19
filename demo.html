@@ -104,7 +104,7 @@
               <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
               <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
             </select>
-            <span class="select-label"><span>CPU MÔ HÌNH A</span></span>
+            <span class="select-label"><span>CPU HOST SERVER · MÔ HÌNH A</span></span>
             <select class="model-select" id="coreSelectA">
               <option value="1">CPU ×1</option>
               <option value="2">CPU ×2</option>
@@ -125,7 +125,7 @@
               <option value="yolo26m_fp32">YOLO26m Baseline (FP16)</option>
               <option value="yolo26m_ptq_int8">YOLO26m PTQ INT8 (OpenVINO)</option>
             </select>
-            <span class="select-label"><span>CPU MÔ HÌNH B</span></span>
+            <span class="select-label"><span>CPU HOST SERVER · MÔ HÌNH B</span></span>
             <select class="model-select" id="coreSelectB">
               <option value="1">CPU ×1</option>
               <option value="2">CPU ×2</option>
@@ -365,7 +365,7 @@
         </optgroup>
       </select></label>
       <label>Thiết bị<select id="hwDevice"></select></label>
-      <label>Số luồng CPU (WASM)<select id="hwThreads" aria-describedby="hwThreadInfo"><option value="1">1 luồng</option></select></label>
+      <label>Số luồng CPU client (WASM)<select id="hwThreads" aria-describedby="hwThreadInfo"><option value="1">1 luồng</option></select></label>
       <label>Precision<select id="hwPrecision"><option>FP32</option><option selected>FP16</option><option>INT8</option></select></label>
       <label>Ảnh benchmark<select id="hwImage"></select></label>
       <label>Ảnh của bạn<input id="hwUpload" type="file" accept="image/jpeg,image/png,image/webp"></label>

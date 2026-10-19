@@ -47,7 +47,7 @@ if (typeof module !== 'undefined') module.exports = {mvpBuildBDD100KJson};
             <select class="model-select" id="mvpModelSelect" aria-label="Mô hình nhận diện">
               <option value="yolo26s_ptq_int8" selected>YOLO26s PTQ INT8 640 (OpenVINO)</option>
             </select>
-            <span class="select-label"><span>SỐ CORE CPU</span></span>
+            <span class="select-label"><span>SỐ CORE CPU HOST SERVER</span></span>
             <select class="model-select" id="mvpCoreSelect">
               <option value="1">CPU ×1</option><option value="2">CPU ×2</option><option value="3" selected>CPU ×3</option>
             </select>
