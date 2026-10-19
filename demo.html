@@ -94,12 +94,12 @@
           <div class="select-wrapper">
             <span class="select-label">
               <span>MÔ HÌNH A (TRÁI)</span>
-              <span id="labelAInfo" style="color:var(--muted)">FP16 · 42MiB</span>
+              <span id="labelAInfo" style="color:var(--muted)">CPU FP16 · trọng số FP16 · 19.40 MiB</span>
             </span>
             <select class="model-select" id="modelSelectA">
-              <option value="" selected>Chọn mô hình A để chạy</option>
+              <option value="">Chọn mô hình A để chạy</option>
               <optgroup label="YOLO26s">
-                <option value="yolo26s_fp32">YOLO26s FP16 PyTorch</option>
+                <option value="yolo26s_fp32" selected>YOLO26s FP16 PyTorch</option>
                 <option value="yolo26s_baseline_fp32">YOLO26s FP32 OpenVINO</option>
                 <option value="yolo26s_ptq_int8">YOLO26s INT8 OpenVINO</option>
               </optgroup>
@@ -111,14 +111,19 @@
             </select>
             <span class="select-label"><span>CPU SUY LUẬN · MÔ HÌNH A</span></span>
             <select class="model-select" id="processorSelectA">
-              <option value="host" id="processorHostA" selected>Đang kiểm tra CPU…</option>
-              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C</option>
+              <option value="host" id="processorHostA">Đang kiểm tra CPU…</option>
+              <option value="huggingface" selected>Intel(R) Xeon(R) Platinum 8559C</option>
             </select>
             <span class="select-label"><span>SỐ CORE CPU · MÔ HÌNH A</span></span>
             <select class="model-select" id="coreSelectA">
               <option value="1">CPU ×1</option>
               <option value="2">CPU ×2</option>
-              <option value="3" selected>CPU ×3</option>
+              <option value="3">CPU ×3</option>
+              <option value="4" selected>CPU ×4</option>
+              <option value="5">CPU ×5</option>
+              <option value="6">CPU ×6</option>
+              <option value="7">CPU ×7</option>
+              <option value="8">CPU ×8</option>
             </select>
             <small class="model-path" id="modelPathA"></small>
           </div>
@@ -126,14 +131,14 @@
           <div class="select-wrapper">
             <span class="select-label">
               <span>MÔ HÌNH B (PHẢI)</span>
-              <span id="labelBInfo" style="color:var(--green-dark)">INT8 · 20.5MiB</span>
+              <span id="labelBInfo" style="color:var(--green-dark)">Winner · YOLO26s PTQ INT8 · 9.99 MiB</span>
             </span>
             <select class="model-select" id="modelSelectB">
-              <option value="" selected>Chọn mô hình B để chạy</option>
+              <option value="">Chọn mô hình B để chạy</option>
               <optgroup label="YOLO26s">
                 <option value="yolo26s_fp32">YOLO26s FP16 PyTorch</option>
                 <option value="yolo26s_baseline_fp32">YOLO26s FP32 OpenVINO</option>
-                <option value="yolo26s_ptq_int8">YOLO26s INT8 OpenVINO</option>
+                <option value="yolo26s_ptq_int8" selected>YOLO26s INT8 OpenVINO</option>
               </optgroup>
               <optgroup label="YOLO26m">
                 <option value="yolo26m_fp32">YOLO26m FP16 PyTorch</option>
@@ -143,14 +148,19 @@
             </select>
             <span class="select-label"><span>CPU SUY LUẬN · MÔ HÌNH B</span></span>
             <select class="model-select" id="processorSelectB">
-              <option value="host" id="processorHostB" selected>Đang kiểm tra CPU…</option>
-              <option value="huggingface">Intel(R) Xeon(R) Platinum 8559C</option>
+              <option value="host" id="processorHostB">Đang kiểm tra CPU…</option>
+              <option value="huggingface" selected>Intel(R) Xeon(R) Platinum 8559C</option>
             </select>
             <span class="select-label"><span>SỐ CORE CPU · MÔ HÌNH B</span></span>
             <select class="model-select" id="coreSelectB">
               <option value="1">CPU ×1</option>
               <option value="2">CPU ×2</option>
-              <option value="3" selected>CPU ×3</option>
+              <option value="3">CPU ×3</option>
+              <option value="4" selected>CPU ×4</option>
+              <option value="5">CPU ×5</option>
+              <option value="6">CPU ×6</option>
+              <option value="7">CPU ×7</option>
+              <option value="8">CPU ×8</option>
             </select>
             <small class="model-path" id="modelPathB"></small>
           </div>

@@ -12,12 +12,15 @@ const expectedModelNames = ['YOLO26s FP16 PyTorch', 'YOLO26s FP32 OpenVINO', 'YO
 for (const side of ['A', 'B']) {
   const select = html.match(new RegExp(`<select class="model-select" id="modelSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...select.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]).filter(Boolean), expectedModels);
-  assert.deepEqual([...select.matchAll(/<option value="[^"]+">([^<]+)<\/option>/g)].map(match => match[1]), expectedModelNames);
+  assert.deepEqual([...select.matchAll(/<option value="[^"]+"(?: selected)?>([^<]+)<\/option>/g)].map(match => match[1]), expectedModelNames);
+  assert.equal(select.match(/<option value="([^"]+)" selected>/)[1], side === 'A' ? 'yolo26s_fp32' : 'yolo26s_ptq_int8');
   assert.deepEqual([...select.matchAll(/<optgroup label="([^"]+)">/g)].map(match => match[1]), ['YOLO26s', 'YOLO26m']);
   const cores = html.match(new RegExp(`<select class="model-select" id="coreSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
-  assert.deepEqual([...cores.matchAll(/<option value="([^"]+)"/g)].map(match => Number(match[1])), [1, 2, 3]);
+  assert.deepEqual([...cores.matchAll(/<option value="([^"]+)"/g)].map(match => Number(match[1])), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.match(cores, /<option value="4" selected>/);
   const processors = html.match(new RegExp(`<select class="model-select" id="processorSelect${side}">([\\s\\S]*?)<\\/select>`))[1];
   assert.deepEqual([...processors.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['host', 'huggingface']);
+  assert.match(processors, /<option value="huggingface" selected>/);
 }
 assert.doesNotMatch(html, /applyPreset\('qat'\)/);
 assert.doesNotMatch(html, /Tỷ Lệ Nén Trọng Số|Tăng Tốc Suy Luận \(CPU\)|Bảo Toàn mAP50–95|Precision Trên Tập Validation/);
